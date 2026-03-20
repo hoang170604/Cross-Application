@@ -1,6 +1,6 @@
 package com.crossapplication.main.entity;
 
-import java.util.Date;
+import java.sql.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,14 +16,11 @@ import jakarta.persistence.Table;
 public class Meal {
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
     @ManyToOne
-    @JoinColumn(name="user_id")
+    @JoinColumn(name="user_id", nullable=false)
     private User user;
-
-    @Column(name="user_id")
-    private int userId;
 
     @Column(name="meal_type", length=20, nullable=false)
     private String mealType;
@@ -31,11 +28,11 @@ public class Meal {
     @Column(name="date")
     private Date date;
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -45,14 +42,6 @@ public class Meal {
 
     public void setUser(User user) {
         this.user = user;
-    }
-
-    public int getUserId() {
-        return userId;
-    }
-
-    public void setUserId(int userId) {
-        this.userId = userId;
     }
 
     public String getMealType() {
