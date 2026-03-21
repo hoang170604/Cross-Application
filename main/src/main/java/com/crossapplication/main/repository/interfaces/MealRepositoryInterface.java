@@ -13,5 +13,4 @@ public interface MealRepositoryInterface {
     public List<Meal> finByDateAndMealType(Date date, String mealType);
 
     public Meal save(Meal meal);
-
 }
