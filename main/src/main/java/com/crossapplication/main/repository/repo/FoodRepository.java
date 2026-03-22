@@ -1,4 +1,4 @@
-package com.crossapplication.main.repository;
+package com.crossapplication.main.repository.repo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +50,7 @@ public class FoodRepository implements FoodRepositoryInterface{
     @Override
     public Food saveFood(Food food) {
         if (food.getId() == null) {
-            em.persist(food);  // tạo mới trong DB
+            em.persist(food);  
             return food;
         } else {
             return em.merge(food);
