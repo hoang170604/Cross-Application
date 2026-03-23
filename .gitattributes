@@ -1,0 +1,7 @@
+# Tự động xử lý xuống dòng cho tất cả các file text
+* text=auto
+
+# Ép các file code cụ thể dùng chuẩn nhất định
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
