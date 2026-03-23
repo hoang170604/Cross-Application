@@ -48,7 +48,11 @@ public class UserRepository implements UserRepositoryInterface{
 
     @Override
     public void save(User user) {
-        em.persist(user);
+        if(user.getId() == null) {
+            em.persist(user);
+        } else {
+            em.merge(user);
+        }
     }
 
     @Override
