@@ -56,4 +56,10 @@ public class FoodRepository implements FoodRepositoryInterface{
             return em.merge(food);
         }
     }
+
+    @Override
+    public double calculateFood(double foodPer100g) {
+        
+        return 0;
+    }
 }

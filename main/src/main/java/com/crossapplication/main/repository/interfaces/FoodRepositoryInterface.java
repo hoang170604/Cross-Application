@@ -14,4 +14,6 @@ public interface FoodRepositoryInterface {
     public ArrayList<Food> findAllFood();
 
     public ArrayList<Food> findByCategory(Long categoryId);
+
+    public double calculateFood(double foodPer100g);
 }
