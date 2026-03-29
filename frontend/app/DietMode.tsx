@@ -1,0 +1,68 @@
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import SharedHeader from '@/components/SharedHeader';
+import { useUserProfile } from '@/context/UserProfileContext';
+
+const activities = [
+  { id: 'sedentary', title: 'Ngồi nhiều', icon: '💻', desc: 'Văn phòng, ít vận động' },
+  { id: 'light', title: 'Vận động nhẹ', icon: '🚶', desc: 'Đi bộ, làm việc nhà' },
+  { id: 'moderate', title: 'Trung bình', icon: '🏃', desc: 'Tập luyện 3-5 buổi/tuần' },
+  { id: 'active', title: 'Năng động', icon: '🔥', desc: 'Tập luyện 6-7 buổi/tuần' },
+  { id: 'very_active', title: 'Cường độ cao', icon: '🏋️', desc: 'VĐV, lao động nặng' },
+  { id: 'free', title: 'Tự do', icon: '⚙️', desc: 'Mặc định cơ bản' },
+];
+
+export default function DietModeScreen() {
+  const router = useRouter();
+  const { userProfile, setUserProfile } = useUserProfile();
+  
+  const [selectedActivity, setSelectedActivity] = useState<string>(userProfile.activityLevel || '');
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+      <SharedHeader showProgress progress={66} />
+      <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 32 }}>
+        <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 32 }}>Mức độ vận động của bạn?</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+          {activities.map((act) => (
+            <TouchableOpacity
+              key={act.id}
+              onPress={() => setSelectedActivity(act.id)}
+              style={{
+                width: '47%', padding: 16,
+                backgroundColor: selectedActivity === act.id ? '#ECFDF5' : '#fff',
+                borderRadius: 24, alignItems: 'center', gap: 8,
+                shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+                borderWidth: selectedActivity === act.id ? 2 : 0,
+                borderColor: '#00C48C',
+              }}
+            >
+              <Text style={{ fontSize: 32 }}>{act.icon}</Text>
+              <Text style={{ fontWeight: '700', textAlign: 'center' }}>{act.title}</Text>
+              <Text style={{ fontSize: 10, color: '#6B7280', textAlign: 'center' }}>{act.desc}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+      <View style={{ padding: 24 }}>
+        <TouchableOpacity
+          onPress={() => {
+            if (selectedActivity) {
+              setUserProfile({ ...userProfile, activityLevel: selectedActivity });
+              router.push('/BiologicalStats');
+            }
+          }}
+          disabled={!selectedActivity}
+          style={{
+            width: '100%', paddingVertical: 16, borderRadius: 999, alignItems: 'center',
+            backgroundColor: selectedActivity ? '#000' : '#E5E7EB',
+          }}
+        >
+          <Text style={{ color: selectedActivity ? '#fff' : '#6B7280', fontWeight: '600', fontSize: 16 }}>Tiếp tục</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+}
