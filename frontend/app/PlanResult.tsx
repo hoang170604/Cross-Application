@@ -32,7 +32,7 @@ export default function PlanResultScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <SharedHeader showBack />
       <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16 }}>
-        {/* Title */}
+        {/* Tiêu đề */}
         <View style={{ alignItems: 'center', marginBottom: 32 }}>
           <Text style={{ fontSize: 28, fontWeight: '700', marginBottom: 12, textAlign: 'center' }}>
             Lộ trình của bạn đã sẵn sàng! 🎯
@@ -42,7 +42,7 @@ export default function PlanResultScreen() {
           </Text>
         </View>
 
-        {/* BMI Card */}
+        {/* Thẻ chỉ số BMI */}
         <View style={{
           backgroundColor: '#F9FAFB', borderRadius: 24, padding: 24, marginBottom: 24,
           alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6',
@@ -56,7 +56,7 @@ export default function PlanResultScreen() {
           </View>
         </View>
 
-        {/* Calorie Target Card */}
+        {/* Thẻ mục tiêu Calo */}
         <View style={{
           backgroundColor: '#F9FAFB', borderRadius: 24, padding: 24, marginBottom: 24,
           borderWidth: 1, borderColor: '#F3F4F6',
@@ -80,7 +80,7 @@ export default function PlanResultScreen() {
           ))}
         </View>
 
-        {/* Dynamic Plan Card */}
+        {/* Thẻ kế hoạch */}
         <View style={{
           backgroundColor: '#F9FAFB', borderRadius: 24, padding: 24, marginBottom: 24,
           borderWidth: 1, borderColor: '#F3F4F6',

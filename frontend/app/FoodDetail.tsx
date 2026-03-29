@@ -20,14 +20,14 @@ export default function FoodDetailScreen() {
       <SharedHeader showBack />
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Food Icon & Name */}
+        {/* Biểu tượng & Tên món */}
         <View style={{ alignItems: 'center', marginBottom: 32 }}>
           <Text style={{ fontSize: 80, marginBottom: 16 }}>🍲</Text>
           <Text style={{ fontSize: 28, fontWeight: '700', marginBottom: 8 }}>Phở bò</Text>
           <Text style={{ fontSize: 20, fontWeight: '500', color: '#6B7280' }}>350 kcal</Text>
         </View>
 
-        {/* Portion Control */}
+        {/* Điều chỉnh khẩu phần */}
         <View style={{
           backgroundColor: '#fff', borderRadius: 24, padding: 24, marginBottom: 24,
           borderWidth: 1, borderColor: '#F3F4F6',
@@ -61,7 +61,7 @@ export default function FoodDetailScreen() {
           </View>
         </View>
 
-        {/* Macros Detail */}
+        {/* Chi tiết dinh dưỡng */}
         {macros.map((macro) => (
           <View key={macro.name} style={{
             backgroundColor: '#fff', borderRadius: 16, padding: 20, marginBottom: 16,

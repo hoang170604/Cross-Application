@@ -90,7 +90,7 @@ export default function SearchScanScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: '#F9FAFB', zIndex: 10 }}>
-        {/* Header */}
+        {/* Thanh tiêu đề */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -105,7 +105,7 @@ export default function SearchScanScreen() {
           <Text style={{ fontSize: 18, fontWeight: '700', letterSpacing: 2 }}>TÌM KIẾM</Text>
         </View>
 
-        {/* Search Bar */}
+        {/* Thanh tìm kiếm */}
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
           <View style={{ flex: 1, position: 'relative' }}>
             <Ionicons name="search" size={20} color="#9CA3AF" style={{ position: 'absolute', left: 16, top: 14, zIndex: 1 }} />
@@ -124,7 +124,7 @@ export default function SearchScanScreen() {
           </View>
         </View>
 
-        {/* Filter Chips */}
+        {/* Bộ lọc */}
         {activeTab === 'search' && (
           <View style={{ marginBottom: 16 }}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -156,7 +156,7 @@ export default function SearchScanScreen() {
           </View>
         )}
 
-        {/* Tabs */}
+        {/* Thẻ tab */}
         <View style={{ flexDirection: 'row', gap: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
           <TouchableOpacity 
             onPress={() => setActiveTab('search')}
@@ -194,7 +194,7 @@ export default function SearchScanScreen() {
                  </View>
               </View>
 
-              {/* Macro Preview Row */}
+              {/* Dòng xem trước dinh dưỡng */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F9FAFB', padding: 12, borderRadius: 8 }}>
                 <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>Đạm <Text style={{ color: '#00C48C', fontWeight: '700' }}>{food.protein}g</Text></Text>
                 <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>T.Bột <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{food.carbs}g</Text></Text>

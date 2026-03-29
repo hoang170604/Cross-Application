@@ -1,6 +1,6 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Dưới đây là các màu sắc được sử dụng trong ứng dụng. Các màu được định nghĩa cho chế độ sáng và tối.
+ * Có nhiều cách khác để tùy chỉnh giao diện ứng dụng. Ví dụ: [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), v.v.
  */
 
 import { Platform } from 'react-native';
@@ -29,13 +29,13 @@ export const Colors = {
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
+    /** iOS `UIFontDescriptorSystemDesignDefault` - Phông chữ mặc định */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
+    /** iOS `UIFontDescriptorSystemDesignSerif` - Phông chữ chân */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
+    /** iOS `UIFontDescriptorSystemDesignRounded` - Phông chữ bo tròn */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
+    /** iOS `UIFontDescriptorSystemDesignMonospaced` - Phông chữ cố định */
     mono: 'ui-monospace',
   },
   default: {

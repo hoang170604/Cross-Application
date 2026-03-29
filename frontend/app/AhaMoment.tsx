@@ -34,7 +34,7 @@ export default function AhaMomentScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-        {/* Circular Progress */}
+        {/* Vòng tiến trình */}
         <View style={{ width: 192, height: 192, marginBottom: 48, position: 'relative' }}>
           <Svg width={192} height={192} style={{ transform: [{ rotate: '-90deg' }] }}>
             <Circle cx={96} cy={96} r={88} stroke="#F3F4F6" strokeWidth={16} fill="none" />

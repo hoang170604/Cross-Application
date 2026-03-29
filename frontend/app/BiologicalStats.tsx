@@ -25,7 +25,7 @@ export default function BiologicalStatsScreen() {
       <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 32 }}>
         <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 32 }}>Nhập chỉ số của bạn</Text>
 
-        {/* Gender Toggle */}
+        {/* Chọn giới tính */}
         <View style={{ marginBottom: 24 }}>
           <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Giới tính</Text>
           <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -51,7 +51,7 @@ export default function BiologicalStatsScreen() {
           </View>
         </View>
 
-        {/* Age */}
+        {/* Tuổi */}
         <View style={{ marginBottom: 24 }}>
           <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Tuổi</Text>
           <View style={{
@@ -76,9 +76,9 @@ export default function BiologicalStatsScreen() {
           </View>
         </View>
 
-        {/* Height & Weight */}
+        {/* Chiều cao & Cân nặng */}
         <View style={{ flexDirection: 'row', gap: 16, marginBottom: 24 }}>
-          {/* Height */}
+          {/* Chiều cao */}
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Chiều cao (cm)</Text>
             <View style={{
@@ -101,7 +101,7 @@ export default function BiologicalStatsScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          {/* Weight */}
+          {/* Cân nặng */}
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Cân nặng (kg)</Text>
             <View style={{
@@ -126,7 +126,7 @@ export default function BiologicalStatsScreen() {
           </View>
         </View>
 
-        {/* Target Weight (Hide if maintain) */}
+        {/* Cân nặng mục tiêu (Ẩn nếu giữ dáng) */}
         {userProfile.goal !== 'maintain' && (
           <View style={{ marginBottom: 24 }}>
             <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Cân nặng mục tiêu (kg)</Text>
@@ -159,7 +159,7 @@ export default function BiologicalStatsScreen() {
           </View>
         )}
 
-        {/* Speed Selector (Hide if maintain) */}
+        {/* Chọn tốc độ (Ẩn nếu giữ dáng) */}
         {userProfile.goal !== 'maintain' && (
           <View style={{ marginBottom: 24 }}>
             <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Tốc độ mong muốn</Text>
@@ -198,7 +198,7 @@ export default function BiologicalStatsScreen() {
             backgroundColor: '#fff', borderRadius: 24, padding: 16, gap: 16,
             borderWidth: 1, borderColor: '#F3F4F6',
           }}>
-            {/* Pregnant (only female) */}
+            {/* Mang thai (chỉ hiện cho nữ) */}
             {gender === 'Nữ' && (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -216,7 +216,7 @@ export default function BiologicalStatsScreen() {
               </View>
             )}
 
-            {/* Diabetes */}
+            {/* Tiểu đường */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>

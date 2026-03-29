@@ -29,7 +29,7 @@ export default function ProfileScreen() {
       <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: '#F9FAFB' }}>
         <Text style={{ fontSize: 18, fontWeight: '700', letterSpacing: 2, marginBottom: 24 }}>HỒ SƠ</Text>
 
-        {/* User Card */}
+        {/* Thẻ người dùng */}
         <View style={{
           backgroundColor: '#fff', borderRadius: 24, padding: 24, marginBottom: 8,
           flexDirection: 'row', alignItems: 'center', gap: 20,
@@ -51,7 +51,7 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Settings List */}
+        {/* Danh sách cài đặt */}
         <View style={{ gap: 12, marginBottom: 32 }}>
           {settingsItems.map((item, idx) => (
             <TouchableOpacity key={idx} style={{
@@ -70,7 +70,7 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* Logout */}
+        {/* Đăng xuất */}
         <TouchableOpacity
           onPress={() => router.replace('/Authwall')}
           style={{

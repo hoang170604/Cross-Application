@@ -13,9 +13,8 @@
 - Performance: Sử dụng Memoization (useMemo, useCallback) khi xử lý các phép tính Calo phức tạp.
 - Clean Code: Biến và hàm phải đặt tên theo camelCase, rõ nghĩa (ví dụ: `calculateDailyCalorie` thay vì `calc`).
 
-## 3. Web-to-Mobile Mapping Rule
-- Khi tham chiếu mã nguồn từ `ReactWeb/`, phải ánh xạ:
-  - div/section -> View
-  - img -> Image (Expo)
-  - button -> TouchableOpacity
-  - span/p/h1 -> Text
+## 3. Advanced Mobile Standards
+- **Safe Area:** Luôn bọc màn hình chính trong `SafeAreaView` để tránh lẹm vào Notch/Dynamic Island.
+- **Image Optimization:** Sử dụng `expo-image` thay cho thẻ `Image` mặc định để tăng tốc độ load và lưu cache ảnh món ăn.
+- **Platform Select:** Khi có sự khác biệt giữa iOS/Android (ví dụ: bóng đổ - shadow), sử dụng `Platform.select({ ios: {...}, android: {...} })`.
+- **Keyboard Handling:** Mọi màn hình có ô nhập liệu (như nhập Cân nặng) phải sử dụng `KeyboardAvoidingView` để không bị bàn phím che khuất.

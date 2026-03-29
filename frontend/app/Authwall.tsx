@@ -15,7 +15,7 @@ export default function AuthwallScreen() {
         <Text style={{ fontSize: 28, fontWeight: '700', marginBottom: 8 }}>NUTRITRACK</Text>
         <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 32 }}>Lưu lộ trình của bạn 🔒</Text>
 
-        {/* Input Card */}
+        {/* Thẻ nhập liệu */}
         <View style={{
           backgroundColor: '#fff', borderRadius: 24, padding: 24, marginBottom: 24,
           borderWidth: 1, borderColor: '#F3F4F6',
@@ -44,7 +44,7 @@ export default function AuthwallScreen() {
           />
         </View>
 
-        {/* Start Button */}
+        {/* Nút bắt đầu */}
         <TouchableOpacity
           onPress={() => router.replace('/(tabs)/diary')}
           style={{
@@ -56,7 +56,7 @@ export default function AuthwallScreen() {
           <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>Bắt đầu hành trình</Text>
         </TouchableOpacity>
 
-        {/* Divider */}
+        {/* Đường phân cách */}
         <View style={{ position: 'relative', marginBottom: 24, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{ width: '100%', height: 1, backgroundColor: '#E5E7EB' }} />
           <View style={{ position: 'absolute', backgroundColor: '#fff', paddingHorizontal: 16 }}>
@@ -64,7 +64,7 @@ export default function AuthwallScreen() {
           </View>
         </View>
 
-        {/* Google Button */}
+        {/* Nút Google */}
         <TouchableOpacity
           style={{
             width: '100%', paddingVertical: 16, backgroundColor: '#fff', borderRadius: 999,
@@ -77,7 +77,7 @@ export default function AuthwallScreen() {
           <Text style={{ fontWeight: '600', fontSize: 16 }}>Google</Text>
         </TouchableOpacity>
 
-        {/* Apple Button */}
+        {/* Nút Apple */}
         <TouchableOpacity
           style={{
             width: '100%', paddingVertical: 16, backgroundColor: '#000', borderRadius: 999,
