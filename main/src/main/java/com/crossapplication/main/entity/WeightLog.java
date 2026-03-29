@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name="weight_log")
-public class WeighLog {
+public class WeightLog {
     
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -30,7 +30,7 @@ public class WeighLog {
     @Column(name="weight")
     private double weight;
     
-    public WeighLog(){}
+    public WeightLog(){}
 
     public int getId() {
         return id;
