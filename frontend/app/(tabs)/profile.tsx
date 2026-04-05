@@ -3,8 +3,14 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useUserProfile } from '@/context/UserProfileContext';
 
+// ─── Import Atomic Hooks ─────────────────────────────────────────────────────
+import { useUserProfile } from '@/src/context/UserProfileContext';
+
+/**
+ * Màn hình Hồ sơ người dùng.
+ * Hiển thị tóm tắt thông tin cá nhân và cài đặt.
+ */
 export default function ProfileScreen() {
   const router = useRouter();
   const { userProfile } = useUserProfile();
@@ -16,7 +22,7 @@ export default function ProfileScreen() {
   const name = 'Người dùng mới';
 
   const settingsItems = [
-    { icon: '🎯', title: 'Mục tiêu của tôi', subtitle: userProfile.goal === 'lose_weight' ? 'Giảm cân' : userProfile.goal === 'gain_muscle' ? 'Tăng cơ' : 'Giữ dáng' },
+    { icon: '🎯', title: 'Mục tiêu của tôi', subtitle: userProfile.goal === 'lose_weight' ? 'Giảm cân' : userProfile.goal === 'gain_muscle' ? 'Tăng cơ' : 'Giữa dáng' },
     { icon: '🥑', title: 'Chế độ ăn', subtitle: userProfile.dietMode ? 'Đã thiết lập' : 'Chưa chọn' },
     { icon: '💧', title: 'Nhắc uống nước', subtitle: 'Mục tiêu 2 Lít/ngày' },
     { icon: '🔔', title: 'Thông báo', subtitle: 'Đã bật' },

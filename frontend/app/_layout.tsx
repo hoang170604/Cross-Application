@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { UserProfileProvider, useUserProfile } from '../context/UserProfileContext';
+import { UserProfileProvider, useUserProfile } from '@/src/context/UserProfileContext';
 import { View } from 'react-native';
 
 /**

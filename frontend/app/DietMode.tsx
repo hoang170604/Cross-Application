@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import SharedHeader from '@/components/SharedHeader';
-import { useUserProfile } from '@/context/UserProfileContext';
+import { SharedHeader } from '@/src/components/molecules/SharedHeader';
+
+// ─── Import Atomic Hooks ─────────────────────────────────────────────────────
+import { useUserProfile } from '@/src/context/UserProfileContext';
 
 const activities = [
   { id: 'sedentary', title: 'Ngồi nhiều', icon: '💻', desc: 'Văn phòng, ít vận động' },
@@ -14,6 +16,9 @@ const activities = [
   { id: 'free', title: 'Tự do', icon: '⚙️', desc: 'Mặc định cơ bản' },
 ];
 
+/**
+ * Màn hình Chọn mức độ vận động (Diet Mode/Activity Level).
+ */
 export default function DietModeScreen() {
   const router = useRouter();
   const { userProfile, setUserProfile } = useUserProfile();

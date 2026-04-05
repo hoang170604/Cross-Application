@@ -3,9 +3,15 @@ import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'reac
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import SharedHeader from '@/components/SharedHeader';
-import { useUserProfile } from '@/context/UserProfileContext';
+import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 
+// ─── Import Atomic Hooks ─────────────────────────────────────────────────────
+import { useUserProfile } from '@/src/context/UserProfileContext';
+
+/**
+ * Màn hình Authwall (Hoàn thiện hồ sơ).
+ * Bước cuối cùng của Onboarding để nhập tên và mục tiêu nhịn ăn khởi đầu.
+ */
 export default function AuthwallScreen() {
   const router = useRouter();
   const { updateUserProfile } = useUserProfile();
@@ -17,9 +23,9 @@ export default function AuthwallScreen() {
       Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên của bạn để tiếp tục!');
       return;
     }
-    // Cập nhật State chung và Ghi thẳng vào AsyncStorage
+    // Cập nhật State chung thông qua Context Orchestrator
     updateUserProfile({ name: name.trim(), fastingGoal: selectedFastingGoal });
-    // Tự động chuyển qua Dashboard
+    // Tự động chuyển qua Dashboard chính
     router.replace('/(tabs)/diary');
   };
 
