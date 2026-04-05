@@ -29,6 +29,13 @@ export default function StatisticsScreen() {
   // ═══════════════════════════════════════════════════
   const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
+  /**
+   * Logic nhóm dữ liệu (Aggregation) cho Biểu đồ Nhịn ăn.
+   * Chức năng: Truy xuất vào chuỗi `userProfile.fastingHistory`.
+   * 1. Lọc và xác định khung thời gian 7 ngày (Thứ 2 đến Chủ nhật) lấy mốc từ Local CPU Time tương đối.
+   * 2. Quét (Scan) và matching các Session kết thúc có cùng cấu trúc ID định dạng (YYYY-MM-DD).
+   * 3. Xử lý làm tròn số (Math.round 1 thập phân) ra định dạng { day, hours } thân thiện để vẽ UI Bar Chart.
+   */
   const fastingDisplayData = useMemo(() => {
     const history = userProfile.fastingHistory || [];
     
@@ -49,9 +56,10 @@ export default function StatisticsScreen() {
 
     return dates.map((dateStr, idx) => {
       const record = history.find(s => s.id === dateStr);
+      // GIỚI HẠN CHART CAPPING: Đảm bảo một ngày không bao giờ vượt 24 tiếng trên UI
       return {
         day: dayLabels[idx],
-        hours: record ? Math.round(record.durationHours * 10) / 10 : 0
+        hours: record ? Math.min(Math.round(record.durationHours * 10) / 10, 24) : 0
       };
     });
   }, [userProfile.fastingHistory]);
@@ -66,8 +74,12 @@ export default function StatisticsScreen() {
   // ═══════════════════════════════════════════════════
   // DỮ LIỆU CALO THỰC TẾ TỪ CONTEXT
   // ═══════════════════════════════════════════════════
-  // Hiện tại totalEatenCalories chỉ tính cho ngày hôm nay.
-  // Ta dùng nó làm điểm cuối, các ngày trước dùng placeholder (sẽ mở rộng khi có DailyLog).
+
+  /**
+   * Chuẩn hóa và tổng hợp lịch sử nạp Calo 7 ngày dưới dạng chuỗi liên tục (Array).
+   * Tại bản Client Context, dữ liệu áp dụng Placeholder (Mảng mồi 0) và nối kết cục bộ với `totalEatenCalories` cho phần tử thứ [6].
+   * Lưu đồ dữ liệu này sẽ sẵn sàng tích hợp thẳng vào Backend/Thống kê API khi có mảng Daily Log đầy đủ.
+   */
   const calorieHistory = useMemo(() => {
     // Placeholder cho 6 ngày trước + ngày hôm nay lấy dữ liệu thực
     return [0, 0, 0, 0, 0, 0, totalEatenCalories || 0];

@@ -7,16 +7,10 @@ import { useUserProfile } from '@/context/UserProfileContext';
 
 export default function FastingTrackerScreen() {
   const { userProfile, startFasting, endFasting, stopFastingLoop, setFastingGoal, addWater } = useUserProfile();
-  const [selectedGoal, setSelectedGoal] = useState<number>(16);
   const [now, setNow] = useState(Date.now());
   const [isPickerVisible, setIsPickerVisible] = useState(false);
 
-  useEffect(() => {
-    setSelectedGoal(userProfile.fastingGoal || 16);
-  }, [userProfile.fastingGoal]);
-
   const handleSelectPlan = (goal: number) => {
-    setSelectedGoal(goal);
     if (setFastingGoal) setFastingGoal(goal);
     setIsPickerVisible(false);
   };
@@ -28,17 +22,43 @@ export default function FastingTrackerScreen() {
     { goal: 20, label: '20:4', icon: '🦁', title: '20:4 (Chiến binh)', desc: 'Kích hoạt sâu Autophagy' },
   ];
 
+  const hasWarned48h = React.useRef(false);
+
   useEffect(() => {
-    if (!userProfile.isFasting) return;
-    const interval = setInterval(() => setNow(Date.now()), 1000);
+    if (!userProfile.isFasting) {
+      hasWarned48h.current = false;
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+      
+      // AUTO-TRANSITION / CẢNH BÁO: Kiểm tra mốc 48 giờ nhịn ăn liên tục 
+      if (userProfile.fastingState === 'FASTING' && userProfile.fastingStartTime) {
+        const elapsedHours = (currentTime - userProfile.fastingStartTime) / (1000 * 60 * 60);
+        if (elapsedHours >= 48 && !hasWarned48h.current) {
+          hasWarned48h.current = true;
+          if (Platform.OS === 'web') {
+            window.alert('Cảnh báo an toàn ⚠️\nPhiên nhịn ăn của bạn đã vượt quá 48 giờ liên tục. Hãy đảm bảo bạn có sự theo dõi của bác sĩ hoặc kết thúc phiên nhịn ăn để bảo vệ sức khỏe.');
+          } else {
+            Alert.alert(
+              'Cảnh báo an toàn ⚠️',
+              'Phiên nhịn ăn của bạn đã vượt quá 48 giờ liên tục. Hãy đảm bảo bạn có sự theo dõi của bác sĩ hoặc kết thúc ngay để bảo vệ sức khỏe.'
+            );
+          }
+        }
+      }
+    }, 1000);
+    
     return () => clearInterval(interval);
-  }, [userProfile.isFasting, userProfile.fastingState]);
+  }, [userProfile.isFasting, userProfile.fastingState, userProfile.fastingStartTime]);
 
   const currentState = userProfile.isFasting ? (userProfile.fastingState || 'FASTING') : 'IDLE';
   const isEating = currentState === 'EATING';
   const isFasting = currentState === 'FASTING';
 
-  const activeGoal = userProfile.isFasting ? (userProfile.fastingGoal || 16) : selectedGoal;
+  const activeGoal = userProfile.fastingGoal || 16;
   
   const fastingTargetMs = activeGoal * 60 * 60 * 1000;
   const eatingTargetMs = (24 - activeGoal) * 60 * 60 * 1000;
@@ -46,6 +66,12 @@ export default function FastingTrackerScreen() {
   
   const clockStart = userProfile.isFasting && userProfile.fastingStartTime ? userProfile.fastingStartTime : Date.now();
   
+  /**
+   * Tính toán thời gian đã trôi qua (Elapsed Time).
+   * 1. Đối chiếu `now` (thời gian Tick thực tế) với `fastingStartTime` trong Context (được đồng bộ từ AsyncStorage).
+   * 2. Nếu ở trạng thái Nhịn ăn -> Hiển thị số milliseconds đã trôi qua tương đối.
+   * 3. Tính tỷ lệ phần trăm (percentage) phục vụ vòng vẽ SVG tròn biểu diễn giao diện đếm tiến.
+   */
   // ĐỒNG HỒ ĐẾM TIẾN (Count-up timer)
   const elapsedMs = userProfile.isFasting ? Math.max(0, now - clockStart) : 0;
   const displayMs = elapsedMs; // Hiện đúng tgian trôi qua
@@ -61,7 +87,17 @@ export default function FastingTrackerScreen() {
     return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
   };
 
-  // LOGIC SINH HỌC & TRẠNG THÁI HIỂN THỊ (@skill.md)
+  /**
+   * LOGIC SINH HỌC & TRẠNG THÁI HIỂN THỊ (Dựa trên skill.md)
+   * 
+   * Cơ chế phân rã quy đổi từ số giờ đã trôi qua (elapsedHours):
+   * - [0h - 4h]: Sugar Processing - Xử lý năng lượng tồn đọng từ bữa trước, Insulin cao.
+   * - [4h - 12h]: Transition - Đường huyết giảm, gan bắt đầu giải phóng Glycogen dự trữ.
+   * - [12h - 16h]: Ketosis - Cạn Glycogen, hệ thống đốt mỡ thừa tạo Ketones (Giảm cân).
+   * - [16h+]: Autophagy - Quá trình tái tạo, dọn dẹp tế bào cũ/lỗi tự động kích hoạt.
+   * 
+   * Hệ thống sẽ tự thay đổi Metadata giao diện (stageColor, stageBadge) bám theo chu kỳ này.
+   */
   const elapsedHours = elapsedMs / (1000 * 60 * 60);
   
   let stageTitle = "Sẵn sàng (Idle)";
@@ -144,11 +180,11 @@ export default function FastingTrackerScreen() {
 
   const onMainAction = useCallback(() => {
     if (currentState === 'IDLE' || currentState === 'EATING') {
-      startFasting(currentState === 'EATING' ? activeGoal : selectedGoal);
+      startFasting(activeGoal);
     } else if (currentState === 'FASTING') {
       handleEndFasting();
     }
-  }, [currentState, activeGoal, selectedGoal, startFasting, handleEndFasting]);
+  }, [currentState, activeGoal, startFasting, handleEndFasting]);
 
   const buttonText = currentState === 'FASTING' ? 'Kết thúc nhịn ăn' : 'Bắt đầu nhịn ăn';
   const buttonColor = currentState === 'FASTING' ? '#EF4444' : '#10B981'; // Đỏ (ngừng) - Xanh Mint (bắt đầu) theo UI-kit

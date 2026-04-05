@@ -35,7 +35,18 @@ export type FastingSession = {
   durationHours: number;
 };
 
+export type WorkoutChallengeState = {
+  isActive: boolean;
+  isPaused: boolean;
+  targetMs: number;
+  accumulatedMs: number;
+  lastResumeTime: number;
+  calorieTarget: number;
+};
+
 export type UserProfile = {
+  name?: string;
+  email?: string;
   goal: string;
   dietMode: number | '';
   activityLevel: string;
@@ -60,6 +71,8 @@ export type UserProfile = {
   waterIntake?: number;
   waterTarget?: number;
   lastWaterDate?: string;
+  extraBurnedCalories?: number;
+  workoutChallenge?: WorkoutChallengeState;
 };
 
 export type Macros = {
@@ -71,6 +84,7 @@ export type Macros = {
 type UserProfileContextType = {
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
+  updateUserProfile: (data: Partial<UserProfile>) => void;
   // Hàm tính toán thủ công (giữ lại cho Onboarding)
   calculateFinalCalories: (profile: UserProfile) => number;
   calculateDuration: (profile: UserProfile) => number;
@@ -84,6 +98,14 @@ type UserProfileContextType = {
   stopFastingLoop: () => void;
   setFastingGoal: (goal: number) => void;
   addWater: (amount: number) => void;
+  
+  // Hành động Vận động bổ sung (Chống nợ Calo)
+  startWorkoutChallenge: (calorieTarget: number) => void;
+  pauseWorkoutChallenge: () => void;
+  resumeWorkoutChallenge: () => void;
+  cancelWorkoutChallenge: () => void;
+  completeWorkoutChallenge: () => void;
+
   // Giá trị tự động tính (Memoized)
   bmr: number;
   tdee: number;
@@ -340,6 +362,29 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   // ACTIONS (Hành động thay đổi State)
   // ═══════════════════════════════════════════════════
 
+  /**
+   * Cập nhật một phần hồ sơ người dùng và đồng bộ hóa tức thì.
+   * Cập nhật State (RAM) và ghi trực tiếp xuống AsyncStorage (ROM).
+   * Bảo đảm "Single Source of Truth" trong quá trình Onboarding.
+   * 
+   * @param {Partial<UserProfile>} data - Thực thể chứa các thay đổi profile.
+   * @returns {void}
+   */
+  const updateUserProfile = useCallback((data: Partial<UserProfile>) => {
+    setUserProfile((prev) => {
+      const next = { ...prev, ...data };
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(e => console.warn('[NutriTrack] Lỗi khi ghi AsyncStorage tức thì:', e));
+      return next;
+    });
+  }, []);
+
+  /**
+   * Thêm một món ăn mới vào danh sách bữa ăn hàng ngày.
+   * Tự động khiến State `dailyMeals` thay đổi, qua đó kích hoạt (Trigger) tính toán lại Tổng lượng Calo & Macros tiêu thụ.
+   * 
+   * @param {keyof DailyMeals} mealType - Bữa ăn thao tác (breakfast, lunch, dinner, snack).
+   * @param {FoodItem} food - Đối tượng thực phẩm với thành phần dinh dưỡng.
+   */
   const addFood = (mealType: keyof DailyMeals, food: FoodItem) => {
     setUserProfile((prev) => {
       const currentMeals = prev.dailyMeals || { breakfast: [], lunch: [], dinner: [], snack: [] };
@@ -353,6 +398,13 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  /**
+   * Ghi nhận cân nặng hiện tại của người dùng.
+   * Ghi chú: Việc thay đổi cân nặng này có năng lực kích hoạt lại công thức BMR (Mifflin-St Jeor),
+   * làm thay đổi chỉ số TDEE toàn cục theo thiết kế (skill.md).
+   * 
+   * @param {number} newWeight - Mức cân nặng mới thu được (Kg).
+   */
   const updateCurrentWeight = (newWeight: number) => {
     setUserProfile((prev) => ({
       ...prev,
@@ -360,6 +412,12 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  /**
+   * Chuyển trạng thái sinh hoạt sang "Nhịn ăn" (Fasting).
+   * Đây là mốc thời gian chốt (Timestamp) để theo dõi các giai đoạn sinh học (Ketosis, Autophagy...).
+   * 
+   * @param {number} goal - Số giờ mục tiêu (VD: 16 cho lộ trình 16:8).
+   */
   const startFasting = (goal: number) => {
     setUserProfile(prev => ({
       ...prev,
@@ -370,6 +428,10 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  /**
+   * Chuyển trạng thái sang "Giờ nạp thức ăn" (Eating).
+   * Xác lập lại Timestamp khởi điểm cho phiên hoạt động ăn uống.
+   */
   const startEating = () => {
     setUserProfile(prev => ({
       ...prev,
@@ -379,33 +441,51 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  /**
+   * Hàm xử lý kết thúc phiên nhịn ăn (Fasting Session).
+   * Cập nhật mới: Thuật toán Tách Ngày (Daily Time Splitting/Bucketing).
+   * 1. Duyệt vòng lặp `while` từ lúc Start đến Now.
+   * 2. Nếu phiên làm việc chạy qua 24h đêm (xuyên ngày), cắt phiên đó thành nhiều khối (chunks).
+   * 3. Phân bổ số giờ tương đối vào đúng `dateStr` của từng ngày.
+   */
   const endFasting = () => {
     setUserProfile(prev => {
       const now = Date.now();
       const st = prev.fastingStartTime || now;
-      const durationHours = (now - st) / (1000 * 60 * 60);
-
-      // Lấy ngày chuẩn (YYYY-MM-DD) theo local timezone để nhóm
-      const stDate = new Date(st);
-      const dateStr = new Date(stDate.getTime() - (stDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
       const history = prev.fastingHistory || [];
-      const existingIdx = history.findIndex(s => s.id === dateStr);
-      
       let newHistory = [...history];
-      if (existingIdx >= 0) {
-        newHistory[existingIdx] = {
-          ...newHistory[existingIdx],
-          durationHours: newHistory[existingIdx].durationHours + durationHours,
-          endTime: now,
-        };
-      } else {
-        newHistory.push({
-          id: dateStr,
-          startTime: st,
-          endTime: now,
-          durationHours,
-        });
+
+      // Thuật toán tách ngày (Bucketing)
+      let currentMs = st;
+      while (currentMs < now) {
+        const d = new Date(currentMs);
+        const nextDay = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+        const endOfDayMs = nextDay.getTime();
+        
+        const chunkEndMs = Math.min(endOfDayMs, now);
+        const chunkDurationHours = (chunkEndMs - currentMs) / (1000 * 60 * 60);
+        
+        // Chuyển sang YYYY-MM-DD chuẩn Local time
+        const dateStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        
+        const existingIdx = newHistory.findIndex(s => s.id === dateStr);
+        if (existingIdx >= 0) {
+          newHistory[existingIdx] = {
+            ...newHistory[existingIdx],
+            durationHours: newHistory[existingIdx].durationHours + chunkDurationHours,
+            endTime: Math.max(newHistory[existingIdx].endTime, chunkEndMs),
+          };
+        } else {
+          newHistory.push({
+            id: dateStr,
+            startTime: currentMs,
+            endTime: chunkEndMs,
+            durationHours: chunkDurationHours,
+          });
+        }
+        
+        currentMs = chunkEndMs;
       }
 
       return {
@@ -426,6 +506,13 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     setUserProfile(prev => ({ ...prev, fastingGoal: goal }));
   };
 
+  /**
+   * Quản lý trạng thái Nạp nước uống (Hydration).
+   * Được thiết kế với logic tự tái lập (Daily Reset): Hệ thống sẽ đối chiếu ngày hiện tại
+   * và `lastWaterDate`, nếu sang ngày mới thì reset Intake về chỉ cung cấp tham số `amount`.
+   * 
+   * @param {number} amount - Thể tích ml nước nạp thêm (thường là 200ml/cốc).
+   */
   const addWater = (amount: number) => {
     setUserProfile(prev => {
       const d = new Date();
@@ -442,6 +529,75 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
       };
     });
   };
+
+  // ═══════════════════════════════════════════════════
+  // WORKOUT CHALLENGE (VẬN ĐỘNG BÙ CALO)
+  // ═══════════════════════════════════════════════════
+
+  const startWorkoutChallenge = useCallback((calorieTarget: number) => {
+    setUserProfile(prev => {
+      const minutes = Math.ceil((calorieTarget / 100) * 20);
+      return {
+        ...prev,
+        workoutChallenge: {
+          isActive: true,
+          isPaused: false,
+          targetMs: minutes * 60 * 1000,
+          accumulatedMs: 0,
+          lastResumeTime: Date.now(),
+          calorieTarget
+        }
+      };
+    });
+  }, []);
+
+  const pauseWorkoutChallenge = useCallback(() => {
+    setUserProfile(prev => {
+      if (!prev.workoutChallenge || !prev.workoutChallenge.isActive || prev.workoutChallenge.isPaused) return prev;
+      const now = Date.now();
+      const elapsed = now - prev.workoutChallenge.lastResumeTime;
+      return {
+        ...prev,
+        workoutChallenge: {
+          ...prev.workoutChallenge,
+          isPaused: true,
+          accumulatedMs: prev.workoutChallenge.accumulatedMs + elapsed
+        }
+      };
+    });
+  }, []);
+
+  const resumeWorkoutChallenge = useCallback(() => {
+    setUserProfile(prev => {
+      if (!prev.workoutChallenge || !prev.workoutChallenge.isActive || !prev.workoutChallenge.isPaused) return prev;
+      return {
+        ...prev,
+        workoutChallenge: {
+          ...prev.workoutChallenge,
+          isPaused: false,
+          lastResumeTime: Date.now()
+        }
+      };
+    });
+  }, []);
+
+  const cancelWorkoutChallenge = useCallback(() => {
+    setUserProfile(prev => ({
+      ...prev,
+      workoutChallenge: undefined
+    }));
+  }, []);
+
+  const completeWorkoutChallenge = useCallback(() => {
+    setUserProfile(prev => {
+      if (!prev.workoutChallenge) return prev;
+      return {
+        ...prev,
+        extraBurnedCalories: (prev.extraBurnedCalories || 0) + prev.workoutChallenge.calorieTarget,
+        workoutChallenge: undefined
+      };
+    });
+  }, []);
 
   // ═══════════════════════════════════════════════════
   // API READINESS: Hàm Dispatcher gom dữ liệu cho Spring Boot
@@ -489,6 +645,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     <UserProfileContext.Provider value={{
       userProfile,
       setUserProfile,
+      updateUserProfile,
       calculateFinalCalories,
       calculateDuration,
       getMacroTargets,
@@ -500,6 +657,11 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
       stopFastingLoop,
       setFastingGoal,
       addWater,
+      startWorkoutChallenge,
+      pauseWorkoutChallenge,
+      resumeWorkoutChallenge,
+      cancelWorkoutChallenge,
+      completeWorkoutChallenge,
       // Computed values (Memoized)
       bmr,
       tdee,
