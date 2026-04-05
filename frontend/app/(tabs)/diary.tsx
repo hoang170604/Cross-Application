@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, TextInput, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
-import { useUserProfile, DailyMeals, FoodItem } from '@/context/UserProfileContext';
+import { useUserProfile, DailyMeals, FoodItem, WorkoutChallengeState } from '@/context/UserProfileContext';
 
+// ─── Memo Sub-Components ─────────────────────────────────────────────────────
+
+/** Hàng món ăn: chỉ re-render khi `item` thay đổi */
 const FoodItemRow = React.memo(({ item }: { item: FoodItem }) => (
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
     <Text style={{ fontSize: 14, color: '#374151', flex: 1 }}>• {item.name}</Text>
@@ -13,124 +16,185 @@ const FoodItemRow = React.memo(({ item }: { item: FoodItem }) => (
   </View>
 ));
 
+/**
+ * Đồng hồ đếm ngược hoàn toàn cô lập.
+ * setInterval 1s/lần chỉ re-render component này,
+ * KHÔNG kéo toàn màn hình / FlatList re-render.
+ */
+const WorkoutTimerDisplay = React.memo(({ challenge, onPauseResume, onCancel, onComplete }: {
+  challenge: WorkoutChallengeState;
+  onPauseResume: () => void;
+  onCancel: () => void;
+  onComplete: () => void;
+}) => {
+  const [, setTick] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!challenge.isActive || challenge.isPaused) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+    intervalRef.current = setInterval(() => {
+      const elapsed = challenge.accumulatedMs + (Date.now() - challenge.lastResumeTime);
+      if (elapsed >= challenge.targetMs) { clearInterval(intervalRef.current!); onComplete(); }
+      else setTick(t => t + 1);
+    }, 1000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [challenge.isActive, challenge.isPaused, challenge.lastResumeTime, challenge.accumulatedMs, challenge.targetMs, onComplete]);
+
+  const elapsedNow = challenge.isPaused ? 0 : (Date.now() - challenge.lastResumeTime);
+  const totalElapsed = challenge.accumulatedMs + elapsedNow;
+  const remainingMs = Math.max(0, challenge.targetMs - totalElapsed);
+  const progress = Math.min(100, (totalElapsed / challenge.targetMs) * 100);
+  const totalSec = Math.floor(remainingMs / 1000);
+  const mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
+  const ss = (totalSec % 60).toString().padStart(2, '0');
+
+  return (
+    <View style={{ backgroundColor: '#F8FAFC', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' }}>
+      <Text style={{ fontSize: 13, color: '#6B7280', fontWeight: '700', marginBottom: 8, letterSpacing: 0.5 }}>🔥 ĐANG ĐỐT CHÁY CALO DƯ THỪA</Text>
+      <Text style={{ fontSize: 48, fontWeight: '900', color: '#111827', marginVertical: 8, fontVariant: ['tabular-nums'] }}>{mm}:{ss}</Text>
+      <View style={{ width: '100%', height: 8, backgroundColor: '#E2E8F0', borderRadius: 999, overflow: 'hidden', marginBottom: 20 }}>
+        <View style={{ height: '100%', backgroundColor: '#F59E0B', width: `${progress}%` }} />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <TouchableOpacity onPress={onPauseResume} style={{ flex: 1, paddingVertical: 14, backgroundColor: '#111827', borderRadius: 999, alignItems: 'center' }}>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{challenge.isPaused ? 'Tiếp tục đi' : 'Tạm dừng'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onCancel} style={{ paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#FEE2E2', borderRadius: 999, alignItems: 'center' }}>
+          <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 14 }}>Dừng hẳn</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
+/** Thẻ cảnh báo vượt Calo */
+const CalorieOverCard = React.memo(({ remainingDisplay, walkMinutes, jogMinutes, onStart }: {
+  remainingDisplay: number; walkMinutes: number; jogMinutes: number; onStart: () => void;
+}) => (
+  <View style={{ backgroundColor: '#FFF1F2', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#FECDD3' }}>
+    <Text style={{ fontSize: 14, color: '#E11D48', fontWeight: 'bold', textAlign: 'center', marginBottom: 6 }}>
+      ⚠️ BẠN CẦN ĐỐT CHÁY {remainingDisplay.toLocaleString()} KCAL DƯ THỪA
+    </Text>
+    <Text style={{ fontSize: 13, color: '#BE123C', textAlign: 'center', lineHeight: 20, marginBottom: 12 }}>
+      Chỉ cần đi bộ thêm khoảng {walkMinutes} phút thôi!{"\n"}{walkMinutes > 120 ? `Hoặc chạy bộ trong ${jogMinutes} phút.` : ''}
+    </Text>
+    <TouchableOpacity onPress={onStart} style={{ backgroundColor: '#E11D48', borderRadius: 999, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}>
+      <Ionicons name="walk" size={20} color="#fff" style={{ marginRight: 6 }} />
+      <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Bắt đầu đi bộ ngay</Text>
+    </TouchableOpacity>
+  </View>
+));
+
+// Tĩnh — định nghĩa ngoài component để không tái tạo mỗi render
+const MEALS_DATA = [
+  { id: 'breakfast', name: 'Bữa sáng', time: '7:00 - 9:00' },
+  { id: 'lunch', name: 'Bữa trưa', time: '12:00 - 14:00' },
+  { id: 'dinner', name: 'Bữa tối', time: '18:00 - 20:00' },
+  { id: 'snack', name: 'Bữa phụ', time: 'Bất kỳ' },
+] as const;
+const DATE_FMT: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function DiaryDashboardScreen() {
   const router = useRouter();
-  const { userProfile, totalEatenCalories, totalEatenMacros, updateCurrentWeight, getMacroTargets, addWater, startWorkoutChallenge, pauseWorkoutChallenge, resumeWorkoutChallenge, cancelWorkoutChallenge, completeWorkoutChallenge } = useUserProfile();
-  
-  const waterIntake = userProfile.waterIntake || 0;
-  const waterTarget = userProfile.waterTarget || 2000;
-  const waterCups = Math.floor(waterIntake / 200);
-  const targetCups = Math.floor(waterTarget / 200);
-  const currentWeightNum = userProfile.currentWeight !== undefined ? userProfile.currentWeight : (userProfile.weight || 70);
-  const [dayWeight, setDayWeight] = useState(String(currentWeightNum));
+  const {
+    userProfile, totalEatenCalories, totalEatenMacros,
+    updateCurrentWeight, getMacroTargets, addWater,
+    startWorkoutChallenge, pauseWorkoutChallenge, resumeWorkoutChallenge,
+    cancelWorkoutChallenge, completeWorkoutChallenge,
+  } = useUserProfile();
 
-  useEffect(() => {
-    const freshWeight = userProfile.currentWeight !== undefined ? userProfile.currentWeight : (userProfile.weight || 70);
-    setDayWeight(String(freshWeight));
-  }, [userProfile.currentWeight, userProfile.weight]);
-  
-  /**
-   * CẤU HÌNH LOGIC NĂNG LƯỢNG (CALORIES)
-   * - targetCals: Mức TDEE thực tế đã được chuẩn hóa theo Mục tiêu (VD: Giảm cân thì -500).
-   * - consumed: Tổng lượng Calo đã nạp thông qua các bữa ăn trong ngày.
-   * - burned: Lượng Calo đốt cháy thêm từ vận động (Hiện đang giả lập ở mức 301 kcal, sẽ mở rộng để lấy từ HealthKit).
-   * - remaining: Tổng lượng Calo (Công suất dư) còn lại người dùng được phép nạp.
-   */
-  const targetCals = userProfile.targetCalories || 1800;
-  const consumed = totalEatenCalories;
-  const burned = 301 + (userProfile.extraBurnedCalories || 0);
-  const trueRemaining = targetCals + burned - consumed;
-  const isOverCalorie = trueRemaining < 0;
-  const remainingDisplay = Math.abs(trueRemaining);
-  
-  // Tính toán số phút vận động (100kcal = 20 phút đi bộ)
-  const walkMinutes = Math.ceil((remainingDisplay / 100) * 20);
-  const jogMinutes = Math.ceil(walkMinutes / 2);
-
-  // Bộ đếm thời gian (Local Timer) cập nhật giao diện
-  const [localTimer, setLocalTimer] = useState(0);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (userProfile.workoutChallenge?.isActive && !userProfile.workoutChallenge.isPaused) {
-      interval = setInterval(() => {
-        const wc = userProfile.workoutChallenge!;
-        const elapsedNow = Date.now() - wc.lastResumeTime;
-        const totalElapsed = wc.accumulatedMs + elapsedNow;
-        const remaining = Math.max(0, wc.targetMs - totalElapsed);
-        
-        if (remaining <= 0) {
-           clearInterval(interval);
-           completeWorkoutChallenge();
-           if (Platform.OS === 'web') {
-               window.alert("🎉 Tuyệt vời! Bạn đã hoàn thành thử thách xóa nợ năng lượng! Phần Calo này đã tự động chuyển sang Cột Đốt Cháy.");
-           } else {
-               Alert.alert("🎉 Tuyệt vời!", "Bạn đã hoàn thành thử thách xóa nợ năng lượng! Phần Calo đã được cộng gộp vào Cột Đốt Cháy.");
-           }
-        } else {
-           setLocalTimer(Date.now());
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [userProfile.workoutChallenge, completeWorkoutChallenge]);
-
-  // Giải mã Data -> Render Values
-  let wcRemainingMs = 0;
-  let wcProgress = 0;
-  if (userProfile.workoutChallenge?.isActive) {
-     const wc = userProfile.workoutChallenge;
-     const elapsedNow = wc.isPaused ? 0 : (Date.now() - wc.lastResumeTime);
-     const totalElapsed = wc.accumulatedMs + elapsedNow;
-     wcRemainingMs = Math.max(0, wc.targetMs - totalElapsed);
-     wcProgress = Math.min(100, (totalElapsed / wc.targetMs) * 100);
-  }
-
-  const formatChallengeTime = (ms: number) => {
-    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-    const m = Math.floor(totalSeconds / 60);
-    const s = totalSeconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-  
+  const [dayWeight, setDayWeight] = useState(String(userProfile.currentWeight ?? userProfile.weight ?? 70));
   const [isWeightFocused, setIsWeightFocused] = useState(false);
 
-  const circumference = 2 * Math.PI * 88;
-  const progressPercent = Math.min(1, consumed / (targetCals + burned));
+  useEffect(() => {
+    setDayWeight(String(userProfile.currentWeight ?? userProfile.weight ?? 70));
+  }, [userProfile.currentWeight, userProfile.weight]);
 
-  const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const todayString = new Intl.DateTimeFormat('vi-VN', options).format(new Date());
+  // ── Memoized Calculations ─────────────────────────────────────────────────
+  const calStats = useMemo(() => {
+    const targetCals = userProfile.targetCalories || 1800;
+    const consumed = totalEatenCalories;
+    const burned = 301 + (userProfile.extraBurnedCalories || 0);
+    const trueRemaining = targetCals + burned - consumed;
+    const isOverCalorie = trueRemaining < 0;
+    const remainingDisplay = Math.abs(trueRemaining);
+    const walkMinutes = Math.ceil((remainingDisplay / 100) * 20);
+    const jogMinutes = Math.ceil(walkMinutes / 2);
+    const progressPercent = Math.min(1, consumed / (targetCals + burned));
+    return { targetCals, consumed, burned, isOverCalorie, remainingDisplay, walkMinutes, jogMinutes, progressPercent };
+  }, [totalEatenCalories, userProfile.targetCalories, userProfile.extraBurnedCalories]);
 
-  const targetMacros = getMacroTargets(targetCals, userProfile.goal);
+  const todayString = useMemo(() => new Intl.DateTimeFormat('vi-VN', DATE_FMT).format(new Date()), []);
 
-  /**
-   * CẤU HÌNH ĐẠI LƯỢNG DINH DƯỠNG (MACROS)
-   * Tùy thuộc vào Mục tiêu (từ `getMacroTargets`), tỉ lệ các chất sẽ được thiết lập tự động.
-   * Ví dụ khi Giảm cân: 30% Tinh bột - 40% Đạm - 30% Béo theo hệ quy chiếu skill.md.
-   * Cấu trúc mảng dưới đây ánh xạ (Map) Data để dựng UI Thanh Tiến Trình (Progress Bars).
-   */
-  const macros = [
-    { name: 'Tinh bột', value: totalEatenMacros.carbs, total: targetMacros.carbs, color: '#FFB800' },
-    { name: 'Chất đạm', value: totalEatenMacros.protein, total: targetMacros.protein, color: '#00C48C' },
-    { name: 'Chất béo', value: totalEatenMacros.fat, total: targetMacros.fat, color: '#FF6B6B' },
-  ];
+  const waterStats = useMemo(() => ({
+    waterCups: Math.floor((userProfile.waterIntake || 0) / 200),
+    targetCups: Math.floor((userProfile.waterTarget || 2000) / 200),
+  }), [userProfile.waterIntake, userProfile.waterTarget]);
 
-  const mealsData = [
-    { id: 'breakfast', name: 'Bữa sáng', time: '7:00 - 9:00' },
-    { id: 'lunch', name: 'Bữa trưa', time: '12:00 - 14:00' },
-    { id: 'dinner', name: 'Bữa tối', time: '18:00 - 20:00' },
-    { id: 'snack', name: 'Bữa phụ', time: 'Bất kỳ' },
-  ] as const;
+  const macros = useMemo(() => {
+    const tm = getMacroTargets(calStats.targetCals, userProfile.goal);
+    return [
+      { name: 'Tinh bột', value: totalEatenMacros.carbs, total: tm.carbs, color: '#FFB800' },
+      { name: 'Chất đạm', value: totalEatenMacros.protein, total: tm.protein, color: '#00C48C' },
+      { name: 'Chất béo', value: totalEatenMacros.fat, total: tm.fat, color: '#FF6B6B' },
+    ];
+  }, [calStats.targetCals, userProfile.goal, totalEatenMacros, getMacroTargets]);
 
-  const renderMeal = ({ item: meal }: { item: typeof mealsData[number] }) => {
+  const fastingBadge = useMemo(() => {
+    if (!userProfile.isFasting) return null;
+    const g = userProfile.fastingGoal || 16;
+    const isEating = userProfile.fastingState === 'EATING';
+    const mascot = g <= 14 ? { icon: '🐱', name: '14:10' }
+      : g <= 16 ? { icon: '🦊', name: '16:8' }
+      : g <= 18 ? { icon: '🐯', name: '18:6' }
+      : g <= 20 ? { icon: '🦁', name: '20:4' }
+      : { icon: '🐉', name: 'OMAD' };
+    return { isEating, mascot };
+  }, [userProfile.isFasting, userProfile.fastingGoal, userProfile.fastingState]);
+
+  // ── Stable Callbacks ──────────────────────────────────────────────────────
+  const handleStartWorkout = useCallback(() => startWorkoutChallenge(calStats.remainingDisplay), [startWorkoutChallenge, calStats.remainingDisplay]);
+
+  const handlePauseResume = useCallback(() => {
+    userProfile.workoutChallenge?.isPaused ? resumeWorkoutChallenge() : pauseWorkoutChallenge();
+  }, [userProfile.workoutChallenge?.isPaused, pauseWorkoutChallenge, resumeWorkoutChallenge]);
+
+  const handleCancel = useCallback(() => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('Bạn muốn hủy thử thách đi bộ không?')) cancelWorkoutChallenge();
+    } else {
+      Alert.alert('Xác nhận dở dang', 'Các nỗ lực sẽ không được cộng dồn.', [
+        { text: 'Hủy', style: 'cancel' },
+        { text: 'Bỏ cuộc', style: 'destructive', onPress: cancelWorkoutChallenge },
+      ]);
+    }
+  }, [cancelWorkoutChallenge]);
+
+  const handleComplete = useCallback(() => {
+    completeWorkoutChallenge();
+    Alert.alert('🎉 Tuyệt vời!', 'Calo đã được cộng vào cột Đốt Cháy. Sức khỏe như con tê giác!');
+  }, [completeWorkoutChallenge]);
+
+  const handleAddWater = useCallback(() => addWater(200), [addWater]);
+
+  const handleUpdateWeight = useCallback(() => {
+    const n = Number(dayWeight);
+    if (isNaN(n) || n <= 0) { Alert.alert('Lỗi', 'Vui lòng nhập số hợp lệ.'); return; }
+    updateCurrentWeight(n);
+    Alert.alert('Thành công', 'Đã cập nhật cân nặng mới nhất vào hồ sơ!');
+  }, [dayWeight, updateCurrentWeight]);
+
+  /** renderMeal: useCallback → FlatList không invalidate card khác khi 1 card thay đổi */
+  const renderMeal = useCallback(({ item: meal }: { item: typeof MEALS_DATA[number] }) => {
     const mealItems = userProfile.dailyMeals?.[meal.id as keyof DailyMeals] || [];
-    const mealCals = mealItems.reduce((sum, item) => sum + item.calories, 0);
-
+    const mealCals = mealItems.reduce((s, i) => s + i.calories, 0);
     return (
-      <View style={{
-        backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 16,
-        borderWidth: 1, borderColor: '#F3F4F6',
-      }}>
+      <View style={{ backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#F3F4F6' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <View>
             <Text style={{ fontWeight: '700', fontSize: 18 }}>{meal.name}</Text>
@@ -141,38 +205,27 @@ export default function DiaryDashboardScreen() {
             {mealItems.length > 0 && <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>{mealItems.length} món</Text>}
           </View>
         </View>
-
-        {/* Hiển thị món ăn */}
         {mealItems.length > 0 ? (
-           <View style={{ marginBottom: 12, gap: 8 }}>
-             {mealItems.map(item => (
-               <FoodItemRow key={item.id} item={item} />
-             ))}
-           </View>
+          <View style={{ marginBottom: 12, gap: 8 }}>
+            {mealItems.map(item => <FoodItemRow key={item.id} item={item} />)}
+          </View>
         ) : (
-           <Text style={{ fontSize: 14, color: '#9CA3AF', fontStyle: 'italic', marginBottom: 16 }}>Chưa có món ăn</Text>
+          <Text style={{ fontSize: 14, color: '#9CA3AF', fontStyle: 'italic', marginBottom: 16 }}>Chưa có món ăn</Text>
         )}
-
         <TouchableOpacity
           onPress={() => router.push({ pathname: '/SearchScan', params: { mealType: meal.id } })}
-          style={{
-            width: '100%', paddingVertical: 12, backgroundColor: '#F9FAFB', borderRadius: 16,
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
+          style={{ width: '100%', paddingVertical: 12, backgroundColor: '#F9FAFB', borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
           <Ionicons name="add" size={20} color="#4B5563" />
           <Text style={{ color: '#4B5563', fontWeight: '600' }}>Thêm món</Text>
         </TouchableOpacity>
       </View>
     );
-  };
+  }, [userProfile.dailyMeals, router]);
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
           {/* Thanh tiêu đề */}
@@ -188,180 +241,106 @@ export default function DiaryDashboardScreen() {
           </View>
 
           <FlatList
-            data={mealsData}
+            data={MEALS_DATA}
             renderItem={renderMeal}
             keyExtractor={item => item.id}
             keyboardShouldPersistTaps="handled"
             style={{ flex: 1, paddingHorizontal: 24 }}
             contentContainerStyle={{ paddingBottom: 24 }}
             showsVerticalScrollIndicator={false}
+            initialNumToRender={5}
+            windowSize={5}
+            removeClippedSubviews={true}
             ListHeaderComponent={
-              <View style={{
-                backgroundColor: '#fff', borderRadius: 24, marginBottom: 24,
-                borderWidth: 1, borderColor: '#F3F4F6', overflow: 'hidden'
-              }}>
-                <View style={{ padding: 24 }}>
-                  {/* Top: Đã nạp - Còn lại - Đốt cháy */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827' }}>{consumed}</Text>
-                      <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, fontWeight: '500' }}>Đã nạp</Text>
-                    </View>
-
-                    {/* Vòng tiến trình */}
-                    <View style={{ width: 140, height: 140, position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-                      <Svg width={140} height={140} style={{ transform: [{ rotate: '-90deg' }] }}>
-                        <Circle cx={70} cy={70} r={64} stroke="#F3F4F6" strokeWidth={12} fill="none" strokeLinecap="round" />
-                        <Circle
-                          cx={70} cy={70} r={64}
-                          stroke={isOverCalorie ? "#F43F5E" : "#00C48C"} strokeWidth={12} fill="none"
-                          strokeDasharray={`${2 * Math.PI * 64}`}
-                          strokeDashoffset={`${2 * Math.PI * 64 * (1 - progressPercent)}`}
-                          strokeLinecap="round"
-                        />
-                      </Svg>
-                      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 28, fontWeight: '800', color: isOverCalorie ? '#F43F5E' : '#111827' }}>
-                          {isOverCalorie ? `-${remainingDisplay}` : remainingDisplay.toLocaleString()}
-                        </Text>
-                        <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2, fontWeight: '600' }}>
-                          {isOverCalorie ? 'Vượt mức' : 'Còn lại'}
-                        </Text>
+              <>
+                {/* Thẻ Calo Overview */}
+                <View style={{ backgroundColor: '#fff', borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: '#F3F4F6', overflow: 'hidden' }}>
+                  <View style={{ padding: 24 }}>
+                    {/* Hàng Đã nạp — Vòng tròn — Đốt cháy */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                      <View style={{ alignItems: 'center', flex: 1 }}>
+                        <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827' }}>{calStats.consumed}</Text>
+                        <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, fontWeight: '500' }}>Đã nạp</Text>
+                      </View>
+                      <View style={{ width: 140, height: 140, position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+                        <Svg width={140} height={140} style={{ transform: [{ rotate: '-90deg' }] }}>
+                          <Circle cx={70} cy={70} r={64} stroke="#F3F4F6" strokeWidth={12} fill="none" strokeLinecap="round" />
+                          <Circle
+                            cx={70} cy={70} r={64}
+                            stroke={calStats.isOverCalorie ? '#F43F5E' : '#00C48C'} strokeWidth={12} fill="none"
+                            strokeDasharray={`${2 * Math.PI * 64}`}
+                            strokeDashoffset={`${2 * Math.PI * 64 * (1 - calStats.progressPercent)}`}
+                            strokeLinecap="round"
+                          />
+                        </Svg>
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontSize: 28, fontWeight: '800', color: calStats.isOverCalorie ? '#F43F5E' : '#111827' }}>
+                            {calStats.isOverCalorie ? `-${calStats.remainingDisplay}` : calStats.remainingDisplay.toLocaleString()}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2, fontWeight: '600' }}>
+                            {calStats.isOverCalorie ? 'Vượt mức' : 'Còn lại'}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ alignItems: 'center', flex: 1 }}>
+                        <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827' }}>{calStats.burned}</Text>
+                        <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, fontWeight: '500' }}>Đốt cháy</Text>
                       </View>
                     </View>
 
-                    <View style={{ alignItems: 'center', flex: 1 }}>
-                      <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827' }}>{burned}</Text>
-                      <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, fontWeight: '500' }}>Đốt cháy</Text>
+                    {/* Macros - 3 Cột */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      {macros.map((macro) => {
+                        const pct = Math.max(0, Math.min(100, macro.total > 0 ? (macro.value / macro.total) * 100 : 0));
+                        return (
+                          <View key={macro.name} style={{ flex: 1, alignItems: 'center', paddingHorizontal: 6 }}>
+                            <Text style={{ fontSize: 13, color: '#4B5563', fontWeight: '600', marginBottom: 12 }}>{macro.name}</Text>
+                            <View style={{ width: '100%', height: 4, backgroundColor: '#F3F4F6', borderRadius: 999, marginBottom: 12, justifyContent: 'center' }}>
+                              <View style={{ position: 'absolute', left: 0, height: 4, borderRadius: 999, backgroundColor: macro.color, width: `${pct}%` }} />
+                              <View style={{ position: 'absolute', left: `${pct}%`, width: 10, height: 10, borderRadius: 5, backgroundColor: macro.color, transform: [{ translateX: -5 }], shadowColor: macro.color, shadowOpacity: 0.5, shadowRadius: 4, elevation: 2 }} />
+                            </View>
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#111827' }}>
+                              {macro.value} <Text style={{ color: '#9CA3AF', fontWeight: '500' }}>/ {macro.total} g</Text>
+                            </Text>
+                          </View>
+                        );
+                      })}
                     </View>
                   </View>
 
-                  {/* Dinh dưỡng (Macros) - 3 Cột ngang */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    {macros.map((macro) => {
-                      const percent = Math.max(0, Math.min(100, macro.total > 0 ? (macro.value / macro.total) * 100 : 0));
-                      return (
-                        <View key={macro.name} style={{ flex: 1, alignItems: 'center', paddingHorizontal: 6 }}>
-                          <Text style={{ fontSize: 13, color: '#4B5563', fontWeight: '600', marginBottom: 12 }}>{macro.name}</Text>
-                          
-                          <View style={{ width: '100%', height: 4, backgroundColor: '#F3F4F6', borderRadius: 999, marginBottom: 12, justifyContent: 'center' }}>
-                            <View style={{
-                              position: 'absolute', left: 0, height: 4, borderRadius: 999,
-                              backgroundColor: macro.color, width: `${percent}%`,
-                            }} />
-                            <View style={{
-                              position: 'absolute', left: `${percent}%`, width: 10, height: 10, borderRadius: 5,
-                              backgroundColor: macro.color, transform: [{ translateX: -5 }],
-                              shadowColor: macro.color, shadowOpacity: 0.5, shadowRadius: 4, elevation: 2,
-                            }} />
-                          </View>
-
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#111827' }}>
-                            {macro.value} <Text style={{ color: '#9CA3AF', fontWeight: '500' }}>/ {macro.total} g</Text>
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
+                  {/* Fasting Status Badge */}
+                  {fastingBadge && (
+                    <View style={{ width: '100%', paddingVertical: 14, backgroundColor: fastingBadge.isEating ? '#ECFDF5' : '#FFFBEB', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderTopWidth: 1, borderTopColor: fastingBadge.isEating ? '#D1FAE5' : '#FEF3C7' }}>
+                      <Text style={{ fontSize: 16 }}>{fastingBadge.isEating ? '🥗' : fastingBadge.mascot.icon}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: fastingBadge.isEating ? '#047857' : '#B45309' }}>
+                        {fastingBadge.isEating ? 'Bây giờ: Giờ nạp năng lượng' : `Bây giờ: Đang nhịn ăn (${fastingBadge.mascot.name})`}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
-                {/* Status bar */}
-                {userProfile.isFasting && (() => {
-                  const getMascot = (goal: number) => {
-                    if (goal <= 14) return { icon: '🐱', name: '14:10' };
-                    if (goal <= 16) return { icon: '🦊', name: '16:8' };
-                    if (goal <= 18) return { icon: '🐯', name: '18:6' };
-                    if (goal <= 20) return { icon: '🦁', name: '20:4' };
-                    return { icon: '🐉', name: 'OMAD' };
-                  };
-                  const mascotInfo = getMascot(userProfile.fastingGoal || 16);
-
-                  return (
-                    <View style={{
-                      width: '100%', paddingVertical: 14,
-                      backgroundColor: userProfile.fastingState === 'EATING' ? '#ECFDF5' : '#FFFBEB',
-                      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      borderTopWidth: 1, borderTopColor: userProfile.fastingState === 'EATING' ? '#D1FAE5' : '#FEF3C7',
-                    }}>
-                      <Text style={{ fontSize: 16 }}>{userProfile.fastingState === 'EATING' ? '🥗' : mascotInfo.icon}</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: userProfile.fastingState === 'EATING' ? '#047857' : '#B45309' }}>
-                        {userProfile.fastingState === 'EATING' 
-                          ? 'Bây giờ: Giờ nạp năng lượng' 
-                          : `Bây giờ: Đang nhịn ăn (${mascotInfo.name})`}
-                      </Text>
-                    </View>
-                  );
-                })()}
-
-                {/* Dòng khuyên nhủ (Smart Nudge) & Workout Challenge */}
+                {/* Workout Challenge / Smart Nudge — Cô lập khỏi phần còn lại */}
                 {userProfile.workoutChallenge?.isActive ? (
-                  <View style={{ backgroundColor: '#F8FAFC', borderRadius: 16, padding: 20, marginTop: 16, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 13, color: '#6B7280', fontWeight: '700', marginBottom: 8, letterSpacing: 0.5 }}>🔥 ĐANG ĐỐT CHÁY CALO DƯ THỪA</Text>
-                    <Text style={{ fontSize: 48, fontWeight: '900', color: '#111827', marginVertical: 8, fontVariant: ['tabular-nums'] }}>
-                      {formatChallengeTime(wcRemainingMs)}
-                    </Text>
-                    
-                    {/* Progress Bar */}
-                    <View style={{ width: '100%', height: 8, backgroundColor: '#E2E8F0', borderRadius: 999, overflow: 'hidden', marginBottom: 20 }}>
-                      <View style={{ height: '100%', backgroundColor: '#F59E0B', width: `${wcProgress}%` }} />
-                    </View>
-
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <TouchableOpacity 
-                        onPress={() => userProfile.workoutChallenge?.isPaused ? resumeWorkoutChallenge() : pauseWorkoutChallenge()}
-                        style={{ flex: 1, paddingVertical: 14, backgroundColor: '#111827', borderRadius: 999, alignItems: 'center' }}
-                      >
-                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
-                          {userProfile.workoutChallenge?.isPaused ? 'Tiếp tục đi' : 'Tạm dừng'}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        onPress={() => {
-                           if (Platform.OS === 'web') {
-                              const confirm = window.confirm('Bạn có chắc chắn muốn hủy bỏ thử thách đi bộ không? Lượng calo chưa đốt sẽ không được tính.');
-                              if (confirm) cancelWorkoutChallenge();
-                           } else {
-                              Alert.alert('Xác nhận dở dang', 'Bạn có chắc chắn muốn từ bỏ thử thách đi bộ không? Các nỗ lực vừa qua sẽ không được cộng dồn.', [
-                                { text: 'Hủy', style: 'cancel' },
-                                { text: 'Bỏ cuộc', style: 'destructive', onPress: cancelWorkoutChallenge }
-                              ]);
-                           }
-                        }}
-                        style={{ paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#FEE2E2', borderRadius: 999, alignItems: 'center' }}
-                      >
-                         <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 14 }}>Dừng hẳn</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ) : (
-                  isOverCalorie && (
-                    <View style={{ backgroundColor: '#FFF1F2', borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: '#FECDD3' }}>
-                      <Text style={{ fontSize: 14, color: '#E11D48', fontWeight: 'bold', textAlign: 'center', marginBottom: 6 }}>
-                        ⚠️ BẠN CẦN ĐỐT CHÁY {remainingDisplay.toLocaleString()} KCAL DƯ THỪA
-                      </Text>
-                      <Text style={{ fontSize: 13, color: '#BE123C', textAlign: 'center', lineHeight: 20, marginBottom: 12 }}>
-                        Chỉ cần đi bộ thêm khoảng {walkMinutes} phút thôi!{"\n"}
-                        {walkMinutes > 120 ? ` Hoặc chạy bộ trong ${jogMinutes} phút.` : ''}
-                      </Text>
-                      <TouchableOpacity 
-                        onPress={() => startWorkoutChallenge(remainingDisplay)}
-                        style={{ backgroundColor: '#E11D48', borderRadius: 999, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
-                      >
-                        <Ionicons name="walk" size={20} color="#fff" style={{ marginRight: 6 }} />
-                        <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Bắt đầu đi bộ ngay</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )
-                )}
-              </View>
+                  <WorkoutTimerDisplay
+                    challenge={userProfile.workoutChallenge}
+                    onPauseResume={handlePauseResume}
+                    onCancel={handleCancel}
+                    onComplete={handleComplete}
+                  />
+                ) : calStats.isOverCalorie ? (
+                  <CalorieOverCard
+                    remainingDisplay={calStats.remainingDisplay}
+                    walkMinutes={calStats.walkMinutes}
+                    jogMinutes={calStats.jogMinutes}
+                    onStart={handleStartWorkout}
+                  />
+                ) : null}
+              </>
             }
             ListFooterComponent={
               <View>
                 {/* Theo dõi nước uống */}
-                <View style={{
-                  backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 16,
-                  borderWidth: 1, borderColor: '#F3F4F6',
-                }}>
+                <View style={{ backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#F3F4F6' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
@@ -373,36 +352,22 @@ export default function DiaryDashboardScreen() {
                       </View>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={{ fontWeight: '700', color: '#3B82F6', fontSize: 18 }}>{waterCups} / {targetCups}</Text>
+                      <Text style={{ fontWeight: '700', color: '#3B82F6', fontSize: 18 }}>{waterStats.waterCups} / {waterStats.targetCups}</Text>
                       <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '500' }}>cốc</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
                     <View style={{ flex: 1, height: 12, backgroundColor: '#EFF6FF', borderRadius: 999, overflow: 'hidden' }}>
-                      <View style={{
-                        height: '100%', backgroundColor: '#3B82F6', borderRadius: 999,
-                        width: `${Math.min(100, (waterCups / targetCups) * 100)}%`,
-                      }} />
+                      <View style={{ height: '100%', backgroundColor: '#3B82F6', borderRadius: 999, width: `${Math.min(100, waterStats.targetCups > 0 ? (waterStats.waterCups / waterStats.targetCups) * 100 : 0)}%` }} />
                     </View>
-                    <TouchableOpacity
-                      onPress={() => addWater(200)}
-                      style={{
-                        width: 48, height: 48, backgroundColor: '#3B82F6', borderRadius: 24,
-                        alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
+                    <TouchableOpacity onPress={handleAddWater} style={{ width: 48, height: 48, backgroundColor: '#3B82F6', borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}>
                       <Ionicons name="add" size={24} color="#fff" />
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 {/* Ghi nhận cân nặng */}
-                <View style={{
-                  backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 16,
-                  borderWidth: 1, 
-                  borderColor: isWeightFocused ? '#00C48C' : '#F3F4F6',
-                  flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                }}>
+                <View style={{ backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: isWeightFocused ? '#00C48C' : '#F3F4F6', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View>
                     <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 4, fontWeight: '500' }}>Cân nặng hôm nay</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
@@ -418,20 +383,7 @@ export default function DiaryDashboardScreen() {
                       <Text style={{ fontSize: 14, fontWeight: '500', color: '#6B7280', marginLeft: 4 }}>kg</Text>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const numTarget = Number(dayWeight);
-                      if (isNaN(numTarget) || numTarget <= 0) {
-                         Alert.alert("Lỗi", "Vui lòng nhập số hợp lệ.");
-                         return;
-                      }
-                      updateCurrentWeight(numTarget);
-                      Alert.alert("Thành công", "Đã cập nhật cân nặng mới nhất vào hồ sơ!");
-                    }}
-                    style={{
-                      paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#00C48C', borderRadius: 999,
-                    }}
-                  >
+                  <TouchableOpacity onPress={handleUpdateWeight} style={{ paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#00C48C', borderRadius: 999 }}>
                     <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Cập nhật</Text>
                   </TouchableOpacity>
                 </View>
