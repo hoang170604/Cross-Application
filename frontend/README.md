@@ -46,18 +46,6 @@ frontend/
 
 ---
 
-Dự án chú trọng đặc biệt vào việc tối ưu hóa mức tiêu thụ tài nguyên và trải nghiệm mượt mà trên thiết bị di động:
-
-> [!IMPORTANT]
-> **Memoization & 60 FPS**: 
-> Sử dụng `React.memo` và `useMemo` cho các thành phần UI hay thay đổi (như đồng hồ nhảy giây trong FastingTimer hoặc thanh ProgressBar). Việc này giúp ngăn chặn hiện tượng re-render dư thừa cho các thành phần tĩnh xung quanh, duy trì khung hình ổn định ở mức 60 FPS.
-
-- **Data Persistence (AsyncStorage)**: Tích hợp cơ chế tự động lưu trữ trạng thái người dùng vào bộ nhớ máy thông qua `useStorage`. Hệ thống đảm bảo dữ liệu không bị mất khi ứng dụng tắt đột ngột.
-- **Dynamic Chart Scaling**: Biểu đồ lịch sử (Line/Bar Chart) sử dụng thuật toán **Dynamic Max Value**, tự động giãn nở thang đo theo dữ liệu thực tế của người dùng, tránh lỗi tràn khung hình (Layout Overflow).
-- **Haptic Feedback & Stepper Logic**: Tích hợp rung cơ học (Haptics) khi tương tác với `WeightProgressCard`, kết hợp cùng cơ chế **Long Press** giúp người dùng điều chỉnh thông số nhanh chóng và trực quan.
-
----
-
 ## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
 
 - **Framework**: React Native (Expo SDK 50+)
