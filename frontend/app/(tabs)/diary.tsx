@@ -27,6 +27,7 @@ import { CalorieCircle } from '@/src/components/organisms/CalorieCircle';
 import { MealCard } from '@/src/components/organisms/MealCard';
 import { WorkoutChallengeCard } from '@/src/components/organisms/WorkoutChallengeCard';
 import { WaterTrackerCard } from '@/src/components/organisms/WaterTrackerCard';
+import { WeightProgressCard } from '@/src/components/organisms/WeightProgressCard';
 
 // ─── Định cấu hình dữ liệu tĩnh ───────────────────────────────────────────────
 const MEALS_DATA = [
@@ -62,12 +63,7 @@ export default function DiaryDashboardScreen() {
     completeWorkoutChallenge,
   } = useWorkout();
 
-  const [dayWeight, setDayWeight] = useState(String(userProfile.currentWeight ?? userProfile.weight ?? 70));
-  const [isWeightFocused, setIsWeightFocused] = useState(false);
-
-  useEffect(() => {
-    setDayWeight(String(userProfile.currentWeight ?? userProfile.weight ?? 70));
-  }, [userProfile.currentWeight, userProfile.weight]);
+  // Cân nặng đã được quản lý tập trung qua Hook useNutrition và Organism WeightProgressCard
 
   // ── Memoized Calculations ─────────────────────────────────────────────────
   const calStats = useMemo(() => {
@@ -129,12 +125,7 @@ export default function DiaryDashboardScreen() {
     Alert.alert('🎉 Tuyệt vời!', 'Calo đã được cộng vào cột Đốt Cháy. Sức khỏe như con tê giác!');
   }, [completeWorkoutChallenge]);
 
-  const handleUpdateWeight = useCallback(() => {
-    const n = Number(dayWeight);
-    if (isNaN(n) || n <= 0) { Alert.alert('Lỗi', 'Vui lòng nhập số hợp lệ.'); return; }
-    updateCurrentWeight(n);
-    Alert.alert('Thành công', 'Đã cập nhật cân nặng mới nhất vào hồ sơ!');
-  }, [dayWeight, updateCurrentWeight]);
+  // Logic cập nhật cân nặng được WeightProgressCard thực thi trực tiếp qua updateCurrentWeight
 
   /** renderMeal: Sử dụng Organism MealCard đã đóng gói */
   const renderMeal = useCallback(({ item: meal }: { item: typeof MEALS_DATA[number] }) => {
@@ -240,25 +231,14 @@ export default function DiaryDashboardScreen() {
                   onAddWater={() => addWater(200)}
                 />
 
-                {/* Ghi nhận cân nặng */}
-                <View style={{ backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: isWeightFocused ? '#00C48C' : '#F3F4F6', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View>
-                    <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 4, fontWeight: '500' }}>Cân nặng hôm nay</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                      <TextInput
-                        value={dayWeight}
-                        onChangeText={setDayWeight}
-                        keyboardType="numeric"
-                        returnKeyType="done"
-                        onFocus={() => setIsWeightFocused(true)}
-                        onBlur={() => setIsWeightFocused(false)}
-                        style={{ fontSize: 28, fontWeight: '900', color: '#1F2937', padding: 0, minWidth: 60 }}
-                      />
-                      <Text style={{ fontSize: 14, fontWeight: '500', color: '#6B7280', marginLeft: 4 }}>kg</Text>
-                    </View>
-                  </View>
-                  <AppButton title="Cập nhật" onPress={handleUpdateWeight} style={{ paddingHorizontal: 20 }} />
-                </View>
+                {/* Organism: Tiến độ Cân nặng & Ghi nhận cân nặng */}
+                <WeightProgressCard 
+                  currentWeight={userProfile.currentWeight ?? userProfile.weight ?? 70}
+                  startWeight={userProfile.weight || 70}
+                  targetWeight={userProfile.targetWeight || 65}
+                  goal={userProfile.goal || 'lose'}
+                  onUpdateWeight={updateCurrentWeight}
+                />
               </View>
             }
           />

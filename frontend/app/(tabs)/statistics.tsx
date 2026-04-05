@@ -7,7 +7,8 @@ import { LineChart } from 'react-native-chart-kit';
 import { useNutrition, useFasting } from '@/src/hooks';
 import { PhysiologyStatsCard } from '@/src/components/organisms/PhysiologyStatsCard';
 import { NutritionSummaryCard } from '@/src/components/organisms/NutritionSummaryCard';
-import { WeightProgressCard } from '@/src/components/organisms/WeightProgressCard';
+import WeightHistoryChart from '@/src/components/organisms/WeightHistoryChart';
+import { FastingHistoryChart } from '@/src/components/organisms/FastingHistoryChart';
 
 const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
@@ -25,12 +26,8 @@ export default function StatisticsScreen() {
     bmi 
   } = useNutrition();
 
-  // Kết nối Hook Nhịn ăn (nếu cần xử lý thêm logic)
+  // Kết nối Hook Nhịn ăn
   const { /* fasting related actions if any */ } = useFasting();
-
-  const startWeight = userProfile.weight || 70;
-  const currentWeight = userProfile.currentWeight !== undefined ? userProfile.currentWeight : startWeight;
-  const targetWeight = userProfile.targetWeight || 65;
 
   // ═══════════════════════════════════════════════════
   // Logic nhóm dữ liệu (Aggregation) cho Biểu đồ Nhịn ăn
@@ -55,7 +52,7 @@ export default function StatisticsScreen() {
     }
 
     return dates.map((dateStr, idx) => {
-      // Tìm record trong lịch sử (đã được xử lý qua splitFastingSession trước đó khi lưu)
+      // Tìm record trong lịch sử
       const record = history.find(s => s.id === dateStr);
       return {
         day: dayLabels[idx],
@@ -64,14 +61,7 @@ export default function StatisticsScreen() {
     });
   }, [userProfile.fastingHistory]);
 
-  const avgFastingHours = useMemo(() => {
-    const validSessions = fastingDisplayData.filter(d => d.hours > 0);
-    if (validSessions.length === 0) return 0;
-    const total = validSessions.reduce((sum, d) => sum + d.hours, 0);
-    return Math.round((total / validSessions.length) * 10) / 10;
-  }, [fastingDisplayData]);
-
-  // Giả lập lịch sử Calo (Trong thực tế sẽ lấy từ history array tương tự Fasting)
+  // Giả lập lịch sử Calo
   const calorieHistory = useMemo(() => {
     return [0, 0, 0, 0, 0, 0, totalEatenCalories || 0];
   }, [totalEatenCalories]);
@@ -97,6 +87,7 @@ export default function StatisticsScreen() {
         style={{ flex: 1, paddingHorizontal: 24 }} 
         contentContainerStyle={{ paddingBottom: 24 }} 
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Organism: Chỉ số sinh lý */}
         <PhysiologyStatsCard tdee={tdee} bmr={bmr} bmi={bmi} />
@@ -104,66 +95,11 @@ export default function StatisticsScreen() {
         {/* Organism: Tóm tắt dinh dưỡng ngày */}
         <NutritionSummaryCard consumed={totalEatenCalories} target={tdee} />
 
-        {/* Lịch sử nhịn ăn (Biểu đồ Cột) */}
-        <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Lịch sử nhịn ăn</Text>
-          <Text style={styles.chartSubTitle}>Tổng kết 7 ngày gần nhất</Text>
-
-          <View style={styles.legendRow}>
-             <View style={styles.legendItem}>
-               <View style={[styles.dot, { backgroundColor: '#F59E0B' }]} />
-               <Text style={styles.legendText}>Đã nhịn</Text>
-             </View>
-             <View style={styles.legendItem}>
-               <View style={[styles.dot, { backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' }]} />
-               <Text style={styles.legendText}>Mục tiêu (16h)</Text>
-             </View>
-          </View>
-
-          <View style={styles.barChartRow}>
-            <View style={styles.yAxis}>
-              {['16h', '12h', '8h', '4h', '0h'].map(h => (
-                <Text key={h} style={styles.yAxisText}>{h}</Text>
-              ))}
-            </View>
-            <View style={styles.barArea}>
-              <View style={styles.barGrid}>
-                {[0, 0.25, 0.5, 0.75, 1].map(r => (
-                  <View key={r} style={[styles.gridLine, { bottom: 20 + r * 160 }]} />
-                ))}
-              </View>
-              <View style={styles.barsContainer}>
-                {fastingDisplayData.map((record, idx) => {
-                  const actualHeight = Math.min((record.hours / 16) * 160, 200);
-                  return (
-                    <View key={idx} style={styles.barColumn}>
-                      <View style={styles.barTrack}>
-                         <View style={styles.barBackground} />
-                         <View style={[styles.barFill, { height: actualHeight, backgroundColor: '#F59E0B' }]} />
-                      </View>
-                      <Text style={styles.xAxisLabel}>{record.day}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.statsSummarySection}>
-            <View style={styles.summaryBox}>
-              <Text style={styles.summaryLabel}>Tổng cộng</Text>
-              <Text style={styles.summaryValue}>
-                {fastingDisplayData.reduce((sum, d) => sum + d.hours, 0).toFixed(1)} <Text style={styles.summaryUnit}>giờ</Text>
-              </Text>
-            </View>
-            <View style={styles.summaryBox}>
-              <Text style={styles.summaryLabel}>Trung bình</Text>
-              <Text style={styles.summaryValue}>
-                {avgFastingHours} <Text style={styles.summaryUnit}>giờ</Text>
-              </Text>
-            </View>
-          </View>
-        </View>
+        {/* 📊 Organism: Biểu đồ lịch sử nhịn ăn (Dynamic Scaling) */}
+        <FastingHistoryChart 
+          data={fastingDisplayData} 
+          goal={userProfile.fastingGoal || 16} 
+        />
 
         {/* Lịch sử nạp Calo (Biểu đồ Đường) */}
         <View style={styles.chartCard}>
@@ -179,7 +115,6 @@ export default function StatisticsScreen() {
                     strokeWidth: 3,
                   },
                   {
-                    // Trick để scale biểu đồ đúng mốc TDEE trung bình
                     data: [3500],
                     color: () => 'transparent',
                     strokeWidth: 0,
@@ -217,7 +152,7 @@ export default function StatisticsScreen() {
               }}
               renderDotContent={({ x, y, index, indexData }) => {
                 if (indexData === 3500 || indexData <= 0.1) return null;
-                if (index !== 6) return null; // Chỉ hiện tooltip cho ngày hôm nay
+                if (index !== 6) return null;
                 return (
                   <View 
                     key={index} 
@@ -241,12 +176,9 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-        {/* Organism: Tiến độ Cân nặng */}
-        <WeightProgressCard 
-            currentWeight={currentWeight}
-            startWeight={startWeight}
-            targetWeight={targetWeight}
-            goal={userProfile.goal || 'lose'}
+        {/* 📉 Organism: Biểu đồ xu hướng cân nặng */}
+        <WeightHistoryChart 
+            history={userProfile.weightHistory}
         />
       </ScrollView>
     </SafeAreaView>
@@ -263,26 +195,4 @@ const styles = StyleSheet.create({
   inactiveTabText: { color: '#94A3B8', fontWeight: '700', fontSize: 14 },
   chartCard: { backgroundColor: '#fff', borderRadius: 24, padding: 24, marginBottom: 24, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   chartTitle: { fontWeight: '800', fontSize: 16, color: '#1E293B', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  chartSubTitle: { fontSize: 13, fontWeight: '600', color: '#94A3B8', marginBottom: 20 },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  legendText: { fontSize: 12, color: '#64748B', fontWeight: '700' },
-  barChartRow: { flexDirection: 'row', height: 190, marginTop: 12, marginBottom: 24 },
-  yAxis: { width: 28, justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 20 },
-  yAxisText: { fontSize: 11, color: '#94A3B8', fontWeight: '800' },
-  barArea: { flex: 1, position: 'relative', borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 20 },
-  barGrid: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 20 },
-  gridLine: { position: 'absolute', left: 0, right: 0, borderTopWidth: 1, borderTopColor: '#F1F5F9', borderStyle: 'dotted' },
-  barsContainer: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginLeft: 8 },
-  barColumn: { alignItems: 'center', width: 32 },
-  barTrack: { width: 12, height: 160, justifyContent: 'flex-end', position: 'relative' },
-  barBackground: { position: 'absolute', bottom: 0, width: '100%', height: 160, backgroundColor: '#F1F5F9', borderRadius: 999 },
-  barFill: { position: 'absolute', bottom: 0, width: '100%', borderRadius: 999 },
-  xAxisLabel: { fontSize: 11, fontWeight: '800', color: '#64748B', marginTop: 8 },
-  statsSummarySection: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  summaryBox: { flex: 1, backgroundColor: '#FFFBEB', borderRadius: 20, padding: 16, alignItems: 'center' },
-  summaryLabel: { fontSize: 12, color: '#B45309', fontWeight: '800', marginBottom: 4, textTransform: 'uppercase' },
-  summaryValue: { fontSize: 24, fontWeight: '900', color: '#B45309' },
-  summaryUnit: { fontSize: 13, fontWeight: '700' },
 });

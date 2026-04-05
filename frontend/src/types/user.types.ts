@@ -65,6 +65,8 @@ export type UserProfile = {
   extraBurnedCalories?: number;
   /** Trạng thái Thử thách Vận động hiện tại */
   workoutChallenge?: WorkoutChallengeState;
+  /** Lịch sử thay đổi cân nặng (Dùng cho biểu đồ) */
+  weightHistory?: { date: string, weight: number }[];
 };
 
 /** Giá trị mặc định khi chưa có dữ liệu từ AsyncStorage */
@@ -93,4 +95,5 @@ export const DEFAULT_PROFILE: UserProfile = {
   waterIntake: 0,
   waterTarget: 2000,
   lastWaterDate: '',
+  weightHistory: [],
 };

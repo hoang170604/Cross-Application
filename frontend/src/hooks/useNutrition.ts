@@ -91,12 +91,29 @@ export function useNutrition(
     });
   }, [setUserProfile]);
 
-  /** Cập nhật cân nặng hiện tại */
+  /** Cập nhật cân nặng hiện tại và ghi lịch sử */
   const updateCurrentWeight = useCallback((newWeight: number) => {
-    setUserProfile((prev) => ({
-      ...prev,
-      currentWeight: newWeight
-    }));
+    setUserProfile((prev) => {
+      const today = getLocalToday();
+      const history = prev.weightHistory || [];
+      const existingIndex = history.findIndex(h => h.date === today);
+      
+      let newHistory = [...history];
+      if (existingIndex >= 0) {
+        newHistory[existingIndex] = { date: today, weight: newWeight };
+      } else {
+        newHistory.push({ date: today, weight: newWeight });
+      }
+
+      // Sắp xếp theo ngày
+      newHistory.sort((a, b) => a.date.localeCompare(b.date));
+
+      return {
+        ...prev,
+        currentWeight: newWeight,
+        weightHistory: newHistory
+      };
+    });
   }, [setUserProfile]);
 
   /** Thêm nước uống */
