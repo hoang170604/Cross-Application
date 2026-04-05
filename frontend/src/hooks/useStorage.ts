@@ -29,14 +29,6 @@ export function useStorage() {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored) as UserProfile;
-          
-          // Logic reset nước hàng ngày
-          const todayStr = getLocalToday();
-          if (parsed.lastWaterDate !== todayStr) {
-            parsed.waterIntake = 0;
-            parsed.lastWaterDate = todayStr;
-          }
-
           setUserProfile(parsed);
         }
       } catch (e) {
@@ -65,29 +57,6 @@ export function useStorage() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [userProfile, isLoaded]);
-
-  // ─── Theo dõi Streak (Số ngày sử dụng liên tục) ──────────────────────────
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    const todayStr = getLocalToday();
-    const today = new Date(todayStr);
-
-    setUserProfile((prev) => {
-      const lastStr = prev.lastActiveDate;
-      if (!lastStr) return { ...prev, lastActiveDate: todayStr, streakCount: 1 };
-      if (todayStr === lastStr) return prev;
-
-      const lastDate = new Date(lastStr);
-      const diffTime = today.getTime() - lastDate.getTime();
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 1) {
-        return { ...prev, lastActiveDate: todayStr, streakCount: (prev.streakCount || 1) + 1 };
-      }
-      return { ...prev, lastActiveDate: todayStr, streakCount: 1 };
-    });
-  }, [isLoaded]);
 
   return { 
     userProfile, 

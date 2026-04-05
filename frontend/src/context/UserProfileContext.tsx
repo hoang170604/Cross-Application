@@ -4,13 +4,14 @@
  * Kết hợp tất cả các hooks chuyên biệt để cung cấp một API duy nhất cho ứng dụng.
  */
 
-import React, { createContext, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { UserProfile, Macros, DailyMeals, FoodItem } from '@/src/types';
 import { useStorage } from '@/src/hooks/useStorage';
 import { useNutrition } from '@/src/hooks/useNutrition';
 import { useFasting } from '@/src/hooks/useFasting';
 import { useWorkout } from '@/src/hooks/useWorkout';
 import * as NutritionUtils from '@/src/utils/calculateNutrition';
+import { getLocalToday } from '@/src/utils/dateFormatter';
 
 type UserProfileContextType = {
   userProfile: UserProfile;
@@ -57,7 +58,48 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   const fasting = useFasting(userProfile, setUserProfile);
   const workout = useWorkout(userProfile, setUserProfile);
 
-  // 3. Logic đồng bộ hóa (Sync)
+  // 3. MASTER RESET: Đồng bộ hóa trạng thái Ngày mới (Atomic Reset)
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const todayStr = getLocalToday();
+    const today = new Date(todayStr);
+
+    setUserProfile((prev) => {
+      const lastStr = prev.lastActiveDate;
+      
+      // Nếu đã là ngày hôm nay, không làm gì cả
+      if (todayStr === lastStr) return prev;
+
+      console.log(`[NutriTrack Reset] Phát hiện ngày mới: ${lastStr} -> ${todayStr}`);
+
+      // Tính toán Streak
+      let newStreak = prev.streakCount || 1;
+      if (lastStr) {
+        const lastDate = new Date(lastStr);
+        const diffTime = today.getTime() - lastDate.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
+          newStreak += 1;
+        } else {
+          newStreak = 1;
+        }
+      }
+
+      // RESET CÁC CHỈ SỐ HÀNG NGÀY
+      return {
+        ...prev,
+        lastActiveDate: todayStr,
+        streakCount: newStreak,
+        waterIntake: 0,
+        extraBurnedCalories: 0,
+        dailyMeals: { breakfast: [], lunch: [], dinner: [], snack: [] }
+      };
+    });
+  }, [isLoaded]);
+
+  // 4. Logic đồng bộ hóa (Sync)
   const syncAllDataToCloud = useCallback(() => {
     const payload = {
       userStats: {

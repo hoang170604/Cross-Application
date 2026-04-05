@@ -46,8 +46,6 @@ frontend/
 
 ---
 
-## ⚡ Tối Ưu Hiệu Năng & Trải Nghiệm (CLO4 Highlights)
-
 Dự án chú trọng đặc biệt vào việc tối ưu hóa mức tiêu thụ tài nguyên và trải nghiệm mượt mà trên thiết bị di động:
 
 > [!IMPORTANT]

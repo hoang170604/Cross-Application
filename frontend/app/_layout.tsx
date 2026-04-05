@@ -3,13 +3,13 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { UserProfileProvider, useUserProfile } from '@/src/context/UserProfileContext';
-import { View } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 
 /**
  * InitialLayout: Component cốt lõi xử lý Logic Hydration và Định tuyến thông minh (Auto-Routing).
  * 
  * Mục đích & Luồng dữ liệu:
- * 1. Chặn Render khuyết: Trả về một màn hình trống (Blank View) để chặn UI cho đến khi 
+ * 1. Chặn Render khuyết: Trả về một màn hình Loading để chặn UI cho đến khi 
  *    State được cấp nước (Hydrated) thành công từ AsyncStorage (`isLoaded` === true).
  *    Tính năng này triệt tiêu hoàn toàn lỗi nháy chữ (Flickering) hoặc chớp màn hình.
  * 2. Auto-Routing: Kiểm tra điều kiện hoàn thành Onboarding (Tồn tại tên và Target Calo).
@@ -45,7 +45,11 @@ function InitialLayout() {
   }, [isLoaded, userProfile.name, userProfile.targetCalories, segments]);
 
   if (!isLoaded) {
-    return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color="#00C48C" />
+      </View>
+    );
   }
 
   return (
