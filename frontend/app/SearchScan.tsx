@@ -3,14 +3,23 @@ import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'reac
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useUserProfile, DailyMeals, FoodItem } from '@/context/UserProfileContext';
+
+// ─── Import Atomic Hooks & Types ─────────────────────────────────────────────
+import { useNutrition } from '@/src/hooks';
+import { DailyMeals } from '@/src/types';
 import { VIETNAMESE_FOOD_DB, FoodItemDB } from '@/constants/foodDatabase';
 
+/**
+ * Màn hình Tìm kiếm & Thêm món ăn thủ công.
+ * Sử dụng hook useNutrition để cập nhật dữ liệu bữa ăn.
+ */
 export default function SearchScanScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const mealType = (params?.mealType as keyof DailyMeals) || 'breakfast';
-  const { addFood } = useUserProfile();
+  
+  // Sử dụng hook chuyên biệt từ kiến trúc Atomic
+  const { addFood } = useNutrition();
 
   const [activeTab, setActiveTab] = useState<'search' | 'custom'>('search');
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,24 +35,21 @@ export default function SearchScanScreen() {
 
   const filteredFoods = useMemo(() => {
     return VIETNAMESE_FOOD_DB.filter(food => {
-      // 1. Phân giải điều kiện Tìm kiếm
       const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // 2. Phân giải điều kiện Lọc
       let matchesFilter = true;
       if (selectedFilter !== 'Tất cả') {
         if (selectedFilter === 'Giàu Đạm') {
-          matchesFilter = food.protein > 15; // Ví dụ: > 15g protein
+          matchesFilter = food.protein > 15;
         } else if (selectedFilter === 'Ít Tinh bột') {
-          matchesFilter = food.carbs < 20; // Ví dụ: < 20g carbs
+          matchesFilter = food.carbs < 20;
         } else if (selectedFilter === 'Ít Béo') {
-          matchesFilter = food.fat < 10; // Ví dụ: < 10g fat
+          matchesFilter = food.fat < 10;
         } else {
           matchesFilter = food.category === selectedFilter;
         }
       }
 
-      // 3. Kết hợp cả 2 điều kiện (AND logic)
       return matchesSearch && matchesFilter;
     });
   }, [searchQuery, selectedFilter]);
@@ -90,7 +96,6 @@ export default function SearchScanScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: '#F9FAFB', zIndex: 10 }}>
-        {/* Thanh tiêu đề */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -105,7 +110,6 @@ export default function SearchScanScreen() {
           <Text style={{ fontSize: 18, fontWeight: '700', letterSpacing: 2 }}>TÌM KIẾM</Text>
         </View>
 
-        {/* Thanh tìm kiếm */}
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
           <View style={{ flex: 1, position: 'relative' }}>
             <Ionicons name="search" size={20} color="#9CA3AF" style={{ position: 'absolute', left: 16, top: 14, zIndex: 1 }} />
@@ -124,7 +128,6 @@ export default function SearchScanScreen() {
           </View>
         </View>
 
-        {/* Bộ lọc */}
         {activeTab === 'search' && (
           <View style={{ marginBottom: 16 }}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -156,7 +159,6 @@ export default function SearchScanScreen() {
           </View>
         )}
 
-        {/* Thẻ tab */}
         <View style={{ flexDirection: 'row', gap: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
           <TouchableOpacity 
             onPress={() => setActiveTab('search')}
@@ -194,7 +196,6 @@ export default function SearchScanScreen() {
                  </View>
               </View>
 
-              {/* Dòng xem trước dinh dưỡng */}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F9FAFB', padding: 12, borderRadius: 8 }}>
                 <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>Đạm <Text style={{ color: '#00C48C', fontWeight: '700' }}>{food.protein}g</Text></Text>
                 <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>T.Bột <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{food.carbs}g</Text></Text>

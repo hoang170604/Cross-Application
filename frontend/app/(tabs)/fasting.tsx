@@ -1,340 +1,263 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, Platform, Modal } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Alert, Platform, Modal, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
-import { useUserProfile } from '@/context/UserProfileContext';
+
+// ─── Import Atomic Hooks & Components ─────────────────────────────────────────
+import { useFasting, useNutrition } from '@/src/hooks';
+import { FastingTimerCard } from '@/src/components/organisms/FastingTimerCard';
+import { WaterTrackerCard } from '@/src/components/organisms/WaterTrackerCard';
+import { AppButton } from '@/src/components/atoms/AppButton';
+
+const FASTING_PLANS = [
+  { goal: 14, label: '14:10', icon: '🐱', title: '14:10 (Người mới)', desc: 'Dành cho người mới bắt đầu' },
+  { goal: 16, label: '16:8', icon: '🦊', title: '16:8 (Phổ biến)', desc: 'Chế độ tiêu chuẩn, dễ duy trì' },
+  { goal: 18, label: '18:6', icon: '🐯', title: '18:6 (Nâng cao)', desc: 'Tối ưu hóa đốt mỡ' },
+  { goal: 20, label: '20:4', icon: '🦁', title: '20:4 (Chiến binh)', desc: 'Kích hoạt sâu Autophagy' },
+];
 
 export default function FastingTrackerScreen() {
-  const { userProfile, startFasting, endFasting, stopFastingLoop, setFastingGoal, addWater } = useUserProfile();
-  const [selectedGoal, setSelectedGoal] = useState<number>(16);
+  // Sử dụng Hook chuyên biệt useFasting
+  const { 
+    userProfile, 
+    startFasting, 
+    endFasting, 
+    stopFastingLoop, 
+    setFastingGoal 
+  } = useFasting();
+
+  // useNutrition để xử lý nước uống
+  const { addWater } = useNutrition();
+
   const [now, setNow] = useState(Date.now());
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const hasWarned48h = React.useRef(false);
 
+  // ─── Logic Tick & Cảnh báo an toàn ───────────────────────────────────────
   useEffect(() => {
-    setSelectedGoal(userProfile.fastingGoal || 16);
-  }, [userProfile.fastingGoal]);
-
-  const handleSelectPlan = (goal: number) => {
-    setSelectedGoal(goal);
-    if (setFastingGoal) setFastingGoal(goal);
-    setIsPickerVisible(false);
-  };
-
-  const FASTING_PLANS = [
-    { goal: 14, label: '14:10', icon: '🐱', title: '14:10 (Người mới)', desc: 'Dành cho người mới bắt đầu' },
-    { goal: 16, label: '16:8', icon: '🦊', title: '16:8 (Phổ biến)', desc: 'Chế độ tiêu chuẩn, dễ duy trì' },
-    { goal: 18, label: '18:6', icon: '🐯', title: '18:6 (Nâng cao)', desc: 'Tối ưu hóa đốt mỡ' },
-    { goal: 20, label: '20:4', icon: '🦁', title: '20:4 (Chiến binh)', desc: 'Kích hoạt sâu Autophagy' },
-  ];
-
-  useEffect(() => {
-    if (!userProfile.isFasting) return;
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, [userProfile.isFasting, userProfile.fastingState]);
-
-  const currentState = userProfile.isFasting ? (userProfile.fastingState || 'FASTING') : 'IDLE';
-  const isEating = currentState === 'EATING';
-  const isFasting = currentState === 'FASTING';
-
-  const activeGoal = userProfile.isFasting ? (userProfile.fastingGoal || 16) : selectedGoal;
-  
-  const fastingTargetMs = activeGoal * 60 * 60 * 1000;
-  const eatingTargetMs = (24 - activeGoal) * 60 * 60 * 1000;
-  const targetMs = isEating ? eatingTargetMs : fastingTargetMs;
-  
-  const clockStart = userProfile.isFasting && userProfile.fastingStartTime ? userProfile.fastingStartTime : Date.now();
-  
-  // ĐỒNG HỒ ĐẾM TIẾN (Count-up timer)
-  const elapsedMs = userProfile.isFasting ? Math.max(0, now - clockStart) : 0;
-  const displayMs = elapsedMs; // Hiện đúng tgian trôi qua
-  
-  const percentage = Math.min(100, Math.max(0, (elapsedMs / targetMs) * 100));
-  const circumference = 2 * Math.PI * 112;
-
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-  };
-
-  // LOGIC SINH HỌC & TRẠNG THÁI HIỂN THỊ (@skill.md)
-  const elapsedHours = elapsedMs / (1000 * 60 * 60);
-  
-  let stageTitle = "Sẵn sàng (Idle)";
-  let stageDesc = "Bấm bắt đầu nhịn ăn để kích hoạt đồng hồ theo dõi sinh lý cơ thể. Hãy thử thách bản thân!";
-  let stageColor = "#9CA3AF"; // slate-400
-  let stageBadge = "Chưa kết nối";
-
-  if (currentState !== 'IDLE') {
-    if (isEating) {
-      stageTitle = "Đang nạp năng lượng (Eating) 🍽️";
-      stageDesc = "Giờ là lúc nạp lại năng lượng! Ưu tiên Protein và chất xơ để hấp thụ tốt nhất. Chia nhỏ bữa ăn sẽ rất có ích.";
-      stageColor = "#10B981"; // emerald-500
-      stageBadge = "Đang ăn";
-    } else {
-      if (elapsedHours < 4) {
-        stageTitle = "Sugar Processing (0-4h)";
-        stageDesc = "Cơ thể đang xử lý năng lượng từ bữa ăn cuối cùng, lượng Insulin hiện tại đang tăng để bù đắp tiêu hóa.";
-        stageColor = "#F59E0B"; // amber-500
-        stageBadge = "Tiêu hóa";
-      } else if (elapsedHours < 12) {
-        stageTitle = "Transition (4h-12h)";
-        stageDesc = "Đường huyết đã giảm đáng kể, cơ thể đang bắt đầu rút ra nguồn năng lượng từ Glycogen trong vùng gan.";
-        stageColor = "#F59E0B"; // amber-500
-        stageBadge = "Chuyển tiếp";
-      } else if (elapsedHours < 16) {
-        stageTitle = "Trạng thái Đốt mỡ (Ketosis) 🔥";
-        stageDesc = "Glycogen đã đạt điểm cạn, giờ đây cơ thể chuyển hẵn sang đốt các khối mỡ dư thừa tạo thành Ketones. Bạn đang giảm cân!";
-        stageColor = "#EF4444"; // red-500
-        stageBadge = "Đang đốt mỡ";
-      } else {
-        stageTitle = "Tái tạo tế bào (Autophagy) ✨";
-        stageDesc = "Giai đoạn dọn dẹp tế bào cũ/lỗi (Autophagy) đã được kích hoạt. Cơ thể đang được trẻ hóa mạnh mẽ từ sâu bên trong.";
-        stageColor = "#EF4444"; // red-500
-        stageBadge = "Tái tạo";
-      }
+    if (!userProfile.isFasting) {
+      hasWarned48h.current = false;
+      return;
     }
-  }
+    const interval = setInterval(() => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+      
+      if (userProfile.fastingState === 'FASTING' && userProfile.fastingStartTime) {
+        const elapsedHours = (currentTime - userProfile.fastingStartTime) / (1000 * 60 * 60);
+        if (elapsedHours >= 48 && !hasWarned48h.current) {
+          hasWarned48h.current = true;
+          const msg = 'Cảnh báo an toàn ⚠️\nPhiên nhịn ăn của bạn đã vượt quá 48 giờ liên tục. Hãy đảm bảo bạn có sự theo dõi của bác sĩ hoặc kết thúc ngay để bảo vệ sức khỏe.';
+          Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Cảnh báo an toàn ⚠️', msg);
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [userProfile.isFasting, userProfile.fastingState, userProfile.fastingStartTime]);
 
-  const startDateObj = new Date(clockStart);
-  const startDateStr = `${startDateObj.getHours().toString().padStart(2,'0')}:${startDateObj.getMinutes().toString().padStart(2,'0')}`;
-  
-  const endDateObj = new Date(clockStart + targetMs);
-  const endDateStr = `${endDateObj.getHours().toString().padStart(2,'0')}:${endDateObj.getMinutes().toString().padStart(2,'0')}`;
+  // ─── Memoized Calculations ─────────────────────────────────────────────────
+  const activeGoal = userProfile.fastingGoal || 16;
+  const currentState = userProfile.isFasting ? (userProfile.fastingState || 'FASTING') : 'IDLE';
+  const clockStart = userProfile.fastingStartTime || now;
+  const elapsedMs = userProfile.isFasting ? Math.max(0, now - clockStart) : 0;
+  const elapsedHours = elapsedMs / (1000 * 60 * 60);
 
+  const bioInfo = useMemo(() => {
+    if (currentState === 'IDLE') return {
+      title: "Sẵn sàng (Idle)",
+      desc: "Bấm bắt đầu nhịn ăn để kích hoạt đồng hồ theo dõi sinh lý cơ thể. Hãy thử thách bản thân!",
+      color: "#94A3B8", badge: "Chưa bắt đầu"
+    };
+    if (currentState === 'EATING') return {
+      title: "Giờ ăn (Eating) 🍽️",
+      desc: "Giờ là lúc nạp lại năng lượng! Ưu tiên Protein và chất xơ để hấp thụ tốt nhất.",
+      color: "#10B981", badge: "Đang ăn"
+    };
+    if (elapsedHours < 4) return {
+      title: "Sugar Processing (0-4h)",
+      desc: "Cơ thể đang xử lý năng lượng từ bữa ăn cuối cùng, lượng Insulin hiện tại đang tăng.",
+      color: "#F59E0B", badge: "Tiêu hóa"
+    };
+    if (elapsedHours < 12) return {
+      title: "Transition (4h-12h)",
+      desc: "Đường huyết đã giảm đáng kể, cơ thể đang bắt đầu rút ra năng lượng từ Glycogen vùng gan.",
+      color: "#F59E0B", badge: "Chuyển tiếp"
+    };
+    if (elapsedHours < 16) return {
+      title: "Trạng thái Đốt mỡ (Ketosis) 🔥",
+      desc: "Glycogen đã cạn, cơ thể chuyển hẳn sang đốt các khối mỡ dư thừa tạo thành Ketones.",
+      color: "#EF4444", badge: "Đang đốt mỡ"
+    };
+    return {
+      title: "Tái tạo tế bào (Autophagy) ✨",
+      desc: "Giai đoạn dọn dẹp tế bào cũ (Autophagy) đã được kích hoạt. Cơ thể đang được trẻ hóa.",
+      color: "#EF4444", badge: "Tái tạo"
+    };
+  }, [currentState, elapsedHours]);
+
+  const timeMarkers = useMemo(() => {
+    if (!userProfile.isFasting) return null;
+    const targetMs = (currentState === 'EATING' ? (24 - activeGoal) : activeGoal) * 60 * 60 * 1000;
+    const start = new Date(clockStart);
+    const end = new Date(clockStart + targetMs);
+    const fmt = (d: Date) => `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    return { start: fmt(start), end: fmt(end) };
+  }, [userProfile.isFasting, clockStart, activeGoal, currentState]);
+
+  // ─── Callbacks ─────────────────────────────────────────────────────────────
   const handleEndFasting = useCallback(() => {
-    const nowMs = Date.now();
-    const startMs = userProfile.fastingStartTime || nowMs;
-    const totalSeconds = Math.floor((nowMs - startMs) / 1000);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
+    const totalSec = Math.floor((Date.now() - (userProfile.fastingStartTime || Date.now())) / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
 
     const onApprove = () => {
-      endFasting(); // Gọi hàm ở Context: Tắt Fasting -> Lưu Session -> Mở vòng lặp Eating -> Reset bộ đếm giờ
+      endFasting();
       setTimeout(() => {
-        if (Platform.OS === 'web') {
-          window.alert(`Chúc mừng! 🎉\nBạn đã hoàn thành phiên nhịn kéo dài ${h} giờ ${m} phút.\nGiờ là lúc nạp lại năng lượng! Ưu tiên Protein và chất xơ để hấp thụ tốt nhất.`);
-        } else {
-          Alert.alert(
-            "Chúc mừng! 🎉", 
-            `Bạn đã hoàn thành phiên nhịn kéo dài ${h} giờ ${m} phút.\nGiờ là lúc nạp lại năng lượng! Ưu tiên Protein và chất xơ để hấp thụ tốt nhất.`
-          );
-        }
+        const msg = `Chúc mừng! 🎉\nBạn đã hoàn thành phiên nhịn kéo dài ${h} giờ ${m} phút.`;
+        Platform.OS === 'web' ? window.alert(msg) : Alert.alert("Chúc mừng! 🎉", msg);
       }, 600);
     };
 
     if (Platform.OS === 'web') {
-      const isConfirmed = window.confirm("Kết thúc phiên nhịn ăn?\nDữ liệu sẽ được lưu để Thống kê. Hệ thống sẽ chuyển sang chế độ đo Giờ Ăn.");
-      if (isConfirmed) onApprove();
+      if (window.confirm("Kết thúc phiên nhịn ăn?\nDữ liệu sẽ được lưu để Thống kê.")) onApprove();
     } else {
-      Alert.alert(
-        "Kết thúc phiên nhịn ăn?",
-        "Dữ liệu của bạn sẽ được lưu vào lịch sử để Thống kê. Hệ thống sẽ chuyển sang chế độ đo Giờ Ăn.",
-        [
-          { text: "Bỏ qua", style: "cancel" },
-          { text: "Đồng ý", onPress: onApprove }
-        ]
-      );
+      Alert.alert("Kết thúc phiên nhịn?", "Dữ liệu sẽ được lưu vào lịch sử.", [
+        { text: "Bỏ qua", style: "cancel" }, { text: "Đồng ý", onPress: onApprove }
+      ]);
     }
   }, [userProfile.fastingStartTime, endFasting]);
 
   const onMainAction = useCallback(() => {
-    if (currentState === 'IDLE' || currentState === 'EATING') {
-      startFasting(currentState === 'EATING' ? activeGoal : selectedGoal);
-    } else if (currentState === 'FASTING') {
-      handleEndFasting();
-    }
-  }, [currentState, activeGoal, selectedGoal, startFasting, handleEndFasting]);
-
-  const buttonText = currentState === 'FASTING' ? 'Kết thúc nhịn ăn' : 'Bắt đầu nhịn ăn';
-  const buttonColor = currentState === 'FASTING' ? '#EF4444' : '#10B981'; // Đỏ (ngừng) - Xanh Mint (bắt đầu) theo UI-kit
+    if (currentState === 'IDLE' || currentState === 'EATING') startFasting(activeGoal);
+    else if (currentState === 'FASTING') handleEndFasting();
+  }, [currentState, activeGoal, startFasting, handleEndFasting]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       {/* Modal Chọn Chế Độ */}
       <Modal visible={isPickerVisible} transparent animationType="slide">
-        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setIsPickerVisible(false)}>
-          <TouchableOpacity activeOpacity={1} style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827' }}>Chọn chế độ nhịn ăn</Text>
-              <TouchableOpacity onPress={() => setIsPickerVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsPickerVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn chế độ nhịn ăn</Text>
+              <TouchableOpacity onPress={() => setIsPickerVisible(false)} hitSlop={10}>
                 <Ionicons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
             <View style={{ gap: 12 }}>
               {FASTING_PLANS.map(plan => {
-                 const isSelected = activeGoal === plan.goal;
-                 return (
-                   <TouchableOpacity 
-                     key={plan.goal}
-                     onPress={() => handleSelectPlan(plan.goal)}
-                     style={{
-                       flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16,
-                       backgroundColor: isSelected ? '#F8FAFC' : '#fff',
-                       borderWidth: 1, borderColor: isSelected ? '#10B981' : '#E2E8F0'
-                     }}
-                   >
-                     <Text style={{ fontSize: 32, marginRight: 16 }}>{plan.icon}</Text>
-                     <View style={{ flex: 1 }}>
-                       <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 }}>{plan.title}</Text>
-                       <Text style={{ fontSize: 13, color: '#6B7280' }}>{plan.desc}</Text>
-                     </View>
-                     {isSelected && <Ionicons name="checkmark-circle" size={24} color="#10B981" />}
-                   </TouchableOpacity>
-                 );
+                const isSelected = activeGoal === plan.goal;
+                return (
+                  <TouchableOpacity 
+                    key={plan.goal}
+                    onPress={() => { setFastingGoal(plan.goal); setIsPickerVisible(false); }}
+                    style={[styles.planItem, isSelected && styles.planItemActive]}
+                  >
+                    <Text style={{ fontSize: 32, marginRight: 16 }}>{plan.icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.planTitle}>{plan.title}</Text>
+                      <Text style={styles.planDesc}>{plan.desc}</Text>
+                    </View>
+                    {isSelected && <Ionicons name="checkmark-circle" size={24} color="#10B981" />}
+                  </TouchableOpacity>
+                );
               })}
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
-      <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: '#F8FAFC', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 24, fontWeight: '700', letterSpacing: 1, color: '#111827' }}>NHỊN ĂN</Text>
-        <TouchableOpacity 
-          onPress={() => setIsPickerVisible(true)}
-          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#E2E8F0' }}
-        >
-          <Text style={{ fontSize: 13, fontWeight: '600', color: '#475569', marginRight: 4 }}>Thay đổi</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>NHỊN ĂN</Text>
+        <TouchableOpacity onPress={() => setIsPickerVisible(true)} style={styles.planBadge}>
+          <Text style={styles.planBadgeText}>Thay đổi {activeGoal}h</Text>
           <Ionicons name="chevron-down" size={16} color="#475569" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Đồng hồ đếm tiến */}
-        <View style={{
-          backgroundColor: '#fff', borderRadius: 24, padding: 32, marginBottom: 24, alignItems: 'center',
-          borderWidth: 1, borderColor: '#F1F5F9',
-          shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
-        }}>
-          <View style={{ width: 256, height: 256, marginBottom: 8, marginTop: 16, position: 'relative' }}>
-            <Svg width={256} height={256} style={{ transform: [{ rotate: '-90deg' }] }}>
-              <Circle cx={128} cy={128} r={112} stroke="#F1F5F9" strokeWidth={24} fill="none" />
-              <Circle
-                cx={128} cy={128} r={112}
-                stroke={userProfile.isFasting ? stageColor : "#10B981"} strokeWidth={24} fill="none"
-                strokeDasharray={`${circumference}`}
-                strokeDashoffset={`${circumference * (1 - (userProfile.isFasting ? percentage / 100 : 0))}`}
-                strokeLinecap="round"
-              />
-            </Svg>
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 36, marginBottom: 8 }}>
-                 {userProfile.fastingState === 'EATING' ? '🥗' : (() => {
-                   if (activeGoal <= 14) return '🐱';
-                   if (activeGoal <= 16) return '🦊';
-                   if (activeGoal <= 18) return '🐯';
-                   if (activeGoal <= 20) return '🦁';
-                   return '🐉';
-                 })()}
-              </Text>
-              <Text style={{ fontSize: 32, fontWeight: '900', color: '#111827', marginBottom: 8 }}>{formatTime(displayMs)}</Text>
-              <View style={{
-                paddingHorizontal: 16, paddingVertical: 6, 
-                backgroundColor: !userProfile.isFasting ? '#F1F5F9' : stageColor, 
-                borderRadius: 999, marginBottom: 8,
-              }}>
-                <Text style={{ color: !userProfile.isFasting ? '#6B7280' : '#fff', fontSize: 12, fontWeight: '700' }}>
-                  {stageBadge}
-                </Text>
-              </View>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#6B7280' }}>Mục tiêu: {isEating ? (24 - activeGoal) : activeGoal}h</Text>
+      <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+        {/* Organism: Fasting Timer Orchestrator */}
+        <FastingTimerCard 
+          isFasting={userProfile.isFasting || false}
+          fastingState={currentState}
+          startTime={userProfile.fastingStartTime || null}
+          activeGoal={activeGoal}
+          stageColor={bioInfo.color}
+          stageBadge={bioInfo.badge}
+          stageTitle={bioInfo.title}
+          stageDesc={bioInfo.desc}
+          buttonText={currentState === 'FASTING' ? 'Kết thúc nhịn ăn' : 'Bắt đầu nhịn ăn'}
+          buttonColor={currentState === 'FASTING' ? '#EF4444' : '#10B981'}
+          onMainAction={onMainAction}
+        />
+
+        {/* Start / End Markers */}
+        {userProfile.isFasting && timeMarkers && (
+          <View style={styles.markersContainer}>
+            <View style={styles.markerColumn}>
+              <Text style={styles.markerLabel}>Bắt đầu</Text>
+              <Text style={styles.markerValue}>{timeMarkers.start}</Text>
+            </View>
+            <View style={styles.markerDivider} />
+            <View style={styles.markerColumn}>
+              <Text style={styles.markerLabel}>Dự kiến KT</Text>
+              <Text style={styles.markerValue}>{timeMarkers.end}</Text>
             </View>
           </View>
+        )}
 
-          {/* Cột mốc sinh học */}
-          <View style={{
-            width: '100%', backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, marginBottom: 24,
-            borderWidth: 1, borderColor: '#F1F5F9'
-          }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: stageColor, marginBottom: 4 }}>{stageTitle}</Text>
-            <Text style={{ fontSize: 14, color: '#475569', lineHeight: 20 }}>{stageDesc}</Text>
+        <View style={styles.statsRow}>
+          {/* Streak Card */}
+          <View style={styles.streakCard}>
+            <Ionicons name="flame" size={32} color="#F59E0B" />
+            <Text style={styles.streakValue}>{userProfile.streakCount || 1}</Text>
+            <Text style={styles.streakLabel}>Streak ngày</Text>
           </View>
 
-          {/* Thời gian bắt đầu / kết thúc */}
-          {userProfile.isFasting && (
-          <View style={{
-            width: '100%', flexDirection: 'row', gap: 16, marginBottom: 32,
-            backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16,
-            borderWidth: 1, borderColor: '#F1F5F9'
-          }}>
-            <View style={{ flex: 1, alignItems: 'center', borderRightWidth: 1, borderRightColor: '#E2E8F0' }}>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>Bắt đầu</Text>
-              <Text style={{ fontWeight: '700', fontSize: 18, color: '#111827' }}>{startDateStr}</Text>
-            </View>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>Dự kiến KT</Text>
-              <Text style={{ fontWeight: '700', fontSize: 18, color: '#111827' }}>{endDateStr}</Text>
-            </View>
-          </View>
-          )}
-
-          <TouchableOpacity
-            onPress={onMainAction}
-            style={{
-              width: '100%', paddingVertical: 18, 
-              backgroundColor: buttonColor, 
-              borderRadius: 16, alignItems: 'center',
-              shadowColor: buttonColor, 
-              shadowOpacity: 0.2, shadowRadius: 8, elevation: 4,
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
-              {buttonText}
-            </Text>
-          </TouchableOpacity>
-          {isEating && (
-          <TouchableOpacity
-            onPress={stopFastingLoop}
-            style={{
-              paddingVertical: 12, marginTop: 12, alignItems: 'center'
-            }}
-          >
-            <Text style={{ color: '#6B7280', fontSize: 14, fontWeight: '600' }}>Bỏ theo dõi giờ Ăn</Text>
-          </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Thống kê & Nước */}
-        <View style={{ flexDirection: 'row', gap: 16 }}>
-          <View style={{
-            flex: 1, backgroundColor: '#fff', borderRadius: 24, padding: 20, alignItems: 'center', justifyContent: 'center',
-            borderWidth: 1, borderColor: '#F1F5F9',
-            shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
-          }}>
-            <Ionicons name="flame" size={32} color="#F59E0B" style={{ marginBottom: 12 }} />
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#111827', marginBottom: 4 }}>{userProfile.streakCount || 1}</Text>
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>Streak ngày</Text>
-          </View>
-
-          {/* THEO DÕI NƯỚC */}
-          <View style={{
-            flex: 1.5, backgroundColor: '#fff', borderRadius: 24, padding: 20, justifyContent: 'center',
-            borderWidth: 1, borderColor: '#F1F5F9',
-            shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
-          }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="water" size={24} color="#3B82F6" />
-              </View>
-              <View style={{ flex: 1 }}>
-                 <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 }}>Nước đã uống</Text>
-                 <Text style={{ fontSize: 13, color: '#6B7280', fontWeight: '500' }}>{userProfile.waterIntake || 0} / {userProfile.waterTarget || 2000} ml</Text>
-              </View>
-            </View>
-
-            <View style={{ height: 10, backgroundColor: '#EFF6FF', borderRadius: 999, overflow: 'hidden' }}>
-               <View style={{ 
-                 height: '100%', backgroundColor: '#3B82F6', borderRadius: 999,
-                 width: `${Math.min(100, ((userProfile.waterIntake || 0) / (userProfile.waterTarget || 2000)) * 100)}%` 
-               }} />
-            </View>
+          {/* Water Tracker Card - REUSABLE ORGANISM */}
+          <View style={{ flex: 1.5 }}>
+            <WaterTrackerCard 
+              intake={userProfile.waterIntake || 0}
+              target={userProfile.waterTarget || 2000}
+              onAddWater={() => addWater(200)}
+            />
           </View>
         </View>
+
+        {currentState === 'EATING' && (
+          <AppButton 
+            variant="ghost" 
+            title="Bỏ theo dõi giờ Ăn" 
+            onPress={stopFastingLoop} 
+            style={{ marginTop: 8 }}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, paddingBottom: 40 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#1E293B' },
+  planItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, backgroundColor: '#fff', borderWidth: 1, borderColor: '#F1F5F9' },
+  planItemActive: { backgroundColor: '#F0FDF4', borderColor: '#10B981' },
+  planTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 2 },
+  planDesc: { fontSize: 13, color: '#64748B', fontWeight: '500' },
+  header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerTitle: { fontSize: 24, fontWeight: '900', color: '#1E293B', letterSpacing: 1 },
+  planBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: '#F1F5F9' },
+  planBadgeText: { fontSize: 13, fontWeight: '700', color: '#64748B', marginRight: 4 },
+  markersContainer: { flexDirection: 'row', backgroundColor: '#fff', padding: 20, borderRadius: 24, marginBottom: 24, borderWidth: 1, borderColor: '#F1F5F9' },
+  markerColumn: { flex: 1, alignItems: 'center' },
+  markerLabel: { fontSize: 13, fontWeight: '600', color: '#94A3B8', marginBottom: 4, textTransform: 'uppercase' },
+  markerValue: { fontSize: 20, fontWeight: '800', color: '#1E293B' },
+  markerDivider: { width: 1, height: '60%', backgroundColor: '#F1F5F9', alignSelf: 'center' },
+  statsRow: { flexDirection: 'row', gap: 16 },
+  streakCard: { flex: 1, backgroundColor: '#fff', borderRadius: 24, padding: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F1F5F9', marginBottom: 16 },
+  streakValue: { fontSize: 26, fontWeight: '900', color: '#1E293B', marginVertical: 4 },
+  streakLabel: { fontSize: 12, color: '#94A3B8', fontWeight: '700', textTransform: 'uppercase' },
+});

@@ -3,9 +3,15 @@ import { View, Text, TouchableOpacity, ScrollView, Alert, Switch } from 'react-n
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import SharedHeader from '@/components/SharedHeader';
-import { useUserProfile } from '@/context/UserProfileContext';
+import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 
+// ─── Import Atomic Hooks ─────────────────────────────────────────────────────
+import { useUserProfile } from '@/src/context/UserProfileContext';
+
+/**
+ * Màn hình Nhập chỉ số cơ thể (Biological Stats).
+ * Thu thập giới tính, tuổi, chiều cao, cân nặng để tính toán TDEE/BMR.
+ */
 export default function BiologicalStatsScreen() {
   const router = useRouter();
   const { userProfile, setUserProfile, calculateFinalCalories } = useUserProfile();
@@ -78,7 +84,6 @@ export default function BiologicalStatsScreen() {
 
         {/* Chiều cao & Cân nặng */}
         <View style={{ flexDirection: 'row', gap: 16, marginBottom: 24 }}>
-          {/* Chiều cao */}
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Chiều cao (cm)</Text>
             <View style={{
@@ -101,7 +106,6 @@ export default function BiologicalStatsScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          {/* Cân nặng */}
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Cân nặng (kg)</Text>
             <View style={{
@@ -126,7 +130,6 @@ export default function BiologicalStatsScreen() {
           </View>
         </View>
 
-        {/* Cân nặng mục tiêu (Ẩn nếu giữ dáng) */}
         {userProfile.goal !== 'maintain' && (
           <View style={{ marginBottom: 24 }}>
             <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Cân nặng mục tiêu (kg)</Text>
@@ -159,7 +162,6 @@ export default function BiologicalStatsScreen() {
           </View>
         )}
 
-        {/* Chọn tốc độ (Ẩn nếu giữ dáng) */}
         {userProfile.goal !== 'maintain' && (
           <View style={{ marginBottom: 24 }}>
             <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Tốc độ mong muốn</Text>
@@ -191,14 +193,12 @@ export default function BiologicalStatsScreen() {
           </View>
         )}
 
-        {/* Cập nhật Tình trạng sức khỏe */}
         <View style={{ marginBottom: 24 }}>
           <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 12, fontWeight: '500' }}>Tình trạng đặc biệt (Nếu có)</Text>
           <View style={{
             backgroundColor: '#fff', borderRadius: 24, padding: 16, gap: 16,
             borderWidth: 1, borderColor: '#F3F4F6',
           }}>
-            {/* Mang thai (chỉ hiện cho nữ) */}
             {gender === 'Nữ' && (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -216,7 +216,6 @@ export default function BiologicalStatsScreen() {
               </View>
             )}
 
-            {/* Tiểu đường */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' }}>
@@ -238,18 +237,18 @@ export default function BiologicalStatsScreen() {
         <TouchableOpacity
           onPress={() => {
             let finalTargetWeight = Number(targetWeight);
-            const currentWeight = Number(weight);
+            const currentWeightValue = Number(weight);
             const userSpeed = typeof speed !== 'undefined' ? Number(speed) : 0.5;
 
             if (userProfile.goal === 'maintain') {
-              finalTargetWeight = currentWeight;
+              finalTargetWeight = currentWeightValue;
             } else if (userProfile.goal === 'lose_weight') {
-              if (finalTargetWeight >= currentWeight) {
+              if (finalTargetWeight >= currentWeightValue) {
                 Alert.alert("Chưa hợp lệ", "Để giảm cân, cân nặng mục tiêu phải nhỏ hơn hiện tại");
                 return;
               }
             } else if (userProfile.goal === 'gain_muscle') {
-              if (finalTargetWeight < currentWeight) {
+              if (finalTargetWeight < currentWeightValue) {
                 Alert.alert("Chưa hợp lệ", "Để tăng cơ, cân nặng mục tiêu không được nhỏ hơn hiện tại");
                 return;
               }
@@ -260,7 +259,7 @@ export default function BiologicalStatsScreen() {
               gender, 
               age: Number(age), 
               height: Number(height), 
-              weight: currentWeight,
+              weight: currentWeightValue,
               targetWeight: finalTargetWeight,
               speed: userSpeed,
               isPregnant: gender === 'Nữ' ? isPregnant : false,

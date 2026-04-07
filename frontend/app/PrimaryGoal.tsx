@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import SharedHeader from '@/components/SharedHeader';
-import { useUserProfile } from '@/context/UserProfileContext';
+import { SharedHeader } from '@/src/components/molecules/SharedHeader';
+
+// ─── Import Atomic Hooks ─────────────────────────────────────────────────────
+import { useUserProfile } from '@/src/context/UserProfileContext';
 
 const goals = [
   { id: 'lose_weight', icon: '🔥', title: 'Giảm cân', desc: 'Đốt cháy mỡ thừa hiệu quả' },
@@ -12,6 +14,9 @@ const goals = [
   { id: 'gain_muscle', icon: '💪', title: 'Tăng cơ', desc: 'Xây dựng khối cơ bắp' },
 ];
 
+/**
+ * Màn hình Chọn mục tiêu chính (Primary Goal).
+ */
 export default function PrimaryGoalScreen() {
   const router = useRouter();
   const { userProfile, setUserProfile } = useUserProfile();
