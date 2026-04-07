@@ -1,4 +1,4 @@
-package com.crossapplication.main.repository.repo;
+package com.crossapplication.main.repository.interfaces;
 
 import java.time.LocalDate;
 import java.util.List;

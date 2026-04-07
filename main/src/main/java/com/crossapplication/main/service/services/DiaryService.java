@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 import com.crossapplication.main.entity.Meal;
 import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.entity.User;
-import com.crossapplication.main.repository.repo.MealLogRepository;
-import com.crossapplication.main.repository.repo.MealRepository;
+import com.crossapplication.main.repository.impl.MealRepository;
+import com.crossapplication.main.repository.interfaces.MealLogRepository;
 
 import jakarta.transaction.Transactional;
 

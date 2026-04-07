@@ -1,4 +1,4 @@
-package com.crossapplication.main.repository.repo;
+package com.crossapplication.main.repository.impl;
 
 import java.sql.Date;
 import java.util.List;
