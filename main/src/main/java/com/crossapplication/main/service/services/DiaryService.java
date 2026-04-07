@@ -58,4 +58,55 @@ public class DiaryService implements com.crossapplication.main.service.interface
     public void removeFoodFromLog(Long mealLogId) {
         mealLogRepo.deleteById(mealLogId);
     }
+
+    @Override
+    public Meal createMeal(Long userId, Date date, String mealType) {
+        List<Meal> existingMeal = mealRepo.findByUserIdAndMealType(userId, mealType);
+        Meal targetMeal = existingMeal.stream()
+                .filter(m -> m.getDate() != null && m.getDate().equals(date))
+                .findFirst()
+                .orElse(null);
+
+        if (targetMeal == null) {
+            targetMeal = new Meal();
+            targetMeal.setDate(date);
+            targetMeal.setMealType(mealType);
+
+            User user = new User();
+            user.setId(userId);
+            targetMeal.setUser(user);
+
+            targetMeal = mealRepo.save(targetMeal);
+        }
+
+        return targetMeal;
+    }
+
+    @Override
+    public MealLog updateMealLog(Long mealLogId, MealLog update) {
+        return mealLogRepo.findById(mealLogId).map(existing -> {
+            if (update.getFood() != null) existing.setFood(update.getFood());
+            if (update.getMeal() != null) existing.setMeal(update.getMeal());
+            if (update.getQuantity() != 0) existing.setQuantity(update.getQuantity());
+            if (update.getCalories() != 0) existing.setCalories(update.getCalories());
+            if (update.getProtein() != 0) existing.setProtein(update.getProtein());
+            if (update.getCarb() != 0) existing.setCarb(update.getCarb());
+            if (update.getFat() != 0) existing.setFat(update.getFat());
+            return mealLogRepo.save(existing);
+        }).orElseThrow(() -> new IllegalArgumentException("MealLog not found: " + mealLogId));
+    }
+
+    @Override
+    public List<Meal> getMealsBetween(Long userId, Date start, Date end) {
+        if (start == null || end == null) return List.of();
+        java.time.LocalDate s = start.toLocalDate();
+        java.time.LocalDate e = end.toLocalDate();
+        List<Meal> result = new java.util.ArrayList<>();
+        for (java.time.LocalDate d = s; !d.isAfter(e); d = d.plusDays(1)) {
+            Date current = Date.valueOf(d);
+            List<Meal> daily = mealRepo.findByUserIdAndDate(userId, current);
+            if (daily != null && !daily.isEmpty()) result.addAll(daily);
+        }
+        return result;
+    }
 }

@@ -3,17 +3,29 @@ package com.crossapplication.main.service.interfaces;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import com.crossapplication.main.dto.FoodDTO;
 import com.crossapplication.main.entity.Food;
 import com.crossapplication.main.entity.FoodCategory;
 
 public interface FoodServiceInterface {
-    public List<Food> getAllFood();
+    List<Food> getAllFood();
 
-    public List<Food> searchByFoodName(String name);
+    List<Food> searchByFoodName(String name);
     
-    public List<Food> getFoodsByCategory(Long categoryId);
+    List<Food> getFoodsByCategory(Long categoryId);
 
-    public List<FoodCategory> getAllCategories();
+    List<FoodCategory> getAllCategories();
 
-    public Map<String, Double> calculateNutrition(Long id, double weightInGrams);
+    Map<String, Double> calculateNutrition(Long id, double weightInGrams);
+
+    FoodDTO createFood(FoodDTO dto);
+
+    FoodDTO updateFood(Long id, FoodDTO dto);
+
+    void deleteFood(Long id);
+
+    Page<Food> getAllFood(Pageable p);
 }

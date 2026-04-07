@@ -1,19 +1,20 @@
 package com.crossapplication.main.repository.interfaces;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.crossapplication.main.entity.User;
 
 public interface UserRepositoryInterface {
-    public void save(User user);
+    void save(User user);
 
-    public User findById(int id);
+    Optional<User> findById(Long id);
 
-    public User findByEmail(String email);
+    Optional<User> findByEmail(String email);
 
-    public List<User> findAllUser();
+    List<User> findAllUser();
 
-    public void updateUser(User user);
+    void updateUser(User user);
 
-    public void deleteUser(int id);
+    void deleteUser(Long id);
 }

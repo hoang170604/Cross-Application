@@ -3,6 +3,7 @@ package com.crossapplication.main.service.interfaces;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.crossapplication.main.dto.ReportSummary;
 import com.crossapplication.main.entity.DailyNutrition;
 import com.crossapplication.main.entity.WeightLog;
 
@@ -15,4 +16,8 @@ public interface ProgressService {
     WeightLog getLatestWeight(int userId);
     
     WeightLog logWeight(int userId, double weight, LocalDate date);
+
+    DailyNutrition getDailyNutrition(int userId, LocalDate date);
+
+    ReportSummary getNutritionSummary(int userId, LocalDate start, LocalDate end);
 }

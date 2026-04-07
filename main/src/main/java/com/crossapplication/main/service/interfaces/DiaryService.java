@@ -13,4 +13,10 @@ public interface DiaryService {
     public List<Meal> getDailyDiary(Long id, Date date);
 
     public void removeFoodFromLog(Long mealLogId);
+
+    Meal createMeal(Long userId, Date date, String mealType);
+
+    MealLog updateMealLog(Long mealLogId, MealLog update);
+
+    List<Meal> getMealsBetween(Long userId, Date start, Date end);
 }

@@ -1,6 +1,7 @@
 package com.crossapplication.main.repository.repo;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
@@ -18,7 +19,7 @@ public class UserRepository implements UserRepositoryInterface{
     private EntityManager em;
 
     @Override
-    public void deleteUser(int id) {
+    public void deleteUser(Long id) {
         User user = em.find(User.class, id);
         if (user != null) {
             em.remove(user);
@@ -32,18 +33,18 @@ public class UserRepository implements UserRepositoryInterface{
     }
 
     @Override
-    public User findByEmail(String email) {
+    public Optional<User> findByEmail(String email) {
         String jpql = "SELECT u FROM User u WHERE u.email = :email";
         TypedQuery<User> query = em.createQuery(jpql, User.class);
         query.setParameter("email", email);
 
         List<User> result = query.getResultList();
-        return result.isEmpty() ? null : result.get(0);
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
     @Override
-    public User findById(int id) {
-        return em.find(User.class, id);
+    public Optional<User> findById(Long id) {
+        return Optional.ofNullable(em.find(User.class, id));
     }
 
     @Override

@@ -18,9 +18,12 @@ public class MealRepository implements MealRepositoryInterface{
     private EntityManager entityManager;
 
     @Override
-    public List<Meal> finByDateAndMealType(Date date, String mealType) {
-        
-        return null;
+    public List<Meal> findByDateAndMealType(Date date, String mealType) {
+        String jpql = "SELECT m FROM Meal m WHERE m.date = :date AND m.mealType = :mealType";
+        return entityManager.createQuery(jpql, Meal.class)
+                .setParameter("date", date)
+                .setParameter("mealType", mealType)
+                .getResultList();
     }
 
     @Override

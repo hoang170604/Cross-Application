@@ -1,19 +1,20 @@
 package com.crossapplication.main.repository.interfaces;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import com.crossapplication.main.entity.Food;
 
 public interface FoodRepositoryInterface {
-    public Food saveFood(Food food);
+    Food saveFood(Food food);
 
-    public void deleteFood(Long id);
+    void deleteFood(Long id);
 
-    public Food findById(Long id);
+    Optional<Food> findById(Long id);
 
-    public ArrayList<Food> findAllFood();
+    List<Food> findAllFood();
 
-    public ArrayList<Food> findByCategory(Long categoryId);
+    List<Food> findByCategory(Long categoryId);
 
-    public double calculateFood(double foodPer100g);
+    double calculateFood(double foodPer100g);
 }

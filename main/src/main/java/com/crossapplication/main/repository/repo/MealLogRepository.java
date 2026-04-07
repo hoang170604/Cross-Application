@@ -9,7 +9,7 @@ import com.crossapplication.main.entity.MealLog;
 
 @Repository
 public interface MealLogRepository extends JpaRepository<MealLog, Long>{
-    
+    //Sửa lại kiểu dữ liệu. 
     public List<MealLog> findByMealId(Long id);
 
     public void deleteByMealId(Long id);
