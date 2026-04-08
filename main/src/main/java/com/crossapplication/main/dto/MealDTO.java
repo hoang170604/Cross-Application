@@ -1,14 +1,14 @@
 package com.crossapplication.main.dto;
 
-import java.sql.Date;
+import java.time.LocalDate;
 
 public class MealDTO {
     private String mealType;
-    private Date date;
-    
+    private LocalDate date;
+
     public MealDTO() {}
 
-    public MealDTO(String mealType, Date date) {
+    public MealDTO(String mealType, LocalDate date) {
         this.mealType = mealType;
         this.date = date;
     }
@@ -21,11 +21,11 @@ public class MealDTO {
         this.mealType = mealType;
     }
 
-    public Date getDate() {
+    public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(LocalDate date) {
         this.date = date;
     }
 }

@@ -21,10 +21,10 @@ public class DailyNutrition {
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
     @Column(name="user_id")
-    private int userId;
+    private Long userId;
 
     @Column(name="date")
     private LocalDate date;
@@ -43,19 +43,19 @@ public class DailyNutrition {
 
     public DailyNutrition(){}
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public int getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 

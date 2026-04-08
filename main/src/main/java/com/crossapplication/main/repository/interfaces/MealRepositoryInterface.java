@@ -1,16 +1,16 @@
 package com.crossapplication.main.repository.interfaces;
 
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 import com.crossapplication.main.entity.Meal;
 
 public interface MealRepositoryInterface {
-    List<Meal> findByUserIdAndDate(Long userId, Date date);
+    public List<Meal> findByUserIdAndDate(Long userId, LocalDate date);
 
-    List<Meal> findByUserIdAndMealType(Long userId, String mealType);
+    public List<Meal> findByUserIdAndMealType(Long userId, String mealType);
 
-    List<Meal> findByDateAndMealType(Date date, String mealType);
+    public List<Meal> findByDateAndMealType(LocalDate date, String mealType);
 
-    Meal save(Meal meal);
+    public Meal save(Meal meal);
 }

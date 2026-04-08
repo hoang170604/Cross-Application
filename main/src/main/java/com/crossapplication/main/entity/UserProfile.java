@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 @Table(name="user_profile")
 public class UserProfile {
     @Id
-    private String userID;
+    private Long userId;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId
@@ -40,12 +40,12 @@ public class UserProfile {
     @Column(name="goal", length=20, nullable=false)
     private String goal;
 
-    public String getUserID() {
-        return userID;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setUserID(String userID) {
-        this.userID = userID;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public User getUser() {

@@ -18,7 +18,7 @@ public class WeightLog {
     
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name="user_id", nullable=false, foreignKey = @ForeignKey(name="fk_weight_user"))
@@ -32,11 +32,11 @@ public class WeightLog {
     
     public WeightLog(){}
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

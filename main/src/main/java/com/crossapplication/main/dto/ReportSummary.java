@@ -3,7 +3,7 @@ package com.crossapplication.main.dto;
 import java.time.LocalDate;
 
 public class ReportSummary {
-    private int userId;
+    private Long userId;
     private LocalDate startDate;
     private LocalDate endDate;
     private double totalCalories;
@@ -12,11 +12,11 @@ public class ReportSummary {
     private double totalCarbs;
     private double totalFat;
 
-    public int getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 

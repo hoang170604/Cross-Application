@@ -10,9 +10,9 @@ import org.springframework.stereotype.Repository;
 import com.crossapplication.main.entity.DailyNutrition;
 
 @Repository
-public interface DailyNutritionRepository extends JpaRepository<DailyNutrition, Integer>{
+public interface DailyNutritionRepository extends JpaRepository<DailyNutrition, Long>{
     
-    Optional<DailyNutrition> findByUserIdAndDate(int userId, LocalDate date);
+    public Optional<DailyNutrition> findByUserIdAndDate(Long userId, LocalDate date);
     
-    List<DailyNutrition> findAllByUserIdAndDateBetween(int userId, LocalDate startDate, LocalDate endDate);
+    public List<DailyNutrition> findAllByUserIdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
 }

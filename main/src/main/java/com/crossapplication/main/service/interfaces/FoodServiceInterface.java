@@ -11,21 +11,21 @@ import com.crossapplication.main.entity.Food;
 import com.crossapplication.main.entity.FoodCategory;
 
 public interface FoodServiceInterface {
-    List<Food> getAllFood();
+    public List<Food> getAllFood();
 
-    List<Food> searchByFoodName(String name);
+    public List<Food> searchByFoodName(String name);
     
-    List<Food> getFoodsByCategory(Long categoryId);
+    public List<Food> getFoodsByCategory(Long categoryId);
 
-    List<FoodCategory> getAllCategories();
+    public List<FoodCategory> getAllCategories();
 
-    Map<String, Double> calculateNutrition(Long id, double weightInGrams);
+    public Map<String, Double> calculateNutrition(Long id, double weightInGrams);
 
-    FoodDTO createFood(FoodDTO dto);
+    public FoodDTO createFood(FoodDTO dto);
 
-    FoodDTO updateFood(Long id, FoodDTO dto);
+    public FoodDTO updateFood(Long id, FoodDTO dto);
 
-    void deleteFood(Long id);
+    public void deleteFood(Long id);
 
-    Page<Food> getAllFood(Pageable p);
+    public Page<Food> getAllFood(Pageable p);
 }

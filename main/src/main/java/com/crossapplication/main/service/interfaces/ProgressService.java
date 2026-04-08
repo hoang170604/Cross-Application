@@ -9,15 +9,15 @@ import com.crossapplication.main.entity.WeightLog;
 
 public interface ProgressService {
     
-    List<WeightLog> getWeightHistory(int userId, LocalDate startDate, LocalDate endDate);
+    public List<WeightLog> getWeightHistory(Long userId, LocalDate startDate, LocalDate endDate);
     
-    List<DailyNutrition> getNutritionReport(int userId, LocalDate startDate, LocalDate endDate);
+    public List<DailyNutrition> getNutritionReport(Long userId, LocalDate startDate, LocalDate endDate);
     
-    WeightLog getLatestWeight(int userId);
+    public WeightLog getLatestWeight(Long userId);
     
-    WeightLog logWeight(int userId, double weight, LocalDate date);
+    public WeightLog logWeight(Long userId, double weight, LocalDate date);
 
-    DailyNutrition getDailyNutrition(int userId, LocalDate date);
+    public DailyNutrition getDailyNutrition(Long userId, LocalDate date);
 
-    ReportSummary getNutritionSummary(int userId, LocalDate start, LocalDate end);
+    public ReportSummary getNutritionSummary(Long userId, LocalDate start, LocalDate end);
 }

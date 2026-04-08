@@ -8,17 +8,17 @@ import com.crossapplication.main.entity.User;
 import com.crossapplication.main.entity.UserProfile;
 
 public interface UserServiceInterface {
-    User register(String email, String password);
+    public User register(String email, String password);
 
-    String login(String email, String password);
+    public String login(String email, String password);
 
-    void changePassword(Long userId, String newPassword);
+    public void changePassword(Long userId, String newPassword);
 
-    NutritionGoal updateProfileAndCalculateGoal(Long id, UserProfile profile);
+    public NutritionGoal updateProfileAndCalculateGoal(Long id, UserProfile profile);
 
-    Optional<UserDTO> getById(Long id);
+    public Optional<UserDTO> getById(Long id);
 
-    void requestPasswordReset(String email);
+    public void requestPasswordReset(String email);
 
-    void verifyEmail(String token);
+    public void verifyEmail(String token);
 }

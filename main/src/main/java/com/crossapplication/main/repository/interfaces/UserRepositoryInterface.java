@@ -6,15 +6,15 @@ import java.util.Optional;
 import com.crossapplication.main.entity.User;
 
 public interface UserRepositoryInterface {
-    void save(User user);
+    public void save(User user);
 
-    Optional<User> findById(Long id);
+    public Optional<User> findById(Long id);
 
-    Optional<User> findByEmail(String email);
+    public Optional<User> findByEmail(String email);
 
-    List<User> findAllUser();
+    public List<User> findAllUser();
 
-    void updateUser(User user);
+    public void updateUser(User user);
 
-    void deleteUser(Long id);
+    public void deleteUser(Long id);
 }

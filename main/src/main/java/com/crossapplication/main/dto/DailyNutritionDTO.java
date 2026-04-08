@@ -3,7 +3,7 @@ package com.crossapplication.main.dto;
 import java.time.LocalDate;
 
 public class DailyNutritionDTO {
-    private int userId;
+    private Long userId;
     private LocalDate date;
     private double totalCalories;
     private double totalProtein;
@@ -12,7 +12,7 @@ public class DailyNutritionDTO {
 
     public DailyNutritionDTO(){}
 
-    public DailyNutritionDTO(int userId, LocalDate date, double totalCalories, double totalProtein, double totalCarb, double totalFat) {
+    public DailyNutritionDTO(Long userId, LocalDate date, double totalCalories, double totalProtein, double totalCarb, double totalFat) {
         this.userId = userId;
         this.date = date;
         this.totalCalories = totalCalories;
@@ -21,11 +21,11 @@ public class DailyNutritionDTO {
         this.totalFat = totalFat;
     }
 
-    public int getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 

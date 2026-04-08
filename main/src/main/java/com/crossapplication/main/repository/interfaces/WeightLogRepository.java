@@ -9,19 +9,19 @@ import org.springframework.stereotype.Repository;
 import com.crossapplication.main.entity.WeightLog;
 
 @Repository
-public interface WeightLogRepository extends JpaRepository<WeightLog, Integer>{
+public interface WeightLogRepository extends JpaRepository<WeightLog, Long>{
     
-    List<WeightLog> findByUserIdOrderByDateAsc(int userId);
+    public List<WeightLog> findByUserIdOrderByDateAsc(Long userId);
 
-    List<WeightLog> findByUserIdAndDateBetweenOrderByDateAsc(
-            int userId,
+    public List<WeightLog> findByUserIdAndDateBetweenOrderByDateAsc(
+            Long userId,
             LocalDate startDate,
             LocalDate endDate
     );
 
-    WeightLog findByUserIdAndDate(int userId, LocalDate date);
+    public WeightLog findByUserIdAndDate(Long userId, LocalDate date);
 
-    WeightLog findTopByUserIdOrderByDateDesc(int userId);
+    public WeightLog findTopByUserIdOrderByDateDesc(Long userId);
 
-    void deleteByUserId(int userId);
+    public void deleteByUserId(Long userId);
 }

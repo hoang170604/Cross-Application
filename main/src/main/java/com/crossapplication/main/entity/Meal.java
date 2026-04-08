@@ -1,6 +1,6 @@
 package com.crossapplication.main.entity;
 
-import java.sql.Date;
+import java.time.LocalDate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,7 +26,7 @@ public class Meal {
     private String mealType;
 
     @Column(name="date")
-    private Date date;
+    private LocalDate date;
 
     public Long getId() {
         return id;
@@ -52,11 +52,11 @@ public class Meal {
         this.mealType = mealType;
     }
 
-    public Date getDate() {
+    public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(LocalDate date) {
         this.date = date;
     }
 }

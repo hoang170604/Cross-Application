@@ -1,6 +1,6 @@
 package com.crossapplication.main.service.services;
 
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,10 +25,10 @@ public class DiaryService implements com.crossapplication.main.service.interface
 
     @Override
     @Transactional
-    public MealLog addFoodToMeal(Long id, Date date, String mealType, MealLog mealLog) {
+    public MealLog addFoodToMeal(Long id, LocalDate date, String mealType, MealLog mealLog) {
         List<Meal> existingMeal = mealRepo.findByUserIdAndMealType(id, mealType);
         Meal targetMeal = existingMeal.stream()
-                .filter(m -> m.getDate().toString().equals(date.toString()))
+                .filter(m -> m.getDate() != null && m.getDate().equals(date))
                 .findFirst()
                 .orElse(null);
 
@@ -48,7 +48,7 @@ public class DiaryService implements com.crossapplication.main.service.interface
     }
 
     @Override
-    public List<Meal> getDailyDiary(Long id, Date date) {
+    public List<Meal> getDailyDiary(Long id, LocalDate date) {
         List<Meal> meals = mealRepo.findByUserIdAndDate(id, date);
         return meals;
     }
@@ -60,7 +60,7 @@ public class DiaryService implements com.crossapplication.main.service.interface
     }
 
     @Override
-    public Meal createMeal(Long userId, Date date, String mealType) {
+    public Meal createMeal(Long userId, LocalDate date, String mealType) {
         List<Meal> existingMeal = mealRepo.findByUserIdAndMealType(userId, mealType);
         Meal targetMeal = existingMeal.stream()
                 .filter(m -> m.getDate() != null && m.getDate().equals(date))
@@ -97,14 +97,11 @@ public class DiaryService implements com.crossapplication.main.service.interface
     }
 
     @Override
-    public List<Meal> getMealsBetween(Long userId, Date start, Date end) {
+    public List<Meal> getMealsBetween(Long userId, LocalDate start, LocalDate end) {
         if (start == null || end == null) return List.of();
-        java.time.LocalDate s = start.toLocalDate();
-        java.time.LocalDate e = end.toLocalDate();
         List<Meal> result = new java.util.ArrayList<>();
-        for (java.time.LocalDate d = s; !d.isAfter(e); d = d.plusDays(1)) {
-            Date current = Date.valueOf(d);
-            List<Meal> daily = mealRepo.findByUserIdAndDate(userId, current);
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            List<Meal> daily = mealRepo.findByUserIdAndDate(userId, d);
             if (daily != null && !daily.isEmpty()) result.addAll(daily);
         }
         return result;

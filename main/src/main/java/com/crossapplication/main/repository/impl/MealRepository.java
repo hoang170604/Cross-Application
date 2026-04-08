@@ -1,6 +1,6 @@
 package com.crossapplication.main.repository.impl;
 
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Repository;
@@ -18,7 +18,7 @@ public class MealRepository implements MealRepositoryInterface{
     private EntityManager entityManager;
 
     @Override
-    public List<Meal> findByDateAndMealType(Date date, String mealType) {
+    public List<Meal> findByDateAndMealType(LocalDate date, String mealType) {
         String jpql = "SELECT m FROM Meal m WHERE m.date = :date AND m.mealType = :mealType";
         return entityManager.createQuery(jpql, Meal.class)
                 .setParameter("date", date)
@@ -27,7 +27,7 @@ public class MealRepository implements MealRepositoryInterface{
     }
 
     @Override
-    public List<Meal> findByUserIdAndDate(Long userId, Date date) {
+    public List<Meal> findByUserIdAndDate(Long userId, LocalDate date) {
         String jpql = "SELECT m FROM Meal m WHERE m.user.id = :userId AND m.date = :date";
 
         return entityManager.createQuery(jpql, Meal.class)
