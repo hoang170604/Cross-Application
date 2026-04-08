@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -36,9 +35,7 @@ public class FoodService implements FoodServiceInterface {
     @Override
     public List<Food> searchByFoodName(String name) {
         if (name == null || name.isBlank()) return List.of();
-        return foodRepo.findAllFood().stream()
-                .filter(f -> f.getName() != null && f.getName().toLowerCase().contains(name.toLowerCase()))
-                .collect(Collectors.toList());
+        return foodRepo.findByNameContainingIgnoreCase(name);
     }
 
     @Override

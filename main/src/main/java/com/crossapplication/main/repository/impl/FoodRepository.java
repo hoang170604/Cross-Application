@@ -33,6 +33,13 @@ public class FoodRepository implements FoodRepositoryInterface{
     }
 
     @Override
+    public List<Food> findByNameContainingIgnoreCase(String keyword) {
+        return em.createQuery("SELECT f FROM Food f WHERE LOWER(f.name) LIKE :kw", Food.class)
+                .setParameter("kw", "%" + (keyword == null ? "" : keyword.toLowerCase()) + "%")
+                .getResultList();
+    }
+
+    @Override
     public List<Food> findByCategory(Long categoryId) {
         return em.createQuery(
                 "SELECT f FROM Food f WHERE f.category.id = :catId", Food.class)

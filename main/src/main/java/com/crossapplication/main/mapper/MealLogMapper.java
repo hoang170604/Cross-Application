@@ -7,6 +7,8 @@ import com.crossapplication.main.entity.MealLog;
 
 @Mapper(componentModel = "spring")
 public interface MealLogMapper {
+    @org.mapstruct.Mapping(source = "food.id", target = "foodId")
+    @org.mapstruct.Mapping(source = "meal.id", target = "mealId")
     MealLogDTO toDto(MealLog entity);
 
     @org.mapstruct.Mapping(target = "id", ignore = true)

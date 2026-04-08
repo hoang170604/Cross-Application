@@ -41,6 +41,8 @@ public class DailyNutrition {
     @Column(name="total_fat")
     private double totalFat;
 
+    
+
     public DailyNutrition(){}
 
     public Long getId() {

@@ -14,6 +14,8 @@ public interface FoodRepositoryInterface {
 
     public List<Food> findAllFood();
 
+    public List<Food> findByNameContainingIgnoreCase(String keyword);
+
     public List<Food> findByCategory(Long categoryId);
 
     public double calculateFood(double foodPer100g);

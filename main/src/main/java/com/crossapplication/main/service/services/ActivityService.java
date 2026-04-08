@@ -11,6 +11,7 @@ import com.crossapplication.main.entity.Activity;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.repository.interfaces.ActivityRepository;
 import com.crossapplication.main.service.interfaces.ActivityServiceInterface;
+import com.crossapplication.main.service.interfaces.DailyNutritionService;
 
 import jakarta.transaction.Transactional;
 
@@ -19,6 +20,9 @@ public class ActivityService implements ActivityServiceInterface {
 
     @Autowired
     private ActivityRepository activityRepository;
+
+    @Autowired
+    private DailyNutritionService dailyNutritionService;
 
     @Override
     @Transactional
@@ -37,7 +41,62 @@ public class ActivityService implements ActivityServiceInterface {
         a.setSource(source);
         a.setExternalId(externalId);
         a.setCreatedAt(LocalDateTime.now());
-        return activityRepository.save(a);
+        Activity saved = activityRepository.save(a);
+        // subtract burned calories from daily totals
+        LocalDate logDate = a.getLogDate();
+        if (caloriesBurned != null && caloriesBurned > 0) {
+            dailyNutritionService.adjustDailyTotals(userId, logDate, -caloriesBurned, 0, 0, 0);
+        }
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Activity updateActivity(Long activityId, com.crossapplication.main.dto.ActivityDTO update) {
+        var opt = activityRepository.findById(activityId);
+        if (opt.isEmpty()) throw new IllegalArgumentException("Activity not found: " + activityId);
+        Activity existing = opt.get();
+        Double oldCaloriesObj = existing.getCaloriesBurned();
+        double oldCalories = oldCaloriesObj == null ? 0.0 : oldCaloriesObj.doubleValue();
+
+        if (update.getActivityType() != null) existing.setActivityType(update.getActivityType());
+        if (update.getDurationMinutes() != null) existing.setDurationMinutes(update.getDurationMinutes());
+        if (update.getCaloriesBurned() != null) existing.setCaloriesBurned(update.getCaloriesBurned());
+        if (update.getStartTime() != null) existing.setStartTime(update.getStartTime());
+        if (update.getDistanceKm() != null) existing.setDistanceKm(update.getDistanceKm());
+        if (update.getSteps() != null) existing.setSteps(update.getSteps());
+        if (update.getSource() != null) existing.setSource(update.getSource());
+        if (update.getExternalId() != null) existing.setExternalId(update.getExternalId());
+
+        Activity saved = activityRepository.save(existing);
+        Double newCaloriesObj = saved.getCaloriesBurned();
+        double newCalories = newCaloriesObj == null ? 0.0 : newCaloriesObj.doubleValue();
+        double delta = newCalories - oldCalories;
+        if (delta != 0) {
+            LocalDate logDate = saved.getLogDate();
+            Long userId = saved.getUser() != null ? saved.getUser().getId() : null;
+            if (userId != null && logDate != null) {
+                // burned increased -> subtract more (negative delta), so pass -delta
+                dailyNutritionService.adjustDailyTotals(userId, logDate, -delta, 0, 0, 0);
+            }
+        }
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public void deleteActivity(Long activityId) {
+        var opt = activityRepository.findById(activityId);
+        if (opt.isEmpty()) return;
+        Activity a = opt.get();
+        Double burned = a.getCaloriesBurned();
+        LocalDate logDate = a.getLogDate();
+        Long userId = a.getUser() != null ? a.getUser().getId() : null;
+        if (burned != null && burned > 0 && userId != null && logDate != null) {
+            // removing activity should add back calories burned
+            dailyNutritionService.adjustDailyTotals(userId, logDate, burned, 0, 0, 0);
+        }
+        activityRepository.deleteById(activityId);
     }
 
     @Override

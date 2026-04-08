@@ -7,9 +7,11 @@ import java.util.List;
 import com.crossapplication.main.entity.Activity;
 
 public interface ActivityServiceInterface {
-    Activity addActivity(Long userId, String type, Integer durationMinutes, Double caloriesBurned, LocalDateTime startTime, Double distanceKm, Integer steps, String source, String externalId);
+    public Activity addActivity(Long userId, String type, Integer durationMinutes, Double caloriesBurned, LocalDateTime startTime, Double distanceKm, Integer steps, String source, String externalId);
 
-    List<Activity> getActivitiesBetween(Long userId, LocalDate start, LocalDate end);
+    public List<Activity> getActivitiesBetween(Long userId, LocalDate start, LocalDate end);
 
-    double getCaloriesBurned(Long userId, LocalDate date);
+    public double getCaloriesBurned(Long userId, LocalDate date);
+    public Activity updateActivity(Long activityId, com.crossapplication.main.dto.ActivityDTO update);
+    public void deleteActivity(Long activityId);
 }

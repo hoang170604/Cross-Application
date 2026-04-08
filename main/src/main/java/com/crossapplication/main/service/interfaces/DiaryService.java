@@ -16,7 +16,7 @@ public interface DiaryService {
 
     public Meal createMeal(Long userId, LocalDate date, String mealType);
 
-    public MealLog updateMealLog(Long mealLogId, MealLog update);
+    public MealLog updateMealLog(Long mealLogId, com.crossapplication.main.dto.MealLogDTO update);
 
     public List<Meal> getMealsBetween(Long userId, LocalDate start, LocalDate end);
 }

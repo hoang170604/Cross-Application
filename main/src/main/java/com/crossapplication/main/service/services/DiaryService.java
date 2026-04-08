@@ -11,6 +11,7 @@ import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.repository.impl.MealRepository;
 import com.crossapplication.main.repository.interfaces.MealLogRepository;
+import com.crossapplication.main.service.interfaces.DailyNutritionService;
 
 import jakarta.transaction.Transactional;
 
@@ -22,6 +23,9 @@ public class DiaryService implements com.crossapplication.main.service.interface
 
     @Autowired
     private MealLogRepository mealLogRepo;
+
+    @Autowired
+    private DailyNutritionService dailyNutritionService;
 
     @Override
     @Transactional
@@ -44,7 +48,10 @@ public class DiaryService implements com.crossapplication.main.service.interface
             targetMeal = mealRepo.save(targetMeal);
         }
         mealLog.setMeal(targetMeal);
-        return mealLogRepo.save(mealLog);
+        MealLog saved = mealLogRepo.save(mealLog);
+        // update daily totals
+        dailyNutritionService.adjustDailyTotals(id, date, saved.getCalories(), saved.getProtein(), saved.getCarb(), saved.getFat());
+        return saved;
     }
 
     @Override
@@ -56,7 +63,16 @@ public class DiaryService implements com.crossapplication.main.service.interface
     @Override
     @Transactional
     public void removeFoodFromLog(Long mealLogId) {
-        mealLogRepo.deleteById(mealLogId);
+        var opt = mealLogRepo.findById(mealLogId);
+        if (opt.isPresent()) {
+            MealLog m = opt.get();
+            if (m.getMeal() != null && m.getMeal().getUser() != null) {
+                Long userId = m.getMeal().getUser().getId();
+                LocalDate date = m.getMeal().getDate();
+                dailyNutritionService.adjustDailyTotals(userId, date, -m.getCalories(), -m.getProtein(), -m.getCarb(), -m.getFat());
+            }
+            mealLogRepo.deleteById(mealLogId);
+        }
     }
 
     @Override
@@ -83,17 +99,44 @@ public class DiaryService implements com.crossapplication.main.service.interface
     }
 
     @Override
-    public MealLog updateMealLog(Long mealLogId, MealLog update) {
-        return mealLogRepo.findById(mealLogId).map(existing -> {
-            if (update.getFood() != null) existing.setFood(update.getFood());
-            if (update.getMeal() != null) existing.setMeal(update.getMeal());
-            if (update.getQuantity() != 0) existing.setQuantity(update.getQuantity());
-            if (update.getCalories() != 0) existing.setCalories(update.getCalories());
-            if (update.getProtein() != 0) existing.setProtein(update.getProtein());
-            if (update.getCarb() != 0) existing.setCarb(update.getCarb());
-            if (update.getFat() != 0) existing.setFat(update.getFat());
-            return mealLogRepo.save(existing);
-        }).orElseThrow(() -> new IllegalArgumentException("MealLog not found: " + mealLogId));
+    @Transactional
+    public MealLog updateMealLog(Long mealLogId, com.crossapplication.main.dto.MealLogDTO update) {
+        var opt = mealLogRepo.findById(mealLogId);
+        if (opt.isEmpty()) throw new IllegalArgumentException("MealLog not found: " + mealLogId);
+        MealLog existing = opt.get();
+        double oldCalories = existing.getCalories();
+        double oldProtein = existing.getProtein();
+        double oldCarb = existing.getCarb();
+        double oldFat = existing.getFat();
+
+        if (update.getFoodId() != null) {
+            com.crossapplication.main.entity.Food f = new com.crossapplication.main.entity.Food();
+            f.setId(update.getFoodId());
+            existing.setFood(f);
+        }
+        if (update.getMealId() != null) {
+            com.crossapplication.main.entity.Meal m = new com.crossapplication.main.entity.Meal();
+            m.setId(update.getMealId());
+            existing.setMeal(m);
+        }
+        if (update.getQuantity() != null) existing.setQuantity(update.getQuantity());
+        if (update.getCalories() != null) existing.setCalories(update.getCalories());
+        if (update.getProtein() != null) existing.setProtein(update.getProtein());
+        if (update.getCarb() != null) existing.setCarb(update.getCarb());
+        if (update.getFat() != null) existing.setFat(update.getFat());
+
+        MealLog saved = mealLogRepo.save(existing);
+        // compute delta and update daily totals
+        double dCal = saved.getCalories() - oldCalories;
+        double dP = saved.getProtein() - oldProtein;
+        double dC = saved.getCarb() - oldCarb;
+        double dF = saved.getFat() - oldFat;
+        if (saved.getMeal() != null && saved.getMeal().getUser() != null) {
+            Long userId = saved.getMeal().getUser().getId();
+            LocalDate date = saved.getMeal().getDate();
+            dailyNutritionService.adjustDailyTotals(userId, date, dCal, dP, dC, dF);
+        }
+        return saved;
     }
 
     @Override
