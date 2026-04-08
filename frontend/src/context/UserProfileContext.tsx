@@ -45,20 +45,22 @@ type UserProfileContextType = {
   totalEatenMacros: Macros;
   isLoaded: boolean;
   syncAllDataToCloud: () => any;
+  // Đăng xuất
+  logout: () => Promise<void>;
 };
 
 const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
 
 export function UserProfileProvider({ children }: { children: ReactNode }) {
   // 1. Quản lý lưu trữ & state gốc
-  const { userProfile, setUserProfile, isLoaded } = useStorage();
+  const { userProfile, setUserProfile, isLoaded, logout } = useStorage();
 
   // 2. Logic nghiệp vụ chuyên biệt
   const nutrition = useNutrition(userProfile, setUserProfile);
   const fasting = useFasting(userProfile, setUserProfile);
   const workout = useWorkout(userProfile, setUserProfile);
 
-  // 3. MASTER RESET: Đồng bộ hóa trạng thái Ngày mới (Atomic Reset)
+  // 3. Đồng bộ hóa trạng thái Ngày mới
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -67,7 +69,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
 
     setUserProfile((prev) => {
       const lastStr = prev.lastActiveDate;
-      
+
       // Nếu đã là ngày hôm nay, không làm gì cả
       if (todayStr === lastStr) return prev;
 
@@ -79,7 +81,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
         const lastDate = new Date(lastStr);
         const diffTime = today.getTime() - lastDate.getTime();
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays === 1) {
           newStreak += 1;
         } else {
@@ -164,6 +166,8 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     calculateFinalCalories: NutritionUtils.calculateFinalCalories,
     calculateDuration: NutritionUtils.calculateDuration,
     getMacroTargets: NutritionUtils.getMacroTargets,
+    // Đăng xuất
+    logout,
   };
 
   return (

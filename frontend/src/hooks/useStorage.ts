@@ -4,7 +4,7 @@
  * Sử dụng AsyncStorage để đồng bộ hóa trạng thái UserProfile giữa các phiên sử dụng.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, DEFAULT_PROFILE } from '@/src/types';
 import { getLocalToday } from '@/src/utils/dateFormatter';
@@ -58,9 +58,28 @@ export function useStorage() {
     };
   }, [userProfile, isLoaded]);
 
+  // ─── Đăng xuất: xóa AsyncStorage + reset state ─────────────────────────────
+  const logout = useCallback(async () => {
+    try {
+      // Hủy timer save đang chờ để tránh ghi đè lại sau khi xóa
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      // Xóa dữ liệu bền vững
+      await AsyncStorage.removeItem(STORAGE_KEY);
+      // Reset state trong bộ nhớ về mặc định
+      setUserProfile(DEFAULT_PROFILE);
+      console.log('[NutriTrack] ✅ Đã đăng xuất và xóa dữ liệu.');
+    } catch (e) {
+      console.error('[NutriTrack] ❌ Lỗi khi đăng xuất:', e);
+    }
+  }, []);
+
   return { 
     userProfile, 
     setUserProfile, 
-    isLoaded 
+    isLoaded,
+    logout 
   };
 }

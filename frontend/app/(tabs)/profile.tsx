@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ─── Import Atomic Hooks ─────────────────────────────────────────────────────
-import { useNutrition } from '@/src/hooks';
+import { useUserProfile } from '@/src/context/UserProfileContext';
+import { resetAllStorage } from '@/scripts/resetStorage';
 
 /**
  * Màn hình Hồ sơ người dùng (Profile Tab).
@@ -15,16 +16,63 @@ import { useNutrition } from '@/src/hooks';
 export default function ProfileScreen() {
   const router = useRouter();
   
-  // Truy cập dữ liệu toàn cục qua Consumer Hook chuyên biệt
+  // Truy cập dữ liệu toàn cục qua Context — bao gồm logout
   const { 
-    userProfile 
-  } = useNutrition();
+    userProfile,
+    logout 
+  } = useUserProfile();
 
   const height = userProfile.height || 170;
   const currentWeight = userProfile.currentWeight !== undefined ? userProfile.currentWeight : (userProfile.weight || 70);
   const gender = userProfile.gender || 'Nam';
   const age = userProfile.age || 25;
   const name = userProfile.name || 'Người dùng mới';
+
+  // ─── Xử lý đăng xuất ──────────────────────────────────────────────────────
+  const handleLogout = () => {
+    const doLogout = async () => {
+      await logout();
+      // _layout.tsx sẽ tự phát hiện !hasFinishedOnboarding 
+      // và redirect về màn hình Welcome (index)
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Bạn có chắc muốn đăng xuất?\nToàn bộ dữ liệu sẽ bị xóa.')) {
+        doLogout();
+      }
+    } else {
+      Alert.alert(
+        'Đăng xuất',
+        'Bạn có chắc muốn đăng xuất?\nToàn bộ dữ liệu cục bộ sẽ bị xóa.',
+        [
+          { text: 'Hủy', style: 'cancel' },
+          {
+            text: 'Đăng xuất',
+            style: 'destructive',
+            onPress: doLogout,
+          },
+        ]
+      );
+    }
+  };
+
+  // ─── Xử lý reset data (Dev) ───────────────────────────────────────────────
+  const handleResetData = () => {
+    Alert.alert(
+      '⚠️ Xác nhận Reset',
+      'Xóa toàn bộ dữ liệu AsyncStorage? App sẽ quay về trạng thái ban đầu.',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa hết',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          },
+        },
+      ]
+    );
+  };
 
   // Danh sách các tùy chọn cài đặt
   const settingsItems = [
@@ -46,7 +94,6 @@ export default function ProfileScreen() {
     { 
       icon: '👤', 
       title: 'Chỉ số sinh lý', 
-      // CẬP NHẬT: Định dạng hiển thị mới bao gồm Cân nặng hiện tại (Reactive)
       subtitle: `${gender}, ${age} tuổi, ${height}cm, ${currentWeight}kg` 
     },
     { 
@@ -73,7 +120,7 @@ export default function ProfileScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.userName}>{name}</Text>
-            <Text style={styles.userEmail}>user@nutritrack.com</Text>
+            <Text style={styles.userEmail}>{userProfile.email || 'user@nutritrack.com'}</Text>
           </View>
           <TouchableOpacity style={styles.editIcon}>
             <Ionicons name="settings-outline" size={20} color="#64748B" />
@@ -102,9 +149,17 @@ export default function ProfileScreen() {
           ))}
         </View>
 
+        {/* Nút Reset Data (Dev) */}
+        <TouchableOpacity
+          onPress={handleResetData}
+          style={[styles.logoutButton, { backgroundColor: '#FFF7ED', marginBottom: 12 }]}
+        >
+          <Text style={[styles.logoutText, { color: '#F59E0B' }]}>🗑️ Reset toàn bộ dữ liệu</Text>
+        </TouchableOpacity>
+
         {/* Nút đăng xuất */}
         <TouchableOpacity
-          onPress={() => router.replace('/Authwall')}
+          onPress={handleLogout}
           style={styles.logoutButton}
         >
           <Text style={styles.logoutText}>Đăng xuất tài khoản</Text>
