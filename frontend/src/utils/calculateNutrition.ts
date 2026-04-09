@@ -48,24 +48,18 @@ export function calculateBMR(gender: string, weight: number, height: number, age
  * TDEE = BMR × Hệ số vận động ± Điều chỉnh theo mục tiêu.
  *
  * @param bmr - Chỉ số BMR đã tính
- * @param activityLevel - Mức độ vận động
- * @param goal - Mục tiêu ('lose_weight' | 'gain_muscle' | 'maintain')
- * @param isPregnant - Có mang thai không (cộng 350 kcal)
+ * @param activityMultiplier - Mức độ vận động (hệ số)
+ * @param goal - Mục tiêu ('lose' | 'gain' | 'maintain')
  * @returns Lượng Calo cần nạp mỗi ngày (kcal)
  */
-export function calculateTDEE(bmr: number, activityLevel: string, goal: string, isPregnant: boolean): number {
-  const activityKey = String(activityLevel || 'light');
-  const multiplier = ACTIVITY_MULTIPLIERS[activityKey] || 1.375;
+export function calculateTDEE(bmr: number, activityMultiplier: number, goal: string): number {
+  const multiplier = activityMultiplier || 1.375;
   let result = bmr * multiplier;
 
-  if (isPregnant) {
-    result += 350;
-  } else {
-    if (goal === 'lose_weight' || goal === 'lose') {
-      result -= 500;
-    } else if (goal === 'gain_muscle' || goal === 'gain') {
-      result += 500;
-    }
+  if (goal === 'lose_weight' || goal === 'lose') {
+    result -= 500;
+  } else if (goal === 'gain_muscle' || goal === 'gain') {
+    result += 500;
   }
   return Math.round(result);
 }
@@ -84,68 +78,7 @@ export function calculateBMI(weight: number, heightCm: number): number {
   return Math.round((w / (h * h)) * 10) / 10;
 }
 
-/**
- * Tính chỉ số Macros mục tiêu theo tỷ lệ phụ thuộc mục tiêu sức khỏe.
- * - Giảm cân: Ưu tiên Đạm (40%), giảm Tinh bột (30%)
- * - Tăng cơ: Ưu tiên Tinh bột (50%), tăng Đạm (30%)
- * - Duy trì: Cân bằng theo tỷ lệ tiêu chuẩn
- *
- * @param totalCal - Tổng Calo mục tiêu (kcal)
- * @param goal - Mục tiêu sức khỏe
- * @returns Đối tượng Macros (gram)
- */
-export function getMacroTargets(totalCal: number, goal: string): Macros {
-  let carbsRatio = 0.45;
-  let proteinRatio = 0.25;
-  let fatRatio = 0.30;
-
-  if (goal === 'lose_weight' || goal === 'lose') {
-    carbsRatio = 0.30;
-    proteinRatio = 0.40;
-    fatRatio = 0.30;
-  } else if (goal === 'gain_muscle' || goal === 'gain') {
-    carbsRatio = 0.50;
-    proteinRatio = 0.30;
-    fatRatio = 0.20;
-  }
-
-  return {
-    carbs: Math.round((totalCal * carbsRatio) / 4),
-    protein: Math.round((totalCal * proteinRatio) / 4),
-    fat: Math.round((totalCal * fatRatio) / 9),
-  };
-}
-
 // ─── Hàm Legacy (tương thích Onboarding) ────────────────────────────────────
-
-/**
- * Tính Calo mục tiêu hàng ngày từ toàn bộ hồ sơ.
- * Hàm "all-in-one" dành cho màn hình Onboarding khi chưa có Context.
- *
- * @param profile - Hồ sơ người dùng đầy đủ
- * @returns Lượng Calo mục tiêu (kcal/ngày)
- */
-export function calculateFinalCalories(profile: UserProfile): number {
-  const bmr = calculateBMR(profile.gender, profile.weight, profile.height, profile.age);
-  return calculateTDEE(bmr, profile.activityLevel, profile.goal, profile.isPregnant);
-}
-
-/**
- * Tính thời lượng dự kiến để đạt mục tiêu cân nặng (tuần).
- *
- * @param profile - Hồ sơ người dùng
- * @returns Số tuần dự kiến (tối thiểu 4 tuần)
- */
-export function calculateDuration(profile: UserProfile): number {
-  if (profile.goal === 'maintain' || profile.weight === profile.targetWeight) {
-    return 8;
-  }
-  const weightDiff = Math.abs(profile.weight - profile.targetWeight);
-  const spd = profile.speed || 0.5;
-  let weeks = Math.ceil(weightDiff / spd);
-  if (weeks < 4) weeks = 4;
-  return weeks;
-}
 
 /**
  * Quy đổi lượng Calo dư thừa thành số phút đi bộ nhanh.

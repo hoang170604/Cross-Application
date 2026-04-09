@@ -10,8 +10,7 @@ import { UserProfile, FoodItem, DailyMeals, Macros } from '@/src/types';
 import { 
   calculateBMR, 
   calculateTDEE, 
-  calculateBMI, 
-  getMacroTargets 
+  calculateBMI 
 } from '@/src/utils/calculateNutrition';
 import { getLocalToday } from '@/src/utils/dateFormatter';
 
@@ -36,18 +35,13 @@ export function useNutrition(
 
   /** TDEE (Total Daily Energy Expenditure) */
   const tdee = useMemo(() => 
-    calculateTDEE(bmr, userProfile.activityLevel, userProfile.goal, userProfile.isPregnant),
-  [bmr, userProfile.activityLevel, userProfile.goal, userProfile.isPregnant]);
+    calculateTDEE(bmr, userProfile.activityLevel, userProfile.goal),
+  [bmr, userProfile.activityLevel, userProfile.goal]);
 
   /** BMI (Body Mass Index) */
   const bmi = useMemo(() => 
     calculateBMI(userProfile.currentWeight || userProfile.weight, userProfile.height),
   [userProfile.currentWeight, userProfile.weight, userProfile.height]);
-
-  /** Macro Targets */
-  const macroTargets = useMemo((): Macros => 
-    getMacroTargets(tdee, userProfile.goal),
-  [tdee, userProfile.goal]);
 
   /** Tổng lượng Calo và Macros đã ăn */
   const { totalEatenCalories, totalEatenMacros } = useMemo(() => {
@@ -56,7 +50,7 @@ export function useNutrition(
     return {
       totalEatenCalories: allFoods.reduce((sum, item) => sum + item.calories, 0),
       totalEatenMacros: {
-        carbs: allFoods.reduce((sum, item) => sum + (item.carbs || 0), 0),
+        carb: allFoods.reduce((sum, item) => sum + (item.carb || 0), 0),
         protein: allFoods.reduce((sum, item) => sum + (item.protein || 0), 0),
         fat: allFoods.reduce((sum, item) => sum + (item.fat || 0), 0),
       }
@@ -116,35 +110,14 @@ export function useNutrition(
     });
   }, [setUserProfile]);
 
-  /** Thêm nước uống */
-  const addWater = useCallback((amount: number) => {
-    setUserProfile(prev => {
-      const todayStr = getLocalToday();
-      let newIntake = (prev.waterIntake || 0) + amount;
-      
-      // Reset nếu sang ngày mới
-      if (prev.lastWaterDate !== todayStr) {
-        newIntake = amount;
-      }
-
-      return {
-        ...prev,
-        waterIntake: newIntake,
-        lastWaterDate: todayStr
-      };
-    });
-  }, [setUserProfile]);
-
   return {
     bmr,
     tdee,
     bmi,
-    macroTargets,
     totalEatenCalories,
     totalEatenMacros,
     updateUserProfile,
     addFood,
-    updateCurrentWeight,
-    addWater
+    updateCurrentWeight
   };
 }

@@ -28,7 +28,7 @@ export default function SearchScanScreen() {
   const [customName, setCustomName] = useState('');
   const [customCals, setCustomCals] = useState('');
   const [customProtein, setCustomProtein] = useState('');
-  const [customCarbs, setCustomCarbs] = useState('');
+  const [customCarb, setCustomCarb] = useState('');
   const [customFat, setCustomFat] = useState('');
 
   const FILTERS = ['Tất cả', 'Giàu Đạm', 'Ít Tinh bột', 'Ít Béo', 'Món nước', 'Cơm/Xôi', 'Tráng miệng', 'Đồ uống', 'Đồ ăn nhanh'];
@@ -42,7 +42,7 @@ export default function SearchScanScreen() {
         if (selectedFilter === 'Giàu Đạm') {
           matchesFilter = food.protein > 15;
         } else if (selectedFilter === 'Ít Tinh bột') {
-          matchesFilter = food.carbs < 20;
+          matchesFilter = food.carb < 20;
         } else if (selectedFilter === 'Ít Béo') {
           matchesFilter = food.fat < 10;
         } else {
@@ -56,12 +56,13 @@ export default function SearchScanScreen() {
 
   const handleAddDataFood = (food: FoodItemDB) => {
      addFood(mealType, {
-       id: Math.random().toString(),
+       id: food.id,
        name: food.name,
        calories: food.calories,
        protein: food.protein,
-       carbs: food.carbs,
-       fat: food.fat
+       carb: food.carb,
+       fat: food.fat,
+       quantity: 100, // Fixed 100g chunk
      });
      router.back();
   };
@@ -78,16 +79,17 @@ export default function SearchScanScreen() {
      }
 
      const protein = Number(customProtein) || 0;
-     const carbs = Number(customCarbs) || 0;
+     const carb = Number(customCarb) || 0;
      const fat = Number(customFat) || 0;
 
      addFood(mealType, {
-       id: Math.random().toString(),
+       id: 0, // Yêu cầu sử dụng ID thật từ Backend trả về
        name: customName.trim(),
        calories: numCals,
        protein,
-       carbs,
+       carb,
        fat,
+       quantity: 100,
      });
      
      router.back();
@@ -198,7 +200,7 @@ export default function SearchScanScreen() {
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F9FAFB', padding: 12, borderRadius: 8 }}>
                 <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>Đạm <Text style={{ color: '#00C48C', fontWeight: '700' }}>{food.protein}g</Text></Text>
-                <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>T.Bột <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{food.carbs}g</Text></Text>
+                <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>T.Bột <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{food.carb}g</Text></Text>
                 <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>Béo <Text style={{ color: '#EF4444', fontWeight: '700' }}>{food.fat}g</Text></Text>
               </View>
 
@@ -247,8 +249,8 @@ export default function SearchScanScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Tinh bột (g)</Text>
                 <TextInput
-                  value={customCarbs}
-                  onChangeText={setCustomCarbs}
+                  value={customCarb}
+                  onChangeText={setCustomCarb}
                   placeholder="0"
                   keyboardType="numeric"
                   style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, fontSize: 16 }}

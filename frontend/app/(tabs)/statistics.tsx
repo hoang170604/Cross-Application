@@ -4,11 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 
 // ─── Import Atomic Hooks & Components ─────────────────────────────────────────
-import { useNutrition, useFasting } from '@/src/hooks';
+import { useNutrition } from '@/src/hooks';
 import { PhysiologyStatsCard } from '@/src/components/organisms/PhysiologyStatsCard';
 import { NutritionSummaryCard } from '@/src/components/organisms/NutritionSummaryCard';
 import WeightHistoryChart from '@/src/components/organisms/WeightHistoryChart';
-import { FastingHistoryChart } from '@/src/components/organisms/FastingHistoryChart';
 
 const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
@@ -26,40 +25,7 @@ export default function StatisticsScreen() {
     bmi 
   } = useNutrition();
 
-  // Kết nối Hook Nhịn ăn
-  const { /* fasting related actions if any */ } = useFasting();
 
-  // ═══════════════════════════════════════════════════
-  // Logic nhóm dữ liệu (Aggregation) cho Biểu đồ Nhịn ăn
-  // ═══════════════════════════════════════════════════
-  const fastingDisplayData = useMemo(() => {
-    const history = userProfile.fastingHistory || [];
-    const dates = [];
-    const curr = new Date();
-    const day = curr.getDay(); // 0(CN)-6(T7)
-    
-    // Tìm mốc Thứ 2 của tuần hiện tại
-    const diffToMonday = curr.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(curr.setDate(diffToMonday));
-    
-    // Tạo danh sách 7 ngày trong tuần
-    for (let i = 0; i < 7; i++) {
-       const d = new Date(monday);
-       d.setDate(monday.getDate() + i);
-       // Chuẩn hóa YYYY-MM-DD
-       const isoDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-       dates.push(isoDate);
-    }
-
-    return dates.map((dateStr, idx) => {
-      // Tìm record trong lịch sử
-      const record = history.find(s => s.id === dateStr);
-      return {
-        day: dayLabels[idx],
-        hours: record ? Math.min(Math.round(record.durationHours * 10) / 10, 24) : 0
-      };
-    });
-  }, [userProfile.fastingHistory]);
 
   // Giả lập lịch sử Calo
   const calorieHistory = useMemo(() => {
@@ -95,11 +61,7 @@ export default function StatisticsScreen() {
         {/* Organism: Tóm tắt dinh dưỡng ngày */}
         <NutritionSummaryCard consumed={totalEatenCalories} target={tdee} />
 
-        {/* 📊 Organism: Biểu đồ lịch sử nhịn ăn (Dynamic Scaling) */}
-        <FastingHistoryChart 
-          data={fastingDisplayData} 
-          goal={userProfile.fastingGoal || 16} 
-        />
+
 
         {/* Lịch sử nạp Calo (Biểu đồ Đường) */}
         <View style={styles.chartCard}>

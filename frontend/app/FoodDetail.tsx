@@ -1,58 +1,94 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import apiClient from '@/src/api/apiClient';
 
-// ─── Import Atomic Molecules ──────────────────────────────────────────────────
+// ─── Import Atomic Molecules & Hooks ──────────────────────────────────────────
 import { SharedHeader } from '@/src/components/molecules/SharedHeader';
+import { useUserProfile } from '@/src/context/UserProfileContext';
+import { VIETNAMESE_FOOD_DB } from '@/constants/foodDatabase';
 
 /**
  * Màn hình Chi tiết món ăn (Food Detail).
- * Hiển thị thông tin dinh dưỡng chi tiết và điều chỉnh khẩu phần.
+ * Cập nhật cấu trúc: 100g của Backend, TextInput nhập quantity.
  */
 export default function FoodDetailScreen() {
   const router = useRouter();
-  const [portion, setPortion] = useState(1);
+  const params = useLocalSearchParams();
+  const { userId } = useUserProfile();
+  
+  const mealType = params?.mealType || 'breakfast';
+  const foodIdNum = Number(params?.id) || 1; 
+
+  const food = VIETNAMESE_FOOD_DB.find(f => f.id === foodIdNum) || VIETNAMESE_FOOD_DB[0];
+
+  const [quantityStr, setQuantityStr] = useState('100');
+  
+  // Calculate macros per 100g proportion
+  const quantity = Number(quantityStr) || 0;
+  
+  const caloriesPer100g = food.calories; 
+  const proteinPer100g = food.protein;
+  const carbPer100g = food.carb;
+  const fatPer100g = food.fat;
+
+  const realCalories = Math.round((caloriesPer100g * quantity) / 100);
+  const realProtein = Math.round((proteinPer100g * quantity) / 100);
+  const realCarb = Math.round((carbPer100g * quantity) / 100);
+  const realFat = Math.round((fatPer100g * quantity) / 100);
 
   const macros = [
-    { name: 'Carbs', value: 55 * portion, total: 250, color: '#FFB800', unit: 'g' },
-    { name: 'Protein', value: 15 * portion, total: 80, color: '#00C48C', unit: 'g' },
-    { name: 'Fat', value: 8 * portion, total: 60, color: '#FF6B6B', unit: 'g' },
+    { name: 'Carb', value: realCarb, total: 300, color: '#FFB800', unit: 'g' },
+    { name: 'Protein', value: realProtein, total: 100, color: '#00C48C', unit: 'g' },
+    { name: 'Fat', value: realFat, total: 80, color: '#FF6B6B', unit: 'g' },
   ];
+
+  const handleAddFood = async () => {
+    if (quantity <= 0) {
+      Alert.alert('Lỗi', 'Vui lòng nhập số gram hợp lệ.');
+      return;
+    }
+    try {
+      // POST API according to User Requirements
+      await apiClient.post(`/diary/users/${userId}/meals/${mealType}`, {
+        foodId: food.id,
+        quantity: quantity
+      });
+      
+      Alert.alert('Thành công', 'Đã thêm món ăn vào nhật ký!');
+      router.back();
+    } catch (error) {
+      console.error('Lỗi khi thêm món ăn:', error);
+      Alert.alert('Lỗi', 'Không thể thêm món ăn, vui lòng thử lại sau.');
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <SharedHeader showBack />
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
         {/* Biểu tượng & Tên món */}
         <View style={styles.iconContainer}>
-          <Text style={styles.foodIcon}>🍲</Text>
-          <Text style={styles.foodName}>Phở bò</Text>
-          <Text style={styles.foodCalories}>350 kcal</Text>
+          <Text style={styles.foodIcon}>{food.icon}</Text>
+          <Text style={styles.foodName}>{food.name}</Text>
+          <Text style={styles.foodCalories}>{realCalories} kcal</Text>
         </View>
 
-        {/* Điều chỉnh khẩu phần */}
+        {/* Cấu trúc mới: Nhập gram */}
         <View style={styles.portionCard}>
-          <Text style={styles.cardInfo}>Khẩu phần</Text>
+          <Text style={styles.cardInfo}>Số Gram (Chuẩn: 100g)</Text>
           <View style={styles.portionControls}>
-            <TouchableOpacity
-              onPress={() => setPortion(Math.max(1, portion - 1))}
-              style={styles.minusButton}
-            >
-              <Ionicons name="remove" size={20} color="#374151" />
-            </TouchableOpacity>
-            <View style={styles.portionValueContainer}>
-              <Text style={styles.portionValue}>{portion}</Text>
-              <Text style={styles.portionUnit}>Bát</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setPortion(portion + 1)}
-              style={styles.plusButton}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-            </TouchableOpacity>
+            <TextInput
+              style={styles.gramInput}
+              keyboardType="numeric"
+              value={quantityStr}
+              onChangeText={setQuantityStr}
+              placeholder="0"
+            />
+            <Text style={styles.portionUnit}>Gram</Text>
           </View>
         </View>
 
@@ -78,7 +114,7 @@ export default function FoodDetailScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={handleAddFood}
           style={styles.addButton}
         >
           <Text style={styles.addButtonText}>Thêm vào nhật ký</Text>
@@ -99,19 +135,13 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
   cardInfo: { fontSize: 14, fontWeight: '500', color: '#6B7280', marginBottom: 16, textAlign: 'center' },
-  portionControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24 },
-  minusButton: {
-    width: 48, height: 48, backgroundColor: '#F3F4F6', borderRadius: 24,
-    alignItems: 'center', justifyContent: 'center',
+  portionControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  gramInput: {
+    width: 120, height: 60, backgroundColor: '#F3F4F6', borderRadius: 12,
+    fontSize: 28, fontWeight: '900', textAlign: 'center', color: '#111827'
   },
-  portionValueContainer: { alignItems: 'center', minWidth: 80 },
-  portionValue: { fontSize: 32, fontWeight: '900' },
-  portionUnit: { fontSize: 14, color: '#6B7280', fontWeight: '500', marginTop: 4 },
-  plusButton: {
-    width: 48, height: 48, backgroundColor: '#00C48C', borderRadius: 24,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#86EFAC', shadowOpacity: 0.3, shadowRadius: 4, elevation: 2,
-  },
+  portionUnit: { fontSize: 18, color: '#6B7280', fontWeight: '500', marginTop: 4 },
+  
   macroCard: {
     backgroundColor: '#fff', borderRadius: 16, padding: 20, marginBottom: 16,
     borderWidth: 1, borderColor: '#F3F4F6',

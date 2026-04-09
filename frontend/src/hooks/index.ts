@@ -17,42 +17,9 @@ export const useNutrition = () => {
     totalEatenMacros: context.totalEatenMacros,
     addFood: context.addFood,
     updateCurrentWeight: context.updateCurrentWeight,
-    addWater: context.addWater,
     bmr: context.bmr,
     tdee: context.tdee,
     bmi: context.bmi,
-    macroTargets: context.macroTargets,
-    getMacroTargets: context.getMacroTargets,
-  };
-};
-
-/**
- * Hook quản lý Nhịn ăn (Từ Global Context)
- */
-export const useFasting = () => {
-  const context = useUserProfile();
-  return {
-    userProfile: context.userProfile,
-    startFasting: context.startFasting,
-    startEating: context.startEating,
-    endFasting: context.endFasting,
-    stopFastingLoop: context.stopFastingLoop,
-    setFastingGoal: context.setFastingGoal,
-  };
-};
-
-/**
- * Hook quản lý Thử thách vận động (Từ Global Context)
- */
-export const useWorkout = () => {
-  const context = useUserProfile();
-  return {
-    userProfile: context.userProfile,
-    startWorkoutChallenge: context.startWorkoutChallenge,
-    pauseWorkoutChallenge: context.pauseWorkoutChallenge,
-    resumeWorkoutChallenge: context.resumeWorkoutChallenge,
-    cancelWorkoutChallenge: context.cancelWorkoutChallenge,
-    completeWorkoutChallenge: context.completeWorkoutChallenge,
   };
 };
 

@@ -81,16 +81,7 @@ export default function ProfileScreen() {
       title: 'Mục tiêu của tôi', 
       subtitle: userProfile.goal === 'lose_weight' ? 'Giảm cân' : userProfile.goal === 'gain_muscle' ? 'Tăng cơ' : 'Giữ dáng' 
     },
-    { 
-      icon: '🥑', 
-      title: 'Chế độ ăn', 
-      subtitle: userProfile.dietMode ? 'Đã thiết lập' : 'Chưa chọn' 
-    },
-    { 
-      icon: '💧', 
-      title: 'Nhắc uống nước', 
-      subtitle: `Mục tiêu ${userProfile.waterTarget || 2000} ml/ngày` 
-    },
+
     { 
       icon: '👤', 
       title: 'Chỉ số sinh lý', 
