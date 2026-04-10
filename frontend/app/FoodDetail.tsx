@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import { VIETNAMESE_FOOD_DB } from '@/constants/foodDatabase';
 export default function FoodDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { userId } = useUserProfile();
+  const { userId, addFood } = useUserProfile();
   
   const mealType = params?.mealType || 'breakfast';
   const foodIdNum = Number(params?.id) || 1; 
@@ -50,24 +50,47 @@ export default function FoodDetailScreen() {
       Alert.alert('Lỗi', 'Vui lòng nhập số gram hợp lệ.');
       return;
     }
+    
+    let mealLogId = food.id; // Fallback an toàn nếu API tạch
+    
     try {
-      // POST API according to User Requirements
-      await apiClient.post(`/diary/users/${userId}/meals/${mealType}`, {
+      const today = new Date().toISOString().split('T')[0];
+      // POST API theo thiết kế Backend
+      const res = await apiClient.post(`/api/diary/users/${userId}/meals/${mealType}?date=${today}`, {
         foodId: food.id,
-        quantity: quantity
+        quantity: quantity,
+        calories: realCalories,
+        protein: realProtein,
+        carb: realCarb,
+        fat: realFat
       });
       
-      Alert.alert('Thành công', 'Đã thêm món ăn vào nhật ký!');
-      router.back();
+      if (res.data && res.data.id) {
+          mealLogId = res.data.id;
+      }
     } catch (error) {
-      console.error('Lỗi khi thêm món ăn:', error);
-      Alert.alert('Lỗi', 'Không thể thêm món ăn, vui lòng thử lại sau.');
-    }
+      console.warn('[Offline Mode] Bỏ qua lỗi Backend ở FoodDetail, chuyển sang lưu Local.');
+    } // Đã bỏ phần Alert chặn đứng nếu Backend Sập!
+
+    // LUÔN LUÔN Nạp vào Context (đảm bảo Offline-First)
+    addFood(mealType as any, {
+        id: mealLogId,
+        name: food.name,
+        calories: realCalories,
+        protein: realProtein,
+        carb: realCarb,
+        fat: realFat,
+        quantity: quantity
+    });
+    
+    Alert.alert('Thành công', 'Đã thêm món ăn vào nhật ký!');
+    router.back();
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-      <SharedHeader showBack />
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+        <SharedHeader showBack />
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
         {/* Biểu tượng & Tên món */}
@@ -120,7 +143,8 @@ export default function FoodDetailScreen() {
           <Text style={styles.addButtonText}>Thêm vào nhật ký</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 

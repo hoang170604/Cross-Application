@@ -29,6 +29,7 @@ type UserProfileContextType = {
   totalEatenMacros: Macros;
   isLoaded: boolean;
   syncAllDataToCloud: () => any;
+  fetchDiaryFromServer: (date: string) => Promise<void>;
   // Đăng xuất
   logout: () => Promise<void>;
 };
@@ -84,7 +85,15 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   }, [storageLogout]);
 
   // 2. Logic nghiệp vụ chuyên biệt
-  const nutrition = useNutrition(userProfile, setUserProfile);
+  const nutrition = useNutrition(userProfile, setUserProfile, userId);
+
+  // 3. Đồng bộ 2 chiều: Kéo dữ liệu khi khởi động
+  useEffect(() => {
+    if (isLoaded && userId) {
+      const today = getLocalToday();
+      nutrition.fetchDiaryFromServer(today);
+    }
+  }, [isLoaded, userId, nutrition.fetchDiaryFromServer]);
 
   // 4. Logic đồng bộ hóa (Sync)
   const syncAllDataToCloud = useCallback(() => {
@@ -126,6 +135,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     bmi: nutrition.bmi,
     totalEatenCalories: nutrition.totalEatenCalories,
     totalEatenMacros: nutrition.totalEatenMacros,
+    fetchDiaryFromServer: nutrition.fetchDiaryFromServer,
     userId,
     token,
     login,

@@ -24,44 +24,36 @@ export const ACTIVITY_MULTIPLIERS: Record<string, number> = {
 // ─── Hàm tính toán cốt lõi ──────────────────────────────────────────────────
 
 /**
- * Tính Tỷ lệ Trao đổi Chất Cơ bản (Basal Metabolic Rate).
- * Áp dụng phương trình Mifflin-St Jeor (1990) — chuẩn vàng y khoa.
- *
- * @param gender - Giới tính ('Nam' | 'male' | 'Nữ' | 'female')
- * @param weight - Cân nặng (kg)
- * @param height - Chiều cao (cm)
- * @param age - Tuổi (năm)
- * @returns Lượng Calo cơ thể đốt khi nghỉ ngơi hoàn toàn (kcal/ngày)
+ * Tính Tỷ lệ Trao đổi Chất Cơ bản (BMR) - Dự phòng khi BE lỗi 404.
+ * Sử dụng công thức Mifflin-St Jeor.
  */
 export function calculateBMR(gender: string, weight: number, height: number, age: number): number {
-  const w = Number(weight);
-  const h = Number(height);
-  const a = Number(age);
-  if (gender === 'Nam' || gender === 'male') {
-    return Math.round((10 * w) + (6.25 * h) - (5 * a) + 5);
+  if (!weight || !height || !age) return 0;
+  
+  if (gender === 'female') {
+    return (10 * weight) + (6.25 * height) - (5 * age) - 161;
   }
-  return Math.round((10 * w) + (6.25 * h) - (5 * a) - 161);
+  // Mặc định Nam
+  return (10 * weight) + (6.25 * height) - (5 * age) + 5;
 }
 
 /**
- * Tính Tổng Năng lượng Tiêu hao Hàng ngày (Total Daily Energy Expenditure).
- * TDEE = BMR × Hệ số vận động ± Điều chỉnh theo mục tiêu.
- *
- * @param bmr - Chỉ số BMR đã tính
- * @param activityMultiplier - Mức độ vận động (hệ số)
- * @param goal - Mục tiêu ('lose' | 'gain' | 'maintain')
- * @returns Lượng Calo cần nạp mỗi ngày (kcal)
+ * Tính Tổng Năng lượng Tiêu hao Hàng ngày (TDEE) - Dự phòng khi BE lỗi 404.
+ * Điều chỉnh dựa trên baseline và mục tiêu (goal).
  */
 export function calculateTDEE(bmr: number, activityMultiplier: number, goal: string): number {
-  const multiplier = activityMultiplier || 1.375;
-  let result = bmr * multiplier;
-
-  if (goal === 'lose_weight' || goal === 'lose') {
-    result -= 500;
-  } else if (goal === 'gain_muscle' || goal === 'gain') {
-    result += 500;
+  if (!bmr || !activityMultiplier) return 0;
+  
+  const baseline = bmr * activityMultiplier;
+  
+  if (goal === 'lose') {
+    return Math.round(baseline - 500);
+  } else if (goal === 'gain') {
+    return Math.round(baseline + 500);
   }
-  return Math.round(result);
+  
+  // Mặc định là maintain hoặc mục tiêu khác
+  return Math.round(baseline);
 }
 
 /**

@@ -53,7 +53,7 @@ export default function DiaryDashboardScreen() {
   const calStats = useMemo(() => {
     const targetCals = userProfile.targetCalories || 1800;
     const consumed = totalEatenCalories;
-    const burned = 301;
+    const burned = 0; // Đã loại bỏ Hardcoded data: Chờ Backend hoàn thiện module Activity
     const trueRemaining = targetCals + burned - consumed;
     const isOverCalorie = trueRemaining < 0;
     const remainingDisplay = Math.abs(trueRemaining);

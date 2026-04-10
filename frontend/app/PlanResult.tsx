@@ -8,6 +8,7 @@ import apiClient from '@/src/api/apiClient';
 // ─── Import Atomic Hooks & Molecules ──────────────────────────────────────────
 import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 import { useUserProfile } from '@/src/context/UserProfileContext';
+import { calculateBMR, calculateTDEE } from '@/src/utils/calculateNutrition';
 
 /**
  * Màn hình Kết quả kế hoạch (Plan Result).
@@ -26,8 +27,8 @@ export default function PlanResultScreen() {
     async function fetchProfile() {
       try {
         const response = await apiClient.get('/api/users/profile');
-        if (response.data && response.data.nutritionGoal) {
-          const goal = response.data.nutritionGoal;
+        if (response.data) {
+          const goal = response.data; // Đọc trực tiếp (Lỗi #5)
           setUserProfile(prev => ({
             ...prev,
             targetCalories: goal.targetCalories,
@@ -36,14 +37,30 @@ export default function PlanResultScreen() {
             targetFat: goal.targetFat
           }));
         }
-      } catch (error) {
-        console.error('Lỗi khi lấy dữ liệu mục tiêu dinh dưỡng:', error);
+      } catch (error: any) {
+        // Bọc lỗi Endpoint (Lỗi #4)
+        if (error.response?.status === 404) {
+          console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
+          // Phương án dự phòng (Fallback): Tính tại Local
+          const localBMR = calculateBMR(userProfile.gender, userProfile.weight, userProfile.height, userProfile.age);
+          const localTDEE = calculateTDEE(localBMR, userProfile.activityLevel, userProfile.goal);
+          setUserProfile(prev => ({
+            ...prev,
+            targetCalories: localTDEE
+          }));
+        } else {
+          console.error('Lỗi khi lấy dữ liệu mục tiêu dinh dưỡng:', error);
+        }
       }
     }
     fetchProfile();
   }, []);
 
-  const targetCals = userProfile.targetCalories || 1500;
+  // Tính toán TDEE tức thời để gán nếu biến targetCalories hiện tại rỗng
+  const localBmrNow = calculateBMR(userProfile.gender, userProfile.weight, userProfile.height, userProfile.age);
+  const fallbackTDEE = calculateTDEE(localBmrNow, userProfile.activityLevel, userProfile.goal);
+  
+  const targetCals = userProfile.targetCalories || fallbackTDEE;
 
   const weeks = 12;
   

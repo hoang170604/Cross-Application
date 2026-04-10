@@ -13,6 +13,7 @@ import {
   calculateBMI 
 } from '@/src/utils/calculateNutrition';
 import { getLocalToday } from '@/src/utils/dateFormatter';
+import apiClient from '@/src/api/apiClient';
 
 const STORAGE_KEY = '@nutritrack_state';
 
@@ -24,7 +25,8 @@ const STORAGE_KEY = '@nutritrack_state';
  */
 export function useNutrition(
   userProfile: UserProfile,
-  setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>
+  setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>,
+  userId: number | null = null
 ) {
   // ─── Computed Values (Memoized logic) ───────────────────────────────────
 
@@ -85,10 +87,12 @@ export function useNutrition(
     });
   }, [setUserProfile]);
 
-  /** Cập nhật cân nặng hiện tại và ghi lịch sử */
-  const updateCurrentWeight = useCallback((newWeight: number) => {
+  /** Cập nhật cân nặng hiện tại và ghi lịch sử (Lỗi #14) */
+  const updateCurrentWeight = useCallback(async (newWeight: number) => {
+    const today = getLocalToday();
+    
+    // 1. Luôn lưu vào Local trước (Fallback)
     setUserProfile((prev) => {
-      const today = getLocalToday();
       const history = prev.weightHistory || [];
       const existingIndex = history.findIndex(h => h.date === today);
       
@@ -98,8 +102,6 @@ export function useNutrition(
       } else {
         newHistory.push({ date: today, weight: newWeight });
       }
-
-      // Sắp xếp theo ngày
       newHistory.sort((a, b) => a.date.localeCompare(b.date));
 
       return {
@@ -108,7 +110,61 @@ export function useNutrition(
         weightHistory: newHistory
       };
     });
-  }, [setUserProfile]);
+
+    // 2. Gọi API thầm lặng (Graceful Fallback - Lỗi #14)
+    if (userId) {
+        try {
+            await apiClient.post('/api/progress/weight', {
+                userId,
+                date: today,
+                weight: newWeight
+            });
+        } catch (error: any) {
+            if (error.response?.status === 404) {
+                 console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
+            }
+        }
+    }
+  }, [setUserProfile, userId]);
+
+  /** Ghi nhận lượng nước (Lỗi #13) */
+  const logWater = useCallback(async (amountMl: number) => {
+      const today = getLocalToday();
+      try {
+          // Chỉ gọi API, vì local state Profile hiện đã "gọt" bỏ dailyWater 
+          // theo yêu cầu chuẩn hóa Backend (Lỗi #13)
+          await apiClient.post('/api/water', {
+              amountMl,
+              logDate: today
+          });
+          console.log(`[NutriTrack] Đã ghi nhận ${amountMl}ml nước lên Server.`);
+      } catch (error: any) {
+          if (error.response?.status === 404) {
+               console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
+          }
+      }
+  }, []);
+
+  /** Đồng bộ 2 chiều: Kéo dữ liệu từ Backend khi khởi động */
+  const fetchDiaryFromServer = useCallback(async (date: string) => {
+      if (!userId) return;
+      try {
+          const response = await apiClient.get(`/api/diary/users/${userId}?date=${date}`);
+          if (response.data) {
+              // Ghi đè Local State bằng data từ Backend
+              setUserProfile((prev) => ({
+                  ...prev,
+                  dailyMeals: response.data
+              }));
+          }
+      } catch (error: any) {
+          if (error.response?.status === 404 || error.message?.includes('Network Error')) {
+              console.warn("Không lấy được data từ BE, dùng Local");
+          } else {
+              console.error("Lỗi khi kéo dữ liệu Diary:", error);
+          }
+      }
+  }, [userId, setUserProfile]);
 
   return {
     bmr,
@@ -118,6 +174,8 @@ export function useNutrition(
     totalEatenMacros,
     updateUserProfile,
     addFood,
-    updateCurrentWeight
+    updateCurrentWeight,
+    logWater,
+    fetchDiaryFromServer
   };
 }
