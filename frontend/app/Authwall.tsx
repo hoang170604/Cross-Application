@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 
 // ─── Import Atomic Hooks ─────────────────────────────────────────────────────
 import { useUserProfile } from '@/src/context/UserProfileContext';
+import apiClient from '@/src/api/apiClient';
 
 /**
  * Màn hình Authwall (Hoàn thiện hồ sơ).
@@ -14,24 +15,47 @@ import { useUserProfile } from '@/src/context/UserProfileContext';
  */
 export default function AuthwallScreen() {
   const router = useRouter();
-  const { updateUserProfile } = useUserProfile();
+  const { userProfile, updateUserProfile, userId } = useUserProfile();
   const [name, setName] = useState('');
-  const [selectedFastingGoal, setSelectedFastingGoal] = useState<number>(16);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!name.trim()) {
       Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên của bạn để tiếp tục!');
       return;
     }
-    // Cập nhật State chung thông qua Context Orchestrator
-    updateUserProfile({ name: name.trim(), fastingGoal: selectedFastingGoal });
-    // Tự động chuyển qua Dashboard chính
-    router.replace('/(tabs)/diary');
+
+    try {
+      // 1. Cập nhật State cục bộ
+      updateUserProfile({ name: name.trim() });
+
+      // 2. Gửi Profile lên Backend
+      // Chú ý: Backend có thể chưa mở REST controller này
+      await apiClient.post(`/api/users/${userId}/profile`, {
+        age: userProfile.age,
+        gender: userProfile.gender,
+        height: userProfile.height,
+        weight: userProfile.weight,
+        activityLevel: userProfile.activityLevel,
+        goal: userProfile.goal
+      });
+
+    } catch (error: any) {
+      // Bọc lỗi Endpoint (Lỗi #4)
+      if (error.response?.status === 404) {
+        console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
+      } else {
+        console.error("Lỗi khi đẩy Profile lên BE:", error);
+      }
+    } finally {
+      // Tự động chuyển qua Dashboard chính kể cả khi API lỗi
+      router.replace('/(tabs)/diary');
+    }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <SharedHeader showBack />
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <SharedHeader showBack />
       <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 32 }} keyboardShouldPersistTaps="handled">
         <Text style={{ fontSize: 28, fontWeight: '700', marginBottom: 8 }}>NUTRITRACK</Text>
         <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 32 }}>Hoàn thiện hồ sơ 🚀</Text>
@@ -59,35 +83,7 @@ export default function AuthwallScreen() {
           </View>
         </View>
 
-        {/* Thẻ chọn mục tiêu nhịn ăn */}
-        <View style={{ marginBottom: 40 }}>
-          <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '500' }}>Mục tiêu nhịn ăn khởi đầu</Text>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            {[
-              { label: '14:10', value: 14, sub: 'Người mới' },
-              { label: '16:8', value: 16, sub: 'Phổ biến' },
-              { label: '18:6', value: 18, sub: 'Nâng cao' }
-            ].map(plan => (
-              <TouchableOpacity
-                key={plan.value}
-                onPress={() => setSelectedFastingGoal(plan.value)}
-                style={{
-                  flex: 1, paddingVertical: 16, borderRadius: 16, alignItems: 'center',
-                  backgroundColor: selectedFastingGoal === plan.value ? '#ECFDF5' : '#fff',
-                  borderWidth: 1, borderColor: selectedFastingGoal === plan.value ? '#00C48C' : '#F3F4F6',
-                  shadowColor: selectedFastingGoal === plan.value ? '#86EFAC' : '#000',
-                  shadowOpacity: selectedFastingGoal === plan.value ? 0.3 : 0.04,
-                  shadowRadius: 4, elevation: selectedFastingGoal === plan.value ? 3 : 1,
-                }}
-              >
-                <Text style={{ fontSize: 18, fontWeight: '800', color: selectedFastingGoal === plan.value ? '#00C48C' : '#4B5563', marginBottom: 4 }}>
-                  {plan.label}
-                </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280' }}>{plan.sub}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+
 
         {/* Nút bắt đầu */}
         <TouchableOpacity
@@ -100,8 +96,9 @@ export default function AuthwallScreen() {
         >
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Bắt đầu hành trình</Text>
         </TouchableOpacity>
-        
-      </ScrollView>
-    </SafeAreaView>
+
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }

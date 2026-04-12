@@ -10,10 +10,10 @@ import { UserProfile, FoodItem, DailyMeals, Macros } from '@/src/types';
 import { 
   calculateBMR, 
   calculateTDEE, 
-  calculateBMI, 
-  getMacroTargets 
+  calculateBMI 
 } from '@/src/utils/calculateNutrition';
 import { getLocalToday } from '@/src/utils/dateFormatter';
+import apiClient from '@/src/api/apiClient';
 
 const STORAGE_KEY = '@nutritrack_state';
 
@@ -25,7 +25,8 @@ const STORAGE_KEY = '@nutritrack_state';
  */
 export function useNutrition(
   userProfile: UserProfile,
-  setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>
+  setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>,
+  userId: number | null = null
 ) {
   // ─── Computed Values (Memoized logic) ───────────────────────────────────
 
@@ -36,18 +37,13 @@ export function useNutrition(
 
   /** TDEE (Total Daily Energy Expenditure) */
   const tdee = useMemo(() => 
-    calculateTDEE(bmr, userProfile.activityLevel, userProfile.goal, userProfile.isPregnant),
-  [bmr, userProfile.activityLevel, userProfile.goal, userProfile.isPregnant]);
+    calculateTDEE(bmr, userProfile.activityLevel, userProfile.goal),
+  [bmr, userProfile.activityLevel, userProfile.goal]);
 
   /** BMI (Body Mass Index) */
   const bmi = useMemo(() => 
     calculateBMI(userProfile.currentWeight || userProfile.weight, userProfile.height),
   [userProfile.currentWeight, userProfile.weight, userProfile.height]);
-
-  /** Macro Targets */
-  const macroTargets = useMemo((): Macros => 
-    getMacroTargets(tdee, userProfile.goal),
-  [tdee, userProfile.goal]);
 
   /** Tổng lượng Calo và Macros đã ăn */
   const { totalEatenCalories, totalEatenMacros } = useMemo(() => {
@@ -56,7 +52,7 @@ export function useNutrition(
     return {
       totalEatenCalories: allFoods.reduce((sum, item) => sum + item.calories, 0),
       totalEatenMacros: {
-        carbs: allFoods.reduce((sum, item) => sum + (item.carbs || 0), 0),
+        carb: allFoods.reduce((sum, item) => sum + (item.carb || 0), 0),
         protein: allFoods.reduce((sum, item) => sum + (item.protein || 0), 0),
         fat: allFoods.reduce((sum, item) => sum + (item.fat || 0), 0),
       }
@@ -91,10 +87,12 @@ export function useNutrition(
     });
   }, [setUserProfile]);
 
-  /** Cập nhật cân nặng hiện tại và ghi lịch sử */
-  const updateCurrentWeight = useCallback((newWeight: number) => {
+  /** Cập nhật cân nặng hiện tại và ghi lịch sử (Lỗi #14) */
+  const updateCurrentWeight = useCallback(async (newWeight: number) => {
+    const today = getLocalToday();
+    
+    // 1. Luôn lưu vào Local trước (Fallback)
     setUserProfile((prev) => {
-      const today = getLocalToday();
       const history = prev.weightHistory || [];
       const existingIndex = history.findIndex(h => h.date === today);
       
@@ -104,8 +102,6 @@ export function useNutrition(
       } else {
         newHistory.push({ date: today, weight: newWeight });
       }
-
-      // Sắp xếp theo ngày
       newHistory.sort((a, b) => a.date.localeCompare(b.date));
 
       return {
@@ -114,37 +110,72 @@ export function useNutrition(
         weightHistory: newHistory
       };
     });
-  }, [setUserProfile]);
 
-  /** Thêm nước uống */
-  const addWater = useCallback((amount: number) => {
-    setUserProfile(prev => {
-      const todayStr = getLocalToday();
-      let newIntake = (prev.waterIntake || 0) + amount;
-      
-      // Reset nếu sang ngày mới
-      if (prev.lastWaterDate !== todayStr) {
-        newIntake = amount;
+    // 2. Gọi API thầm lặng (Graceful Fallback - Lỗi #14)
+    if (userId) {
+        try {
+            await apiClient.post('/api/progress/weight', {
+                userId,
+                date: today,
+                weight: newWeight
+            });
+        } catch (error: any) {
+            if (error.response?.status === 404) {
+                 console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
+            }
+        }
+    }
+  }, [setUserProfile, userId]);
+
+  /** Ghi nhận lượng nước (Lỗi #13) */
+  const logWater = useCallback(async (amountMl: number) => {
+      const today = getLocalToday();
+      try {
+          // Chỉ gọi API, vì local state Profile hiện đã "gọt" bỏ dailyWater 
+          // theo yêu cầu chuẩn hóa Backend (Lỗi #13)
+          await apiClient.post('/api/water', {
+              amountMl,
+              logDate: today
+          });
+          console.log(`[NutriTrack] Đã ghi nhận ${amountMl}ml nước lên Server.`);
+      } catch (error: any) {
+          if (error.response?.status === 404) {
+               console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
+          }
       }
+  }, []);
 
-      return {
-        ...prev,
-        waterIntake: newIntake,
-        lastWaterDate: todayStr
-      };
-    });
-  }, [setUserProfile]);
+  /** Đồng bộ 2 chiều: Kéo dữ liệu từ Backend khi khởi động */
+  const fetchDiaryFromServer = useCallback(async (date: string) => {
+      if (!userId) return;
+      try {
+          const response = await apiClient.get(`/api/diary/users/${userId}?date=${date}`);
+          if (response.data) {
+              // Ghi đè Local State bằng data từ Backend
+              setUserProfile((prev) => ({
+                  ...prev,
+                  dailyMeals: response.data
+              }));
+          }
+      } catch (error: any) {
+          if (error.response?.status === 404 || error.message?.includes('Network Error')) {
+              console.warn("Không lấy được data từ BE, dùng Local");
+          } else {
+              console.error("Lỗi khi kéo dữ liệu Diary:", error);
+          }
+      }
+  }, [userId, setUserProfile]);
 
   return {
     bmr,
     tdee,
     bmi,
-    macroTargets,
     totalEatenCalories,
     totalEatenMacros,
     updateUserProfile,
     addFood,
     updateCurrentWeight,
-    addWater
+    logWater,
+    fetchDiaryFromServer
   };
 }

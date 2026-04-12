@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import apiClient from '@/src/api/apiClient';
 
 // ─── Import Atomic Hooks & Molecules ──────────────────────────────────────────
 import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 import { useUserProfile } from '@/src/context/UserProfileContext';
+import { calculateBMR, calculateTDEE } from '@/src/utils/calculateNutrition';
 
 /**
  * Màn hình Kết quả kế hoạch (Plan Result).
@@ -14,14 +16,53 @@ import { useUserProfile } from '@/src/context/UserProfileContext';
  */
 export default function PlanResultScreen() {
   const router = useRouter();
-  const { userProfile, calculateDuration } = useUserProfile();
+  const { userProfile, setUserProfile } = useUserProfile();
   
   const weight = userProfile.weight || 70;
   const height = userProfile.height || 170;
   const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
-  const targetCals = userProfile.targetCalories || 1500;
 
-  const weeks = calculateDuration ? calculateDuration(userProfile) : 12;
+  // Fetch true nutrition goal from backend
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const response = await apiClient.get('/api/users/profile');
+        if (response.data) {
+          const goal = response.data; // Đọc trực tiếp (Lỗi #5)
+          setUserProfile(prev => ({
+            ...prev,
+            targetCalories: goal.targetCalories,
+            targetProtein: goal.targetProtein,
+            targetCarb: goal.targetCarb,
+            targetFat: goal.targetFat
+          }));
+        }
+      } catch (error: any) {
+        // Bọc lỗi Endpoint (Lỗi #4)
+        if (error.response?.status === 404) {
+          console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
+          // Phương án dự phòng (Fallback): Tính tại Local
+          const localBMR = calculateBMR(userProfile.gender, userProfile.weight, userProfile.height, userProfile.age);
+          const localTDEE = calculateTDEE(localBMR, userProfile.activityLevel, userProfile.goal);
+          setUserProfile(prev => ({
+            ...prev,
+            targetCalories: localTDEE
+          }));
+        } else {
+          console.error('Lỗi khi lấy dữ liệu mục tiêu dinh dưỡng:', error);
+        }
+      }
+    }
+    fetchProfile();
+  }, []);
+
+  // Tính toán TDEE tức thời để gán nếu biến targetCalories hiện tại rỗng
+  const localBmrNow = calculateBMR(userProfile.gender, userProfile.weight, userProfile.height, userProfile.age);
+  const fallbackTDEE = calculateTDEE(localBmrNow, userProfile.activityLevel, userProfile.goal);
+  
+  const targetCals = userProfile.targetCalories || fallbackTDEE;
+
+  const weeks = 12;
   
   const projectedDate = new Date();
   projectedDate.setDate(projectedDate.getDate() + weeks * 7);
@@ -29,9 +70,9 @@ export default function PlanResultScreen() {
   const year = projectedDate.getFullYear();
 
   const macros = [
-    { label: 'Carbs', percent: '50%', color: '#FFB800', grams: '180g' },
-    { label: 'Protein', percent: '30%', color: '#00C48C', grams: '110g' },
-    { label: 'Fat', percent: '20%', color: '#FF6B6B', grams: '33g' },
+    { label: 'Carbs', percent: '50%', color: '#FFB800', grams: `${userProfile.targetCarb || 180}g` },
+    { label: 'Protein', percent: '30%', color: '#00C48C', grams: `${userProfile.targetProtein || 110}g` },
+    { label: 'Fat', percent: '20%', color: '#FF6B6B', grams: `${userProfile.targetFat || 33}g` },
   ];
 
   return (

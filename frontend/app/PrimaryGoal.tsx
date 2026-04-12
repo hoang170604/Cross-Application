@@ -9,9 +9,9 @@ import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 import { useUserProfile } from '@/src/context/UserProfileContext';
 
 const goals = [
-  { id: 'lose_weight', icon: '🔥', title: 'Giảm cân', desc: 'Đốt cháy mỡ thừa hiệu quả' },
+  { id: 'lose', icon: '🔥', title: 'Giảm cân', desc: 'Đốt cháy mỡ thừa hiệu quả' },
   { id: 'maintain', icon: '⚖️', title: 'Giữ dáng', desc: 'Duy trì cân nặng hiện tại' },
-  { id: 'gain_muscle', icon: '💪', title: 'Tăng cơ', desc: 'Xây dựng khối cơ bắp' },
+  { id: 'gain', icon: '💪', title: 'Tăng cơ', desc: 'Xây dựng khối cơ bắp' },
 ];
 
 /**
@@ -20,7 +20,7 @@ const goals = [
 export default function PrimaryGoalScreen() {
   const router = useRouter();
   const { userProfile, setUserProfile } = useUserProfile();
-  const [selectedGoal, setSelectedGoal] = useState(userProfile.goal || 'lose_weight');
+  const [selectedGoal, setSelectedGoal] = useState(userProfile.goal || 'lose');
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>

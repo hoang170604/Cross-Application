@@ -1,6 +1,6 @@
 /**
  * @file MacroMetric.tsx
- * @description Phân tử (Molecule) hiển thị một chỉ số dinh dưỡng (Carbs, Protein, Fat).
+ * @description Phân tử (Molecule) hiển thị một chỉ số dinh dưỡng (Carb, Protein, Fat).
  * Bao gồm tên chỉ số, thanh tiến trình và tỷ lệ giá trị hiện tại/mục tiêu.
  */
 

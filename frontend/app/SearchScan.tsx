@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert, FlatList, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ─── Import Atomic Hooks & Types ─────────────────────────────────────────────
+import { useUserProfile } from '@/src/context/UserProfileContext';
+import apiClient from '@/src/api/apiClient';
 import { useNutrition } from '@/src/hooks';
 import { DailyMeals } from '@/src/types';
 import { VIETNAMESE_FOOD_DB, FoodItemDB } from '@/constants/foodDatabase';
@@ -20,6 +22,7 @@ export default function SearchScanScreen() {
   
   // Sử dụng hook chuyên biệt từ kiến trúc Atomic
   const { addFood } = useNutrition();
+  const { userId } = useUserProfile();
 
   const [activeTab, setActiveTab] = useState<'search' | 'custom'>('search');
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,7 +31,7 @@ export default function SearchScanScreen() {
   const [customName, setCustomName] = useState('');
   const [customCals, setCustomCals] = useState('');
   const [customProtein, setCustomProtein] = useState('');
-  const [customCarbs, setCustomCarbs] = useState('');
+  const [customCarb, setCustomCarb] = useState('');
   const [customFat, setCustomFat] = useState('');
 
   const FILTERS = ['Tất cả', 'Giàu Đạm', 'Ít Tinh bột', 'Ít Béo', 'Món nước', 'Cơm/Xôi', 'Tráng miệng', 'Đồ uống', 'Đồ ăn nhanh'];
@@ -42,7 +45,7 @@ export default function SearchScanScreen() {
         if (selectedFilter === 'Giàu Đạm') {
           matchesFilter = food.protein > 15;
         } else if (selectedFilter === 'Ít Tinh bột') {
-          matchesFilter = food.carbs < 20;
+          matchesFilter = food.carb < 20;
         } else if (selectedFilter === 'Ít Béo') {
           matchesFilter = food.fat < 10;
         } else {
@@ -54,19 +57,42 @@ export default function SearchScanScreen() {
     });
   }, [searchQuery, selectedFilter]);
 
-  const handleAddDataFood = (food: FoodItemDB) => {
+  const handleAddDataFood = async (food: FoodItemDB) => {
+     let mealLogId = food.id; // Fallback
+     try {
+       const today = new Date().toISOString().split('T')[0];
+       // Đồng bộ xuống Backend trước
+       const res = await apiClient.post(`/api/diary/users/${userId}/meals/${mealType}?date=${today}`, {
+         foodId: food.id,
+         quantity: 100,
+         calories: food.calories,
+         protein: food.protein,
+         carb: food.carb,
+         fat: food.fat
+       });
+
+       if (res.data && res.data.id) {
+           mealLogId = res.data.id;
+       }
+     } catch (error) {
+       console.warn('[Offline Mode] Backend chưa mở API Thêm món ăn, Fallback sang Local Storage.');
+     }
+
+     // LUÔN LUÔN CHẠY DÙ MẠNG CHẾT (Sửa Lỗi Chí Mạng #1)
      addFood(mealType, {
-       id: Math.random().toString(),
+       id: mealLogId,
        name: food.name,
        calories: food.calories,
        protein: food.protein,
-       carbs: food.carbs,
-       fat: food.fat
+       carb: food.carb,
+       fat: food.fat,
+       quantity: 100,
      });
+
      router.back();
   };
 
-  const handleAddCustom = () => {
+  const handleAddCustom = async () => {
      if (!customName.trim()) {
        Alert.alert("Lỗi", "Vui lòng nhập tên món ăn.");
        return;
@@ -78,24 +104,47 @@ export default function SearchScanScreen() {
      }
 
      const protein = Number(customProtein) || 0;
-     const carbs = Number(customCarbs) || 0;
+     const carb = Number(customCarb) || 0;
      const fat = Number(customFat) || 0;
 
+     let mealLogId = Date.now(); // Fallback tạm thời nếu API lỗi
+     try {
+       const today = new Date().toISOString().split('T')[0];
+       // Đồng bộ Backend trước
+       const res = await apiClient.post(`/api/diary/users/${userId}/meals/${mealType}?date=${today}`, {
+         foodId: 0, // Placeholder ID cho món tự nhập
+         quantity: 100,
+         calories: numCals,
+         protein,
+         carb,
+         fat
+       });
+
+       if (res.data && res.data.id) {
+           mealLogId = res.data.id;
+       }
+     } catch (error) {
+       console.warn('[Offline Mode] Bỏ qua lỗi đồng bộ Backend đồ ăn thủ công.');
+     }
+
+     // LUÔN LUÔN LƯU LOCAL DÙ SERVER CHẾT
      addFood(mealType, {
-       id: Math.random().toString(),
+       id: mealLogId, 
        name: customName.trim(),
        calories: numCals,
        protein,
-       carbs,
+       carb,
        fat,
+       quantity: 100,
      });
-     
+
      router.back();
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: '#F9FAFB', zIndex: 10 }}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+        <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: '#F9FAFB', zIndex: 10 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -175,10 +224,18 @@ export default function SearchScanScreen() {
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 24, paddingTop: 8 }}>
+      <View style={{ flex: 1 }}>
         {activeTab === 'search' ? (
-          filteredFoods.map((food, idx) => (
-            <View key={food.id} style={{
+          <FlatList
+            data={filteredFoods}
+            keyExtractor={(item) => item.id.toString()}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24, paddingTop: 8 }}
+            initialNumToRender={10}
+            windowSize={5}
+            maxToRenderPerBatch={10}
+            renderItem={({ item: food }) => (
+              <View style={{
               width: '100%', flexDirection: 'column', gap: 12,
               padding: 16, backgroundColor: '#fff', borderRadius: 16, marginBottom: 16,
               borderWidth: 1, borderColor: '#F3F4F6',
@@ -198,7 +255,7 @@ export default function SearchScanScreen() {
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#F9FAFB', padding: 12, borderRadius: 8 }}>
                 <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>Đạm <Text style={{ color: '#00C48C', fontWeight: '700' }}>{food.protein}g</Text></Text>
-                <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>T.Bột <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{food.carbs}g</Text></Text>
+                <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>T.Bột <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{food.carb}g</Text></Text>
                 <Text style={{ fontSize: 12, color: '#111827', fontWeight: '500' }}>Béo <Text style={{ color: '#EF4444', fontWeight: '700' }}>{food.fat}g</Text></Text>
               </View>
 
@@ -210,10 +267,12 @@ export default function SearchScanScreen() {
                 }}>
                 <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Thêm món này</Text>
               </TouchableOpacity>
-            </View>
-          ))
+              </View>
+            )}
+          />
         ) : (
-          <View style={{ backgroundColor: '#fff', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: '#F3F4F6' }}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
+            <View style={{ backgroundColor: '#fff', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: '#F3F4F6' }}>
             <Text style={{ fontWeight: '700', fontSize: 18, marginBottom: 16 }}>Nhập món ăn thủ công</Text>
             
             <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Tên món ăn *</Text>
@@ -247,8 +306,8 @@ export default function SearchScanScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Tinh bột (g)</Text>
                 <TextInput
-                  value={customCarbs}
-                  onChangeText={setCustomCarbs}
+                  value={customCarb}
+                  onChangeText={setCustomCarb}
                   placeholder="0"
                   keyboardType="numeric"
                   style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, fontSize: 16 }}
@@ -265,16 +324,17 @@ export default function SearchScanScreen() {
                 />
               </View>
             </View>
-
             <TouchableOpacity 
               onPress={handleAddCustom}
               style={{ width: '100%', paddingVertical: 16, backgroundColor: '#00C48C', borderRadius: 999, alignItems: 'center' }}
             >
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Xác nhận thêm</Text>
             </TouchableOpacity>
-          </View>
+            </View>
+          </ScrollView>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }

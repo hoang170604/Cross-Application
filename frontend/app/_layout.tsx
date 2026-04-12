@@ -29,8 +29,8 @@ function InitialLayout() {
       'index', 'PrimaryGoal', 'DietMode', 'BiologicalStats', 'AhaMoment', 'PlanResult', 'Authwall'
     ].includes(segments[0]);
     
-    // Đã hoàn thành Onboarding nếu có Tên và Mục tiêu Calo
-    const hasFinishedOnboarding = !!userProfile.name && (userProfile.targetCalories || 0) > 0;
+    // Đã hoàn thành Onboarding nếu người dùng đã lập Tên (an toàn hơn là dựa vào Calories vì nếu BE sập, Calo có thể tạm thời đè thành 0)
+    const hasFinishedOnboarding = !!userProfile.name;
 
     // Sửa lỗi Ghost Redirect: 
     // Chỉ ép chuyển hướng (Redirect) về Dashboard nếu người dùng ĐÃ hoàn thành hồ sơ
@@ -42,7 +42,7 @@ function InitialLayout() {
       // Ép về Onboarding nếu định vào App nhưng chưa đủ hồ sơ
       router.replace('/');
     }
-  }, [isLoaded, userProfile.name, userProfile.targetCalories, segments]);
+  }, [isLoaded, userProfile.name, segments]);
 
   if (!isLoaded) {
     return (

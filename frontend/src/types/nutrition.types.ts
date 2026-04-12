@@ -7,17 +7,19 @@
 /** Đối tượng thực phẩm đơn lẻ với thành phần dinh dưỡng */
 export type FoodItem = {
   /** Mã định danh duy nhất của món ăn */
-  id: string;
+  id: number;
   /** Tên hiển thị của món ăn */
   name: string;
-  /** Năng lượng (kcal) */
+  /** Năng lượng trên 100g (kcal) */
   calories: number;
-  /** Hàm lượng Chất đạm (g) */
+  /** Hàm lượng Chất đạm trên 100g (g) */
   protein: number;
-  /** Hàm lượng Tinh bột (g) */
-  carbs: number;
-  /** Hàm lượng Chất béo (g) */
+  /** Hàm lượng Tinh bột trên 100g (g) */
+  carb: number;
+  /** Hàm lượng Chất béo trên 100g (g) */
   fat: number;
+  /** Số lượng (gram) */
+  quantity: number;
 };
 
 /** Cấu trúc 4 bữa ăn trong ngày */
@@ -31,7 +33,7 @@ export type DailyMeals = {
 /** Chỉ số dinh dưỡng đa lượng (Macronutrients) tính bằng gram */
 export type Macros = {
   /** Tinh bột (g) */
-  carbs: number;
+  carb: number;
   /** Chất đạm (g) */
   protein: number;
   /** Chất béo (g) */

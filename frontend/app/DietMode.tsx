@@ -8,12 +8,11 @@ import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 import { useUserProfile } from '@/src/context/UserProfileContext';
 
 const activities = [
-  { id: 'sedentary', title: 'Ngồi nhiều', icon: '💻', desc: 'Văn phòng, ít vận động' },
-  { id: 'light', title: 'Vận động nhẹ', icon: '🚶', desc: 'Đi bộ, làm việc nhà' },
-  { id: 'moderate', title: 'Trung bình', icon: '🏃', desc: 'Tập luyện 3-5 buổi/tuần' },
-  { id: 'active', title: 'Năng động', icon: '🔥', desc: 'Tập luyện 6-7 buổi/tuần' },
-  { id: 'very_active', title: 'Cường độ cao', icon: '🏋️', desc: 'VĐV, lao động nặng' },
-  { id: 'free', title: 'Tự do', icon: '⚙️', desc: 'Mặc định cơ bản' },
+  { id: 1.2, title: 'Ngồi nhiều', icon: '💻', desc: 'Văn phòng, ít vận động' },
+  { id: 1.375, title: 'Vận động nhẹ', icon: '🚶', desc: 'Đi bộ, làm việc nhà' },
+  { id: 1.55, title: 'Trung bình', icon: '🏃', desc: 'Tập luyện 3-5 buổi/tuần' },
+  { id: 1.725, title: 'Năng động', icon: '🔥', desc: 'Tập luyện 6-7 buổi/tuần' },
+  { id: 1.9, title: 'Cường độ cao', icon: '🏋️', desc: 'VĐV, lao động nặng' },
 ];
 
 /**
@@ -23,7 +22,7 @@ export default function DietModeScreen() {
   const router = useRouter();
   const { userProfile, setUserProfile } = useUserProfile();
   
-  const [selectedActivity, setSelectedActivity] = useState<string>(userProfile.activityLevel || '');
+  const [selectedActivity, setSelectedActivity] = useState<number>(userProfile.activityLevel || 0);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
