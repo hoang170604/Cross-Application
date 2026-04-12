@@ -6,7 +6,6 @@ const apiClient = axios.create({
   timeout: 10000,
 });
 
-/*
 apiClient.interceptors.request.use(
   async (config) => {
     try {
@@ -23,7 +22,6 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-*/
 
 // Global Response Interceptor
 apiClient.interceptors.response.use(

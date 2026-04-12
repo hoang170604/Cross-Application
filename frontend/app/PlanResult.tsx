@@ -1,75 +1,41 @@
-import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import apiClient from '@/src/api/apiClient';
 
-// ─── Import Atomic Hooks & Molecules ──────────────────────────────────────────
 import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 import { useUserProfile } from '@/src/context/UserProfileContext';
+import { calculateBMI } from '@/src/utils/calculateNutrition';
 
-/**
- * Màn hình hiển thị kết quả kế hoạch dinh dưỡng của người dùng.
- * 
- * Chức năng:
- * - Hiện thị chỉ số BMI và kiến nghị mục tiêu định lượng thức ăn theo các thành phần Macro.
- * - Đề xuất lộ trình dinh dưỡng để đạt mục tiêu sức khỏe dựa trên các số liệu sinh trắc học.
- */
 export default function PlanResultScreen() {
   const router = useRouter();
-  const { userProfile, setUserProfile, userId } = useUserProfile();
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { userProfile, token, setPendingSync } = useUserProfile();
   
   const weight = userProfile.weight || 70;
   const height = userProfile.height || 170;
-  const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
-
-  // Hàm gọi API đưa phần tính toán cho Backend
-  useEffect(() => {
-    async function fetchProfile() {
-      if (!userId) {
-        setIsLoading(false);
-        return;
-      }
-      try {
-        const payload = {
-          weight: userProfile.weight,
-          height: userProfile.height,
-          age: userProfile.age,
-          gender: userProfile.gender,
-          activityLevel: userProfile.activityLevel,
-          goal: userProfile.goal
-        };
-        const response = await apiClient.put(`/api/users/${userId}/profile`, payload);
-        
-        if (response.data) {
-          const goal = response.data;
-          setUserProfile(prev => ({
-            ...prev,
-            targetCalories: Math.round(goal.targetCalories),
-            targetProtein: Math.round(goal.targetProtein),
-            targetCarb: Math.round(goal.targetCarb),
-            targetFat: Math.round(goal.targetFat)
-          }));
-        }
-      } catch (error: any) {
-        console.error('Lỗi khi tính toán chỉ số với BE:', error);
-        // Xử lý báo lỗi an toàn, không văng app
-        import('react-native').then(({ Alert }) => {
-          Alert.alert('Lỗi', 'Không thể tính toán dữ liệu lúc này, vui lòng thử lại sau.');
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchProfile();
-  }, [userId]);
+  const age = userProfile.age || 25;
+  const gender = userProfile.gender || 'male';
+  const activityLevel = userProfile.activityLevel || 1.2;
+  const goal = userProfile.goal || 'maintain';
   
-  const targetCals = userProfile.targetCalories || 0;
+  const bmi = calculateBMI(weight, height);
+
+  // Tính TDEE cục bộ tạm thời (BE sẽ tính lại chuẩn xác hơn sau khi Sync)
+  const targetCals = useMemo(() => {
+    let bmr = 0;
+    if (gender === 'male') {
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+    let tdee = bmr * activityLevel;
+    if (goal === 'lose_weight') tdee -= 500;
+    if (goal === 'build_muscle') tdee += 500;
+    return Math.round(tdee);
+  }, [weight, height, age, gender, activityLevel, goal]);
 
   const weeks = 12;
-  
   const projectedDate = new Date();
   projectedDate.setDate(projectedDate.getDate() + weeks * 7);
   const month = projectedDate.getMonth() + 1;
@@ -79,32 +45,30 @@ export default function PlanResultScreen() {
   let carbPercent = '40%';
   let fatPercent = '30%';
   
-  if (userProfile.goal?.toLowerCase().includes('lose')) {
+  if (goal === 'lose_weight') {
     proteinPercent = '40%';
     carbPercent = '30%';
     fatPercent = '30%';
-  } else if (userProfile.goal?.toLowerCase().includes('gain')) {
+  } else if (goal === 'build_muscle') {
     proteinPercent = '30%';
     carbPercent = '50%';
     fatPercent = '20%';
   }
 
   const macros = [
-    { label: 'Carbs', percent: carbPercent, color: '#FFB800', grams: `${userProfile.targetCarb || 180}g` },
-    { label: 'Protein', percent: proteinPercent, color: '#00C48C', grams: `${userProfile.targetProtein || 110}g` },
-    { label: 'Fat', percent: fatPercent, color: '#FF6B6B', grams: `${userProfile.targetFat || 33}g` },
+    { label: 'Carbs', percent: carbPercent, color: '#FFB800', grams: `${Math.round(targetCals * parseInt(carbPercent)/100 / 4)}g` },
+    { label: 'Protein', percent: proteinPercent, color: '#00C48C', grams: `${Math.round(targetCals * parseInt(proteinPercent)/100 / 4)}g` },
+    { label: 'Fat', percent: fatPercent, color: '#FF6B6B', grams: `${Math.round(targetCals * parseInt(fatPercent)/100 / 9)}g` },
   ];
+
+  const handleSave = () => {
+    router.push('/WelcomeProfile');
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <SharedHeader showBack />
-      {isLoading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#00C48C" />
-          <Text style={{ marginTop: 16, color: '#6B7280', fontSize: 16 }}>Đang thiết lập kế hoạch cho bạn...</Text>
-        </View>
-      ) : (
-      <>
+      
       <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16 }}>
         <View style={{ alignItems: 'center', marginBottom: 32 }}>
           <Text style={{ fontSize: 28, fontWeight: '700', marginBottom: 12, textAlign: 'center' }}>
@@ -156,15 +120,13 @@ export default function PlanResultScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          onPress={() => router.push('/Authwall')}
+          onPress={handleSave}
           style={styles.confirmButton}
         >
           <Text style={styles.confirmButtonText}>Lưu lại lộ trình</Text>
           <Ionicons name="chevron-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
-      </>
-      )}
     </SafeAreaView>
   );
 }

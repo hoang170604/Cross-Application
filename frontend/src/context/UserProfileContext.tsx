@@ -32,6 +32,8 @@ type UserProfileContextType = {
   fetchDiaryFromServer: (date: string) => Promise<void>;
   // Đăng xuất
   logout: () => Promise<void>;
+  pendingOnboardingSync: boolean;
+  setPendingSync: (val: boolean) => Promise<void>;
 };
 
 const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
@@ -43,6 +45,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   // 1.5 Auth State
   const [userId, setUserId] = useState<number | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [pendingOnboardingSync, setPendingOnboardingSync] = useState(false);
 
   // Khôi phục auth từ Storage
   useEffect(() => {
@@ -50,8 +53,10 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
       try {
         const storedToken = await AsyncStorage.getItem('token');
         const storedUserId = await AsyncStorage.getItem('userId');
+        const storedPending = await AsyncStorage.getItem('pendingOnboardingSync');
         if (storedToken) setToken(storedToken);
         if (storedUserId) setUserId(Number(storedUserId));
+        if (storedPending === 'true') setPendingOnboardingSync(true);
       } catch (error) {
         console.error('Lỗi khi khôi phục auth:', error);
       }
@@ -68,6 +73,19 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
       await AsyncStorage.setItem('userId', newId.toString());
     } catch (error) {
       console.error('Lỗi khi lưu token:', error);
+    }
+  };
+
+  const setPendingSync = async (val: boolean) => {
+    setPendingOnboardingSync(val);
+    try {
+      if (val) {
+        await AsyncStorage.setItem('pendingOnboardingSync', 'true');
+      } else {
+        await AsyncStorage.removeItem('pendingOnboardingSync');
+      }
+    } catch (error) {
+      console.error('Lỗi khi lưu pending sync:', error);
     }
   };
 
@@ -141,6 +159,8 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     login,
     // Đăng xuất
     logout,
+    pendingOnboardingSync,
+    setPendingSync,
   };
 
   return (

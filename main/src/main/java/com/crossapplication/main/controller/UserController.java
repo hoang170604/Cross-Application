@@ -37,11 +37,13 @@ public class UserController {
         }
         try {
             User user = userService.register(email, password);
-            UserDTO dto = new UserDTO();
-            dto.setId(user.getId());
-            dto.setEmail(user.getEmail());
-            dto.setCreatedAt(user.getCreatedAt());
-            return ResponseEntity.ok(dto);
+            // Tự động login sau khi đăng ký thành công
+            String token = "token-" + user.getId() + "-" + System.currentTimeMillis();
+            return ResponseEntity.ok(Map.of(
+                "token", token,
+                "userId", user.getId(),
+                "email", user.getEmail()
+            ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -56,8 +58,13 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("error", "Email and password are required"));
         }
         try {
-            String token = userService.login(email, password);
-            return ResponseEntity.ok(Map.of("token", token));
+            User user = userService.loginAndGetUser(email, password);
+            String token = "token-" + user.getId() + "-" + System.currentTimeMillis();
+            return ResponseEntity.ok(Map.of(
+                "token", token,
+                "userId", user.getId(),
+                "email", user.getEmail()
+            ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
@@ -100,6 +107,8 @@ public class UserController {
             profile.setWeight(profileDTO.getWeight());
             profile.setActivityLevel(profileDTO.getActivityLevel());
             profile.setGoal(profileDTO.getGoal());
+            profile.setName(profileDTO.getName());
+            profile.setFastingGoal(profileDTO.getFastingGoal());
 
             NutritionGoal goal = userService.updateProfileAndCalculateGoal(id, profile);
             return ResponseEntity.ok(goal);

@@ -7,6 +7,8 @@ public class UserProfileDTO {
     private double weight;
     private double activityLevel;
     private String goal;
+    private String name;
+    private String fastingGoal;
 
     public UserProfileDTO() {}
 
@@ -64,5 +66,21 @@ public class UserProfileDTO {
 
     public void setGoal(String goal) {
         this.goal = goal;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getFastingGoal() {
+        return fastingGoal;
+    }
+
+    public void setFastingGoal(String fastingGoal) {
+        this.fastingGoal = fastingGoal;
     }
 }

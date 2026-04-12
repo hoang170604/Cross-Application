@@ -45,6 +45,15 @@ public class UserService implements UserServiceInterface {
     }
 
     @Override
+    public User loginAndGetUser(String email, String password) {
+        Optional<User> uopt = userRepo.findByEmail(email);
+        if (uopt.isEmpty()) throw new IllegalArgumentException("Invalid credentials");
+        User u = uopt.get();
+        if (!u.getPassword().equals(password)) throw new IllegalArgumentException("Invalid credentials");
+        return u;
+    }
+
+    @Override
     public void changePassword(Long userId, String newPassword) {
         Optional<User> uopt = userRepo.findById(userId);
         if (uopt.isEmpty()) throw new IllegalArgumentException("User not found");
@@ -73,33 +82,33 @@ public class UserService implements UserServiceInterface {
         double activity = profile.getActivityLevel() > 0 ? profile.getActivityLevel() : 1.2;
         double targetCalories = bmr * activity;
         String goal = profile.getGoal() != null ? profile.getGoal().toLowerCase() : "maintain";
-        if (goal.contains("lose")) targetCalories -= 500;
-        if (goal.contains("gain")) targetCalories += 500;
-
-        NutritionGoal ng = new NutritionGoal();
-        ng.setUser(u);
-        ng.setTargetCalories(targetCalories);
         
         double proteinCalories;
         double carbCalories;
         double fatCalories;
 
-        if (goal.contains("lose")) {
+        if (goal.equals("lose_weight")) {
+            targetCalories -= 500;
             proteinCalories = targetCalories * 0.40;
             carbCalories = targetCalories * 0.30;
             fatCalories = targetCalories * 0.30;
-        } else if (goal.contains("gain")) {
+        } else if (goal.equals("build_muscle")) {
+            targetCalories += 500;
             proteinCalories = targetCalories * 0.30;
             carbCalories = targetCalories * 0.50;
             fatCalories = targetCalories * 0.20;
-        } else {
+        } else { // maintain
             proteinCalories = targetCalories * 0.30;
             carbCalories = targetCalories * 0.40;
             fatCalories = targetCalories * 0.30;
         }
-        ng.setTargetProtein(proteinCalories / 4.0);
-        ng.setTargetCarb(carbCalories / 4.0);
-        ng.setTargetFat(fatCalories / 9.0);
+
+        NutritionGoal ng = new NutritionGoal();
+        ng.setUser(u);
+        ng.setTargetCalories(Math.round(targetCalories));
+        ng.setTargetProtein(Math.round(proteinCalories / 4.0));
+        ng.setTargetCarb(Math.round(carbCalories / 4.0));
+        ng.setTargetFat(Math.round(fatCalories / 9.0));
         return goalRepo.save(ng);
     }
 

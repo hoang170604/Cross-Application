@@ -29,23 +29,26 @@ export default function DietModeScreen() {
       <SharedHeader showProgress progress={66} />
       <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 32 }}>
         <Text style={{ fontSize: 24, fontWeight: '700', marginBottom: 32 }}>Mức độ vận động của bạn?</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+        <View style={{ flexDirection: 'column', gap: 16, paddingBottom: 24 }}>
           {activities.map((act) => (
             <TouchableOpacity
               key={act.id}
               onPress={() => setSelectedActivity(act.id)}
               style={{
-                width: '47%', padding: 16,
+                width: '100%', padding: 20,
                 backgroundColor: selectedActivity === act.id ? '#ECFDF5' : '#fff',
-                borderRadius: 24, alignItems: 'center', gap: 8,
+                borderRadius: 24, 
+                flexDirection: 'row', alignItems: 'center', gap: 16,
                 shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
                 borderWidth: selectedActivity === act.id ? 2 : 0,
                 borderColor: '#00C48C',
               }}
             >
               <Text style={{ fontSize: 32 }}>{act.icon}</Text>
-              <Text style={{ fontWeight: '700', textAlign: 'center' }}>{act.title}</Text>
-              <Text style={{ fontSize: 10, color: '#6B7280', textAlign: 'center' }}>{act.desc}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: '700', fontSize: 18, color: '#374151', marginBottom: 2 }}>{act.title}</Text>
+                <Text style={{ fontSize: 13, color: '#6B7280' }}>{act.desc}</Text>
+              </View>
             </TouchableOpacity>
           ))}
         </View>

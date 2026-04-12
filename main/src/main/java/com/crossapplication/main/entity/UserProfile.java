@@ -40,6 +40,12 @@ public class UserProfile {
     @Column(name="goal", length=20, nullable=false)
     private String goal;
 
+    @Column(name="name", length=100)
+    private String name;
+
+    @Column(name="fasting_goal", length=20)
+    private String fastingGoal;
+
     public Long getUserId() {
         return userId;
     }
@@ -102,5 +108,21 @@ public class UserProfile {
 
     public void setGoal(String goal) {
         this.goal = goal;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getFastingGoal() {
+        return fastingGoal;
+    }
+
+    public void setFastingGoal(String fastingGoal) {
+        this.fastingGoal = fastingGoal;
     }
 }

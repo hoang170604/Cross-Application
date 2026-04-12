@@ -12,6 +12,8 @@ public interface UserServiceInterface {
 
     public String login(String email, String password);
 
+    public User loginAndGetUser(String email, String password);
+
     public void changePassword(Long userId, String newPassword);
 
     public NutritionGoal updateProfileAndCalculateGoal(Long id, UserProfile profile);

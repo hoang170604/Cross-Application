@@ -9,9 +9,9 @@ import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 import { useUserProfile } from '@/src/context/UserProfileContext';
 
 const goals = [
-  { id: 'lose', icon: '🔥', title: 'Giảm cân', desc: 'Đốt cháy mỡ thừa hiệu quả' },
-  { id: 'maintain', icon: '⚖️', title: 'Giữ dáng', desc: 'Duy trì cân nặng hiện tại' },
-  { id: 'gain', icon: '💪', title: 'Tăng cơ', desc: 'Xây dựng khối cơ bắp' },
+  { id: 'lose_weight', icon: '🔥', title: 'Giảm cân & Đốt mỡ', desc: 'Đốt cháy mỡ thừa hiệu quả' },
+  { id: 'maintain', icon: '⚖️', title: 'Duy trì vóc dáng', desc: 'Duy trì cân nặng hiện tại' },
+  { id: 'build_muscle', icon: '💪', title: 'Tăng cơ & Tăng cân chuẩn', desc: 'Xây dựng khối cơ bắp' },
 ];
 
 /**
