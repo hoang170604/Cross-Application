@@ -18,7 +18,7 @@ public class DailyNutritionServiceImpl implements DailyNutritionService {
     @Autowired
     private DailyNutritionRepository dailyRepo;
     private static final ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
-    // mealRepo removed: aggregation uses MealLogRepository queries directly
+    
     @Autowired
     private com.crossapplication.main.repository.interfaces.MealLogRepository mealLogRepo;
     @Autowired
@@ -31,8 +31,7 @@ public class DailyNutritionServiceImpl implements DailyNutritionService {
         Object lock = locks.computeIfAbsent(key, k -> new Object());
         synchronized (lock) {
             try {
-                // Recalculate totals from meal logs and activities to keep consistent state
-                // Use aggregated queries to reliably compute totals
+                
                 double totalCalories = mealLogRepo.sumCaloriesByUserIdAndDate(userId, date);
                 double totalProtein = mealLogRepo.sumProteinByUserIdAndDate(userId, date);
                 double totalCarb = mealLogRepo.sumCarbByUserIdAndDate(userId, date);

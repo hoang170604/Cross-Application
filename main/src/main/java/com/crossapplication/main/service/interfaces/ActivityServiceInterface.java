@@ -12,6 +12,8 @@ public interface ActivityServiceInterface {
     public List<Activity> getActivitiesBetween(Long userId, LocalDate start, LocalDate end);
 
     public double getCaloriesBurned(Long userId, LocalDate date);
+
     public Activity updateActivity(Long activityId, com.crossapplication.main.dto.ActivityDTO update);
+    
     public void deleteActivity(Long activityId);
 }

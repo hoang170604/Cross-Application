@@ -42,7 +42,7 @@ public class ActivityService implements ActivityServiceInterface {
         a.setExternalId(externalId);
         a.setCreatedAt(LocalDateTime.now());
         Activity saved = activityRepository.save(a);
-        // subtract burned calories from daily totals
+        
         LocalDate logDate = a.getLogDate();
         if (caloriesBurned != null && caloriesBurned > 0) {
             dailyNutritionService.adjustDailyTotals(userId, logDate, -caloriesBurned, 0, 0, 0);
@@ -76,7 +76,7 @@ public class ActivityService implements ActivityServiceInterface {
             LocalDate logDate = saved.getLogDate();
             Long userId = saved.getUser() != null ? saved.getUser().getId() : null;
             if (userId != null && logDate != null) {
-                // burned increased -> subtract more (negative delta), so pass -delta
+                
                 dailyNutritionService.adjustDailyTotals(userId, logDate, -delta, 0, 0, 0);
             }
         }
@@ -93,7 +93,7 @@ public class ActivityService implements ActivityServiceInterface {
         LocalDate logDate = a.getLogDate();
         Long userId = a.getUser() != null ? a.getUser().getId() : null;
         if (burned != null && burned > 0 && userId != null && logDate != null) {
-            // removing activity should add back calories burned
+            
             dailyNutritionService.adjustDailyTotals(userId, logDate, burned, 0, 0, 0);
         }
         activityRepository.deleteById(activityId);

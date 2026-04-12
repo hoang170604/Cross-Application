@@ -52,7 +52,7 @@ public class UserService implements UserServiceInterface {
         u.setPassword(newPassword);
         userRepo.updateUser(u);
     }
-
+        // cá nhân hóa, tính chỉ số cơ thể
     @Override
     public NutritionGoal updateProfileAndCalculateGoal(Long id, UserProfile profile) {
         Optional<User> uopt = userRepo.findById(id);
@@ -79,7 +79,7 @@ public class UserService implements UserServiceInterface {
         NutritionGoal ng = new NutritionGoal();
         ng.setUser(u);
         ng.setTargetCalories(targetCalories);
-        // simple macro splits: protein 20%, carb 50%, fat 30% (cal-per-gram: p/c=4, f=9)
+        
         double proteinCalories = targetCalories * 0.2;
         double carbCalories = targetCalories * 0.5;
         double fatCalories = targetCalories * 0.3;
