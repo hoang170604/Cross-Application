@@ -7,32 +7,16 @@ export interface AuthResponse {
 }
 
 export const registerUser = async (email: string, password: string): Promise<AuthResponse> => {
-  // GIẢ LẬP: Trả về thành công ngay lập tức để test UI
-  console.log('[Mock] Registering user:', email);
-  return {
-    token: 'mock-token-' + Date.now(),
-    userId: 999,
-    email: email
-  };
+  const response = await apiClient.post<AuthResponse>('/api/users/register', { email, password });
+  return response.data;
 };
 
 export const loginUser = async (email: string, password: string): Promise<AuthResponse> => {
-  // GIẢ LẬP: Trả về thành công ngay lập tức để test UI
-  console.log('[Mock] Logging in user:', email);
-  return {
-    token: 'mock-token-' + Date.now(),
-    userId: 999,
-    email: email
-  };
+  const response = await apiClient.post<AuthResponse>('/api/users/login', { email, password });
+  return response.data;
 };
 
 export const syncOnboardingProfile = async (userId: number, profileData: any) => {
-  // GIẢ LẬP: Trả về kết quả tính toán mẫu
-  console.log('[Mock] Syncing profile for user:', userId, profileData);
-  return {
-    targetCalories: 2100,
-    targetProtein: 150,
-    targetCarb: 250,
-    targetFat: 70
-  };
+  const response = await apiClient.put(`/api/users/${userId}/profile`, profileData);
+  return response.data;
 };

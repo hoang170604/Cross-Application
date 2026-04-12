@@ -17,8 +17,6 @@ export default function SyncLoadingScreen() {
       }
 
       try {
-        // GIẢ LẬP: Chờ 1.5 giây để thấy hiệu ứng loading
-        await new Promise(resolve => setTimeout(resolve, 1500));
 
         const payload = {
           name: userProfile.name,
