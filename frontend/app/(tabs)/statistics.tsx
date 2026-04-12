@@ -13,8 +13,11 @@ import WeightHistoryChart from '@/src/components/organisms/WeightHistoryChart';
 const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 /**
- * Màn hình Thống kê (Statistics Dashboard)
- * Sử dụng kiến trúc Atomic để hiển thị các chỉ số dài hạn.
+ * Màn hình thống kê dữ liệu cá nhân hóa dài hạn.
+ * 
+ * Chức năng:
+ * - Trực quan hóa dữ liệu dinh dưỡng thông qua các biểu đồ đồ thị.
+ * - Hiển thị tóm lược các chỉ số sinh lý như TDEE, BMR, BMI.
  */
 export default function StatisticsScreen() {
   // Kết nối Hook Dinh dưỡng
@@ -29,7 +32,7 @@ export default function StatisticsScreen() {
   const [remoteWeightHistory, setRemoteWeightHistory] = useState(userProfile.weightHistory || []);
   const [remoteCalorieHistory, setRemoteCalorieHistory] = useState<number[]>([]);
 
-  // Gọi API Statistics (Lỗi #15)
+  // Gọi API lấy thông tin dữ liệu thống kê
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -47,7 +50,7 @@ export default function StatisticsScreen() {
       } catch (error: any) {
           if (error.response?.status === 404) {
               console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
-              // Fallback: FE không có API kéo list 7 ngày, đặt [] để báo không có dữ liệu
+              // Xử lý báo lỗi khi không thể lấy dữ liệu 7 ngày từ hệ thống trung tâm
               setRemoteCalorieHistory([]);
           }
       }
@@ -57,7 +60,7 @@ export default function StatisticsScreen() {
 
 
 
-  // Đã dọn dẹp mock data `calorieHistory`, thay thế bằng mảng rỗng `remoteCalorieHistory` nếu BE sập
+
 
   const { width } = Dimensions.get('window');
   const chartWidth = width - 96;
@@ -171,7 +174,7 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-        {/* 📉 Organism: Biểu đồ xu hướng cân nặng */}
+        {/* Biểu đồ xu hướng cân nặng */}
         <WeightHistoryChart 
             history={remoteWeightHistory}
         />

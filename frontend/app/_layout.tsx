@@ -6,15 +6,11 @@ import { UserProfileProvider, useUserProfile } from '@/src/context/UserProfileCo
 import { View, ActivityIndicator } from 'react-native';
 
 /**
- * InitialLayout: Component cốt lõi xử lý Logic Hydration và Định tuyến thông minh (Auto-Routing).
- * 
- * Mục đích & Luồng dữ liệu:
- * 1. Chặn Render khuyết: Trả về một màn hình Loading để chặn UI cho đến khi 
- *    State được cấp nước (Hydrated) thành công từ AsyncStorage (`isLoaded` === true).
- *    Tính năng này triệt tiêu hoàn toàn lỗi nháy chữ (Flickering) hoặc chớp màn hình.
- * 2. Auto-Routing: Kiểm tra điều kiện hoàn thành Onboarding (Tồn tại tên và Target Calo).
- *    - Nếu thoả mãn -> Trực tiếp ném vào không gian Dashboard (Tab).
- *    - Nếu chưa -> Khóa user ở chuỗi Màn hình đầu vào.
+ * Component cốt lõi xử lý quá trình hiển thị ban đầu.
+ *
+ * Chức năng:
+ * - Quản lý việc hiển thị màn hình Loading trong thời gian chờ cấp nước (Hydration) cho State.
+ * - Tự động điều hướng người dùng tới Onboarding hoặc Dashboard dựa vào trạng thái thiết lập hồ sơ.
  */
 function InitialLayout() {
   const { isLoaded, userProfile } = useUserProfile();
@@ -24,22 +20,19 @@ function InitialLayout() {
   useEffect(() => {
     if (!isLoaded) return;
     
-    // Khai báo nhóm Màn hình thuộc quyền Onboarding
+    // Nhóm màn hình dành cho quy trình Onboarding
     const inAuthGroup = !segments[0] || [
       'index', 'PrimaryGoal', 'DietMode', 'BiologicalStats', 'AhaMoment', 'PlanResult', 'Authwall'
     ].includes(segments[0]);
     
-    // Đã hoàn thành Onboarding nếu người dùng đã lập Tên (an toàn hơn là dựa vào Calories vì nếu BE sập, Calo có thể tạm thời đè thành 0)
+    // Kiểm tra định danh để xác nhận hoàn tất hồ sơ người dùng
     const hasFinishedOnboarding = !!userProfile.name;
 
-    // Sửa lỗi Ghost Redirect: 
-    // Chỉ ép chuyển hướng (Redirect) về Dashboard nếu người dùng ĐÃ hoàn thành hồ sơ
-    // MÀ lại đang ở một trong các màn hình Onboarding (inAuthGroup).
-    // Nếu họ đang ở '/SearchScan' (bên ngoài Tabs nhưng không phải auth), cho phép đi tiếp.
+    // Xử lý điều kiện điều hướng về Dashboard hoặc Onboarding
     if (hasFinishedOnboarding && inAuthGroup) {
       router.replace('/(tabs)/diary');
     } else if (!hasFinishedOnboarding && !inAuthGroup) {
-      // Ép về Onboarding nếu định vào App nhưng chưa đủ hồ sơ
+      // Điều hướng về luồng đăng ký người dùng màn Onboarding
       router.replace('/');
     }
   }, [isLoaded, userProfile.name, segments]);

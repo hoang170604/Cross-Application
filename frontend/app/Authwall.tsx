@@ -10,8 +10,12 @@ import { useUserProfile } from '@/src/context/UserProfileContext';
 import apiClient from '@/src/api/apiClient';
 
 /**
- * Màn hình Authwall (Hoàn thiện hồ sơ).
- * Bước cuối cùng của Onboarding để nhập tên và mục tiêu nhịn ăn khởi đầu.
+ * Màn hình thu thập thông tin hồ sơ của người dùng.
+ *
+ * Chức năng:
+ * - Lưu thông tin định danh vào trạng thái cục bộ.
+ * - Gửi dữ liệu cập nhật hồ sơ lên backend API.
+ * - Điều hướng tới Dashboard sau khi hoàn thành.
  */
 export default function AuthwallScreen() {
   const router = useRouter();
@@ -29,7 +33,6 @@ export default function AuthwallScreen() {
       updateUserProfile({ name: name.trim() });
 
       // 2. Gửi Profile lên Backend
-      // Chú ý: Backend có thể chưa mở REST controller này
       await apiClient.post(`/api/users/${userId}/profile`, {
         age: userProfile.age,
         gender: userProfile.gender,
@@ -40,14 +43,14 @@ export default function AuthwallScreen() {
       });
 
     } catch (error: any) {
-      // Bọc lỗi Endpoint (Lỗi #4)
+      // Xử lý báo lỗi trong quá trình gửi dữ liệu API
       if (error.response?.status === 404) {
         console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
       } else {
         console.error("Lỗi khi đẩy Profile lên BE:", error);
       }
     } finally {
-      // Tự động chuyển qua Dashboard chính kể cả khi API lỗi
+      // Chuyển hướng tới Dashboard
       router.replace('/(tabs)/diary');
     }
   };

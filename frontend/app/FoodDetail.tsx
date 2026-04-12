@@ -11,8 +11,11 @@ import { useUserProfile } from '@/src/context/UserProfileContext';
 import { VIETNAMESE_FOOD_DB } from '@/constants/foodDatabase';
 
 /**
- * Màn hình Chi tiết món ăn (Food Detail).
- * Cập nhật cấu trúc: 100g của Backend, TextInput nhập quantity.
+ * Màn hình chi tiết dinh dưỡng của thực phẩm.
+ *
+ * Chức năng:
+ * - Hiển thị hàm lượng dinh dưỡng của món ăn và cho phép điều chỉnh định lượng theo số gram.
+ * - Lưu lại bản ghi món ăn vào bữa ăn được chọn trong ngày trên nhật ký dinh dưỡng.
  */
 export default function FoodDetailScreen() {
   const router = useRouter();
@@ -51,11 +54,11 @@ export default function FoodDetailScreen() {
       return;
     }
     
-    let mealLogId = food.id; // Fallback an toàn nếu API tạch
+    let mealLogId = food.id;
     
     try {
       const today = new Date().toISOString().split('T')[0];
-      // POST API theo thiết kế Backend
+      // Gửi bản ghi cập nhật bữa ăn qua API
       const res = await apiClient.post(`/api/diary/users/${userId}/meals/${mealType}?date=${today}`, {
         foodId: food.id,
         quantity: quantity,
@@ -69,10 +72,10 @@ export default function FoodDetailScreen() {
           mealLogId = res.data.id;
       }
     } catch (error) {
-      console.warn('[Offline Mode] Bỏ qua lỗi Backend ở FoodDetail, chuyển sang lưu Local.');
-    } // Đã bỏ phần Alert chặn đứng nếu Backend Sập!
+      console.warn('Lỗi kết nối lưu bản ghi thực phẩm qua API, tự động chuyển vào trạng thái lưu cục bộ.');
+    }
 
-    // LUÔN LUÔN Nạp vào Context (đảm bảo Offline-First)
+    // Lưu trữ độc lập cho nhật ký dinh dưỡng cục bộ
     addFood(mealType as any, {
         id: mealLogId,
         name: food.name,

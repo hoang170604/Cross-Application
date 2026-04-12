@@ -80,9 +80,23 @@ public class UserService implements UserServiceInterface {
         ng.setUser(u);
         ng.setTargetCalories(targetCalories);
         
-        double proteinCalories = targetCalories * 0.2;
-        double carbCalories = targetCalories * 0.5;
-        double fatCalories = targetCalories * 0.3;
+        double proteinCalories;
+        double carbCalories;
+        double fatCalories;
+
+        if (goal.contains("lose")) {
+            proteinCalories = targetCalories * 0.40;
+            carbCalories = targetCalories * 0.30;
+            fatCalories = targetCalories * 0.30;
+        } else if (goal.contains("gain")) {
+            proteinCalories = targetCalories * 0.30;
+            carbCalories = targetCalories * 0.50;
+            fatCalories = targetCalories * 0.20;
+        } else {
+            proteinCalories = targetCalories * 0.30;
+            carbCalories = targetCalories * 0.40;
+            fatCalories = targetCalories * 0.30;
+        }
         ng.setTargetProtein(proteinCalories / 4.0);
         ng.setTargetCarb(carbCalories / 4.0);
         ng.setTargetFat(fatCalories / 9.0);

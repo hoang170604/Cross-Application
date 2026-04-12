@@ -47,13 +47,13 @@ export default function DiaryDashboardScreen() {
     tdee
   } = useNutrition();
 
-  // Cân nặng đã được quản lý tập trung qua Hook useNutrition và Organism WeightProgressCard
+
 
   // ── Memoized Calculations ─────────────────────────────────────────────────
   const calStats = useMemo(() => {
     const targetCals = userProfile.targetCalories || 1800;
     const consumed = totalEatenCalories;
-    const burned = 0; // Đã loại bỏ Hardcoded data: Chờ Backend hoàn thiện module Activity
+    const burned = 0; // Giá trị tiêu hao năng lượng mặc định do hoạt động thể chất (cần bổ sung từ Module thể chất)
     const trueRemaining = targetCals + burned - consumed;
     const isOverCalorie = trueRemaining < 0;
     const remainingDisplay = Math.abs(trueRemaining);
@@ -63,9 +63,9 @@ export default function DiaryDashboardScreen() {
 
   const todayString = useMemo(() => new Intl.DateTimeFormat('vi-VN', DATE_FMT).format(new Date()), []);
 
-  // Logic cập nhật cân nặng được WeightProgressCard thực thi trực tiếp qua updateCurrentWeight
 
-  /** renderMeal: Sử dụng Organism MealCard đã đóng gói */
+
+  /** Hàm callback để truy xuất và hiển thị dữ liệu của từng thẻ bữa ăn hằng ngày */
   const renderMeal = useCallback(({ item: meal }: { item: typeof MEALS_DATA[number] }) => {
     const mealItems = userProfile.dailyMeals?.[meal.id as keyof DailyMeals] || [];
     const mealCals = mealItems.reduce((s, i) => s + i.calories, 0);

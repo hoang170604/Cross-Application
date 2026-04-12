@@ -27,6 +27,7 @@ export const ACTIVITY_MULTIPLIERS: Record<string, number> = {
  * Tính Tỷ lệ Trao đổi Chất Cơ bản (BMR) - Dự phòng khi BE lỗi 404.
  * Sử dụng công thức Mifflin-St Jeor.
  */
+/*
 export function calculateBMR(gender: string, weight: number, height: number, age: number): number {
   if (!weight || !height || !age) return 0;
   
@@ -36,11 +37,13 @@ export function calculateBMR(gender: string, weight: number, height: number, age
   // Mặc định Nam
   return (10 * weight) + (6.25 * height) - (5 * age) + 5;
 }
+*/
 
 /**
  * Tính Tổng Năng lượng Tiêu hao Hàng ngày (TDEE) - Dự phòng khi BE lỗi 404.
  * Điều chỉnh dựa trên baseline và mục tiêu (goal).
  */
+/*
 export function calculateTDEE(bmr: number, activityMultiplier: number, goal: string): number {
   if (!bmr || !activityMultiplier) return 0;
   
@@ -55,6 +58,7 @@ export function calculateTDEE(bmr: number, activityMultiplier: number, goal: str
   // Mặc định là maintain hoặc mục tiêu khác
   return Math.round(baseline);
 }
+*/
 
 /**
  * Tính Chỉ số Khối Cơ thể (Body Mass Index).

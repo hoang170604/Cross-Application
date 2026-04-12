@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,59 +8,65 @@ import apiClient from '@/src/api/apiClient';
 // ─── Import Atomic Hooks & Molecules ──────────────────────────────────────────
 import { SharedHeader } from '@/src/components/molecules/SharedHeader';
 import { useUserProfile } from '@/src/context/UserProfileContext';
-import { calculateBMR, calculateTDEE } from '@/src/utils/calculateNutrition';
 
 /**
- * Màn hình Kết quả kế hoạch (Plan Result).
- * Hiển thị BMI và dự tính thời gian đạt mục tiêu.
+ * Màn hình hiển thị kết quả kế hoạch dinh dưỡng của người dùng.
+ * 
+ * Chức năng:
+ * - Hiện thị chỉ số BMI và kiến nghị mục tiêu định lượng thức ăn theo các thành phần Macro.
+ * - Đề xuất lộ trình dinh dưỡng để đạt mục tiêu sức khỏe dựa trên các số liệu sinh trắc học.
  */
 export default function PlanResultScreen() {
   const router = useRouter();
-  const { userProfile, setUserProfile } = useUserProfile();
+  const { userProfile, setUserProfile, userId } = useUserProfile();
+  const [isLoading, setIsLoading] = React.useState(true);
   
   const weight = userProfile.weight || 70;
   const height = userProfile.height || 170;
   const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
 
-  // Fetch true nutrition goal from backend
+  // Hàm gọi API đưa phần tính toán cho Backend
   useEffect(() => {
     async function fetchProfile() {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
       try {
-        const response = await apiClient.get('/api/users/profile');
+        const payload = {
+          weight: userProfile.weight,
+          height: userProfile.height,
+          age: userProfile.age,
+          gender: userProfile.gender,
+          activityLevel: userProfile.activityLevel,
+          goal: userProfile.goal
+        };
+        const response = await apiClient.put(`/api/users/${userId}/profile`, payload);
+        
         if (response.data) {
-          const goal = response.data; // Đọc trực tiếp (Lỗi #5)
+          const goal = response.data;
           setUserProfile(prev => ({
             ...prev,
-            targetCalories: goal.targetCalories,
-            targetProtein: goal.targetProtein,
-            targetCarb: goal.targetCarb,
-            targetFat: goal.targetFat
+            targetCalories: Math.round(goal.targetCalories),
+            targetProtein: Math.round(goal.targetProtein),
+            targetCarb: Math.round(goal.targetCarb),
+            targetFat: Math.round(goal.targetFat)
           }));
         }
       } catch (error: any) {
-        // Bọc lỗi Endpoint (Lỗi #4)
-        if (error.response?.status === 404) {
-          console.warn('API chưa sẵn sàng ở BE, dùng Local Data');
-          // Phương án dự phòng (Fallback): Tính tại Local
-          const localBMR = calculateBMR(userProfile.gender, userProfile.weight, userProfile.height, userProfile.age);
-          const localTDEE = calculateTDEE(localBMR, userProfile.activityLevel, userProfile.goal);
-          setUserProfile(prev => ({
-            ...prev,
-            targetCalories: localTDEE
-          }));
-        } else {
-          console.error('Lỗi khi lấy dữ liệu mục tiêu dinh dưỡng:', error);
-        }
+        console.error('Lỗi khi tính toán chỉ số với BE:', error);
+        // Xử lý báo lỗi an toàn, không văng app
+        import('react-native').then(({ Alert }) => {
+          Alert.alert('Lỗi', 'Không thể tính toán dữ liệu lúc này, vui lòng thử lại sau.');
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchProfile();
-  }, []);
-
-  // Tính toán TDEE tức thời để gán nếu biến targetCalories hiện tại rỗng
-  const localBmrNow = calculateBMR(userProfile.gender, userProfile.weight, userProfile.height, userProfile.age);
-  const fallbackTDEE = calculateTDEE(localBmrNow, userProfile.activityLevel, userProfile.goal);
+  }, [userId]);
   
-  const targetCals = userProfile.targetCalories || fallbackTDEE;
+  const targetCals = userProfile.targetCalories || 0;
 
   const weeks = 12;
   
@@ -69,15 +75,36 @@ export default function PlanResultScreen() {
   const month = projectedDate.getMonth() + 1;
   const year = projectedDate.getFullYear();
 
+  let proteinPercent = '30%';
+  let carbPercent = '40%';
+  let fatPercent = '30%';
+  
+  if (userProfile.goal?.toLowerCase().includes('lose')) {
+    proteinPercent = '40%';
+    carbPercent = '30%';
+    fatPercent = '30%';
+  } else if (userProfile.goal?.toLowerCase().includes('gain')) {
+    proteinPercent = '30%';
+    carbPercent = '50%';
+    fatPercent = '20%';
+  }
+
   const macros = [
-    { label: 'Carbs', percent: '50%', color: '#FFB800', grams: `${userProfile.targetCarb || 180}g` },
-    { label: 'Protein', percent: '30%', color: '#00C48C', grams: `${userProfile.targetProtein || 110}g` },
-    { label: 'Fat', percent: '20%', color: '#FF6B6B', grams: `${userProfile.targetFat || 33}g` },
+    { label: 'Carbs', percent: carbPercent, color: '#FFB800', grams: `${userProfile.targetCarb || 180}g` },
+    { label: 'Protein', percent: proteinPercent, color: '#00C48C', grams: `${userProfile.targetProtein || 110}g` },
+    { label: 'Fat', percent: fatPercent, color: '#FF6B6B', grams: `${userProfile.targetFat || 33}g` },
   ];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <SharedHeader showBack />
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#00C48C" />
+          <Text style={{ marginTop: 16, color: '#6B7280', fontSize: 16 }}>Đang thiết lập kế hoạch cho bạn...</Text>
+        </View>
+      ) : (
+      <>
       <ScrollView style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16 }}>
         <View style={{ alignItems: 'center', marginBottom: 32 }}>
           <Text style={{ fontSize: 28, fontWeight: '700', marginBottom: 12, textAlign: 'center' }}>
@@ -136,6 +163,8 @@ export default function PlanResultScreen() {
           <Ionicons name="chevron-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
+      </>
+      )}
     </SafeAreaView>
   );
 }

@@ -1,7 +1,10 @@
 /**
  * @file WeightHistoryChart.tsx
- * @description Sinh vật (Organism) hiển thị biểu đồ xu hướng cân nặng.
- * Sử dụng react-native-chart-kit với phong cách Bezier đường cong mượt.
+ * @description Biểu đồ đồ thị hiển thị xu hướng cân nặng của người dùng.
+ *
+ * Chức năng:
+ * - Trực quan hóa dữ liệu bản ghi thay đổi cân nặng qua lại các khoảng thời gian.
+ * - Khắc phục các tình trạng dữ liệu mảng thiếu để đảm bảo trải nghiệm hiển thị liền mạch.
  */
 
 import React from 'react';
@@ -19,7 +22,7 @@ const WeightHistoryChartComponent: React.FC<WeightHistoryChartProps> = ({
   const screenWidth = Dimensions.get('window').width - 48; // Giảm padding 24 (lề tab Statistics)
 
   // 1. Xử lý dữ liệu biểu đồ
-  // Lấy tối đa 7 điểm dữ liệu gần nhất để biểu đồ không bị rối
+  // Xử lý đồ thị với tối đa 7 điểm dữ liệu mới nhất được nạp vào
   const chartDataPoints = history.slice(-7);
 
   // Fallback nếu không đủ dữ liệu

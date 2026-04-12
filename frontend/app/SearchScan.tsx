@@ -12,8 +12,12 @@ import { DailyMeals } from '@/src/types';
 import { VIETNAMESE_FOOD_DB, FoodItemDB } from '@/constants/foodDatabase';
 
 /**
- * Màn hình Tìm kiếm & Thêm món ăn thủ công.
- * Sử dụng hook useNutrition để cập nhật dữ liệu bữa ăn.
+ * Màn hình tìm kiếm và thêm lượng ăn.
+ *
+ * Chức năng:
+ * - Cung cấp giao diện lọc và tìm kiếm món ăn từ cơ sở dữ liệu có sẵn.
+ * - Hỗ trợ người dùng nhập chỉ số món ăn thủ công để thêm vào nhật ký dinh dưỡng.
+ * - Gửi bản ghi món ăn mới tương ứng với bữa ăn về backend để lưu lại.
  */
 export default function SearchScanScreen() {
   const router = useRouter();
@@ -61,7 +65,7 @@ export default function SearchScanScreen() {
      let mealLogId = food.id; // Fallback
      try {
        const today = new Date().toISOString().split('T')[0];
-       // Đồng bộ xuống Backend trước
+       // Đồng bộ với Backend để lưu món ăn mới
        const res = await apiClient.post(`/api/diary/users/${userId}/meals/${mealType}?date=${today}`, {
          foodId: food.id,
          quantity: 100,
@@ -78,7 +82,7 @@ export default function SearchScanScreen() {
        console.warn('[Offline Mode] Backend chưa mở API Thêm món ăn, Fallback sang Local Storage.');
      }
 
-     // LUÔN LUÔN CHẠY DÙ MẠNG CHẾT (Sửa Lỗi Chí Mạng #1)
+     // Cập nhật trạng thái cục bộ giúp hỗ trợ Offline Mode
      addFood(mealType, {
        id: mealLogId,
        name: food.name,
@@ -107,10 +111,10 @@ export default function SearchScanScreen() {
      const carb = Number(customCarb) || 0;
      const fat = Number(customFat) || 0;
 
-     let mealLogId = Date.now(); // Fallback tạm thời nếu API lỗi
+     let mealLogId = Date.now();
      try {
        const today = new Date().toISOString().split('T')[0];
-       // Đồng bộ Backend trước
+       // Gửi dữ liệu về Backend
        const res = await apiClient.post(`/api/diary/users/${userId}/meals/${mealType}?date=${today}`, {
          foodId: 0, // Placeholder ID cho món tự nhập
          quantity: 100,
@@ -127,7 +131,7 @@ export default function SearchScanScreen() {
        console.warn('[Offline Mode] Bỏ qua lỗi đồng bộ Backend đồ ăn thủ công.');
      }
 
-     // LUÔN LUÔN LƯU LOCAL DÙ SERVER CHẾT
+     // Cập nhật trạng thái cục bộ giúp hỗ trợ Offline Mode
      addFood(mealType, {
        id: mealLogId, 
        name: customName.trim(),

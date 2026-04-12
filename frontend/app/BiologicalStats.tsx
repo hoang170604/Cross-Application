@@ -131,11 +131,20 @@ export default function BiologicalStatsScreen() {
         <TouchableOpacity
           onPress={() => {
             const currentWeightValue = Number(weight);
+            const currentHeightValue = Number(height);
+            const currentAgeValue = Number(age);
+
+            // Bắt lỗi an toàn (Validation Guard) chống lại các số liệu âm hoặc bằng 0
+            if (currentAgeValue <= 0 || currentHeightValue <= 0 || currentWeightValue <= 0) {
+              Alert.alert('Lỗi thông tin', 'Vui lòng đảm bảo các chỉ số sinh học của bạn phải lớn hơn 0 để hệ thống có thể tính toán chính xác!');
+              return;
+            }
+
             const updatedProfile = { 
               ...userProfile, 
               gender, 
-              age: Number(age), 
-              height: Number(height), 
+              age: currentAgeValue, 
+              height: currentHeightValue, 
               weight: currentWeightValue,
               targetCalories: 0
             };

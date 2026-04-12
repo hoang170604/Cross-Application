@@ -8,8 +8,6 @@ import { useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, FoodItem, DailyMeals, Macros } from '@/src/types';
 import { 
-  calculateBMR, 
-  calculateTDEE, 
   calculateBMI 
 } from '@/src/utils/calculateNutrition';
 import { getLocalToday } from '@/src/utils/dateFormatter';
@@ -30,15 +28,11 @@ export function useNutrition(
 ) {
   // ─── Computed Values (Memoized logic) ───────────────────────────────────
 
-  /** BMR (Basal Metabolic Rate) */
-  const bmr = useMemo(() => 
-    calculateBMR(userProfile.gender, userProfile.weight, userProfile.height, userProfile.age),
-  [userProfile.gender, userProfile.weight, userProfile.height, userProfile.age]);
+  /** BMR (Basal Metabolic Rate) - Hiện tại BE không trả về nhánh riêng nên đặt là 0 hoặc ẩn đi trên UI */
+  const bmr = 0;
 
-  /** TDEE (Total Daily Energy Expenditure) */
-  const tdee = useMemo(() => 
-    calculateTDEE(bmr, userProfile.activityLevel, userProfile.goal),
-  [bmr, userProfile.activityLevel, userProfile.goal]);
+  /** TDEE (Total Daily Energy Expenditure) - Sử dụng trực tiếp từ targetCalories BE trả về */
+  const tdee = userProfile.targetCalories || 0;
 
   /** BMI (Body Mass Index) */
   const bmi = useMemo(() => 
