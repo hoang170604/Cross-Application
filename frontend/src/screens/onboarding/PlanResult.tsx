@@ -21,19 +21,11 @@ export default function PlanResultScreen() {
   
   const bmi = calculateBMI(weight, height);
 
-  // Tính TDEE cục bộ tạm thời (BE sẽ tính lại chuẩn xác hơn sau khi Sync)
-  const targetCals = useMemo(() => {
-    let bmr = 0;
-    if (gender === 'male') {
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
-    let tdee = bmr * activityLevel;
-    if (goal === 'lose_weight') tdee -= 500;
-    if (goal === 'build_muscle') tdee += 500;
-    return Math.round(tdee);
-  }, [weight, height, age, gender, activityLevel, goal]);
+  // Lấy các chỉ số mục tiêu đã được Backend tính toán (đã được lưu vào store từ màn hình AhaMoment)
+  const targetCals = userProfile.targetCalories || 2000;
+  const targetProtein = userProfile.targetProtein || 150;
+  const targetCarb = userProfile.targetCarb || 250;
+  const targetFat = userProfile.targetFat || 65;
 
   const weeks = 12;
   const projectedDate = new Date();
@@ -45,20 +37,20 @@ export default function PlanResultScreen() {
   let carbPercent = '40%';
   let fatPercent = '30%';
   
-  if (goal === 'lose_weight') {
+  if (userProfile.goal === 'lose_weight') {
     proteinPercent = '40%';
     carbPercent = '30%';
     fatPercent = '30%';
-  } else if (goal === 'build_muscle') {
+  } else if (userProfile.goal === 'build_muscle') {
     proteinPercent = '30%';
     carbPercent = '50%';
     fatPercent = '20%';
   }
 
   const macros = [
-    { label: 'Carbs', percent: carbPercent, color: '#FFB800', grams: `${Math.round(targetCals * parseInt(carbPercent)/100 / 4)}g` },
-    { label: 'Protein', percent: proteinPercent, color: '#00C48C', grams: `${Math.round(targetCals * parseInt(proteinPercent)/100 / 4)}g` },
-    { label: 'Fat', percent: fatPercent, color: '#FF6B6B', grams: `${Math.round(targetCals * parseInt(fatPercent)/100 / 9)}g` },
+    { label: 'Carbs', percent: carbPercent, color: '#FFB800', grams: `${targetCarb}g` },
+    { label: 'Protein', percent: proteinPercent, color: '#00C48C', grams: `${targetProtein}g` },
+    { label: 'Fat', percent: fatPercent, color: '#FF6B6B', grams: `${targetFat}g` },
   ];
 
   const handleSave = () => {

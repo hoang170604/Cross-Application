@@ -68,41 +68,49 @@ public class UserService implements UserServiceInterface {
         if (uopt.isEmpty()) throw new IllegalArgumentException("User not found");
         User u = uopt.get();
 
-        // Basic BMR calculation (Mifflin-St Jeor)
+        // 1. Tính Tỷ lệ trao đổi chất cơ bản (BMR) theo phương trình Mifflin-St Jeor
         double bmr;
         double weight = profile.getWeight();
         double height = profile.getHeight();
         int age = profile.getAge();
         String gender = profile.getGender();
+        
         if ("male".equalsIgnoreCase(gender)) {
-            bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+            bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
         } else {
-            bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
         }
-        double activity = profile.getActivityLevel() > 0 ? profile.getActivityLevel() : 1.2;
-        double targetCalories = bmr * activity;
+        
+        // 2. Tính Tổng năng lượng tiêu hao hàng ngày (TDEE) dựa trên Hệ số vận động (Activity Multiplier)
+        // Hệ số lấy từ activity_level của người dùng (1.2, 1.375, 1.55, 1.725, 1.9)
+        double activityMultiplier = profile.getActivityLevel() > 0 ? profile.getActivityLevel() : 1.2;
+        double tdee = bmr * activityMultiplier;
+        
+        // 3. Tính toán Năng lượng mục tiêu (Target Calories) dựa trên mục tiêu (Goal)
+        double targetCalories = tdee;
         String goal = profile.getGoal() != null ? profile.getGoal().toLowerCase() : "maintain";
         
-        double proteinCalories;
-        double carbCalories;
-        double fatCalories;
+        double proteinRatio = 0.30;
+        double carbRatio = 0.40;
+        double fatRatio = 0.30;
 
-        if (goal.equals("lose_weight")) {
-            targetCalories -= 500;
-            proteinCalories = targetCalories * 0.40;
-            carbCalories = targetCalories * 0.30;
-            fatCalories = targetCalories * 0.30;
-        } else if (goal.equals("build_muscle")) {
-            targetCalories += 500;
-            proteinCalories = targetCalories * 0.30;
-            carbCalories = targetCalories * 0.50;
-            fatCalories = targetCalories * 0.20;
-        } else { // maintain
-            proteinCalories = targetCalories * 0.30;
-            carbCalories = targetCalories * 0.40;
-            fatCalories = targetCalories * 0.30;
+        if ("lose_weight".equals(goal)) {
+            targetCalories = tdee - 500;
+            proteinRatio = 0.40;
+            carbRatio = 0.30;
+            fatRatio = 0.30;
+        } else if ("build_muscle".equals(goal)) {
+            targetCalories = tdee + 500;
+            proteinRatio = 0.30;
+            carbRatio = 0.50;
+            fatRatio = 0.20;
         }
 
+        double proteinCalories = targetCalories * proteinRatio;
+        double carbCalories = targetCalories * carbRatio;
+        double fatCalories = targetCalories * fatRatio;
+
+        // 4. Khởi tạo và lưu mục tiêu dinh dưỡng (ngưỡng Grams)
         NutritionGoal ng = new NutritionGoal();
         ng.setUser(u);
         ng.setTargetCalories(Math.round(targetCalories));

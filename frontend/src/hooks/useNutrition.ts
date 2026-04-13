@@ -14,7 +14,16 @@ export function useNutrition() {
   const { userProfile } = store;
 
   // ─── Computed Values (Memoized logic) ───────────────────────────────────
-  const bmr = 0;
+  const bmr = useMemo(() => {
+    const { weight, height, age, gender } = userProfile;
+    if (!weight || !height || !age) return 0;
+    if (gender === 'male') {
+      return Math.round(10 * weight + 6.25 * height - 5 * age + 5);
+    } else {
+      return Math.round(10 * weight + 6.25 * height - 5 * age - 161);
+    }
+  }, [userProfile.weight, userProfile.height, userProfile.age, userProfile.gender]);
+
   const tdee = userProfile.targetCalories || 0;
 
   const bmi = useMemo(() => 
