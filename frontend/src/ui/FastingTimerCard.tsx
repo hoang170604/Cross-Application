@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { AppButton } from '../atoms/AppButton';
+import { AppButton } from './core/AppButton';
 
 interface FastingTimerCardProps {
   /** Trạng thái nhịn ăn */

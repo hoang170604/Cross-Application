@@ -20,6 +20,7 @@ export type UserProfile = {
    * nhưng cần thiết để duy trì hoạt động của ứng dụng tại Frontend.
    */
   name?: string;
+  email?: string;
   fastingGoal?: string;
   targetCalories?: number;
   targetProtein?: number;

@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ProgressBar } from '../atoms/ProgressBar';
+import { ProgressBar } from './core/ProgressBar';
 
 interface MacroMetricProps {
   /** Tên thành phần (VD: Tinh bột, Chất đạm...) */

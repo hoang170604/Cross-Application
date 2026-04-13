@@ -12,8 +12,8 @@ import {
   StyleSheet, 
   Platform 
 } from 'react-native';
-import { ProgressBar } from '../atoms/ProgressBar';
-import { IconButton } from '../atoms/IconButton';
+import { ProgressBar } from './core/ProgressBar';
+import { IconButton } from './core/IconButton';
 import * as Haptics from 'expo-haptics';
 
 interface WeightProgressCardProps {

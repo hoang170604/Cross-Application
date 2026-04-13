@@ -1,24 +1,38 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { UserProfileProvider, useUserProfile } from '@/src/context/UserProfileContext';
+import { useAppStore } from '@/src/store/useAppStore';
 import { View, ActivityIndicator } from 'react-native';
 
 /**
  * Component cốt lõi xử lý quá trình hiển thị ban đầu.
  *
  * Chức năng:
- * - Quản lý việc hiển thị màn hình Loading trong thời gian chờ cấp nước (Hydration) cho State.
+ * - Quản lý việc hiển thị màn hình Loading trong thời gian chờ Hydration cho Zustand Store.
  * - Tự động điều hướng người dùng tới Onboarding hoặc Dashboard dựa vào trạng thái thiết lập hồ sơ.
  */
 function InitialLayout() {
-  const { isLoaded, token, pendingOnboardingSync } = useUserProfile();
+  const { token, pendingOnboardingSync } = useAppStore();
   const segments = useSegments();
   const router = useRouter();
 
+  // Zustand persist rehydration check
+  const [isHydrated, setIsHydrated] = useState(false);
   useEffect(() => {
-    if (!isLoaded) return;
+    // onFinishHydration fires when Zustand has loaded state from AsyncStorage
+    const unsub = useAppStore.persist.onFinishHydration(() => {
+      setIsHydrated(true);
+    });
+    // If already hydrated (e.g. sync storage or hot reload)
+    if (useAppStore.persist.hasHydrated()) {
+      setIsHydrated(true);
+    }
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
     
     // Nhóm màn hình dành cho quy trình Onboarding và Đăng nhập
     const inAuthGroup = !segments[0] || [
@@ -43,9 +57,9 @@ function InitialLayout() {
       // Điều hướng về luồng đăng ký/onboarding ban đầu
       router.replace('/');
     }
-  }, [isLoaded, token, pendingOnboardingSync, segments]);
+  }, [isHydrated, token, pendingOnboardingSync, segments]);
 
-  if (!isLoaded) {
+  if (!isHydrated) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
         <ActivityIndicator size="large" color="#00C48C" />
@@ -74,9 +88,9 @@ function InitialLayout() {
 
 export default function RootLayout() {
   return (
-    <UserProfileProvider>
+    <>
       <InitialLayout />
       <StatusBar style="dark" />
-    </UserProfileProvider>
+    </>
   );
 }

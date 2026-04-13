@@ -8,7 +8,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FoodItem } from '@/src/types';
-import { FoodItemRow } from '../molecules/FoodItemRow';
+import { FoodItemRow } from './FoodItemRow';
 
 interface MealCardProps {
   /** Tên bữa ăn (VD: Bữa sáng, Bữa trưa...) */
