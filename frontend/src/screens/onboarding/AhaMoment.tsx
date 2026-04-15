@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '@/src/store/useAppStore';
 import { syncOnboardingProfile } from '@/src/api/authService';
 import Svg, { Circle } from 'react-native-svg';
 
 export default function AhaMomentScreen() {
   const router = useRouter();
+  const [progress, setProgress] = useState(0);
   const { userProfile, userId, updateUserProfile } = useAppStore();
 
   useEffect(() => {
