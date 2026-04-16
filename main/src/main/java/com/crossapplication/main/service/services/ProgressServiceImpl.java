@@ -92,4 +92,11 @@ public class ProgressServiceImpl implements ProgressService {
         r.setTotalFat(totalF);
         return r;
     }
+
+    @Override
+    public void onChallengeCompleted(Long userId, Long challengeId) {
+        // Minimal: log and could create achievement/notification
+        System.out.println("ProgressService: challenge completed for user=" + userId + " challenge=" + challengeId);
+        // TODO: integrate with notification / achievements
+    }
 }

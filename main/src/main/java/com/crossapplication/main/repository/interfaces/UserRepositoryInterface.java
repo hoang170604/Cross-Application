@@ -3,18 +3,14 @@ package com.crossapplication.main.repository.interfaces;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import com.crossapplication.main.entity.User;
 
-public interface UserRepositoryInterface {
-    public void save(User user);
+public interface UserRepositoryInterface extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email);
 
-    public Optional<User> findById(Long id);
-
-    public Optional<User> findByEmail(String email);
-
-    public List<User> findAllUser();
-
-    public void updateUser(User user);
-
-    public void deleteUser(Long id);
+    default List<User> findAllUser() { return findAll(); }
+    default void updateUser(User user) { save(user); }
+    default void deleteUser(Long id) { deleteById(id); }
 }

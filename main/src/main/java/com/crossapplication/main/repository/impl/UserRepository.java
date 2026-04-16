@@ -3,8 +3,6 @@ package com.crossapplication.main.repository.impl;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Repository;
-
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.repository.interfaces.UserRepositoryInterface;
 
@@ -12,8 +10,14 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 
-@Repository
-public class UserRepository implements UserRepositoryInterface{
+/**
+ * Legacy, hand-written repository kept for reference. Made abstract so it
+ * does not need to implement all methods from Spring Data's
+ * `UserRepositoryInterface` (which extends `JpaRepository`).
+ *
+ * This class is intentionally not a Spring bean.
+ */
+public abstract class UserRepository implements UserRepositoryInterface{
 
     @PersistenceContext
     private EntityManager em;
@@ -48,11 +52,12 @@ public class UserRepository implements UserRepositoryInterface{
     }
 
     @Override
-    public void save(User user) {
-        if(user.getId() == null) {
+    public <S extends User> S save(S user) {
+        if (user.getId() == null) {
             em.persist(user);
+            return user;
         } else {
-            em.merge(user);
+            return em.merge(user);
         }
     }
 

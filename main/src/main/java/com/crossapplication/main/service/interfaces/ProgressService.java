@@ -20,4 +20,7 @@ public interface ProgressService {
     public DailyNutrition getDailyNutrition(Long userId, LocalDate date);
 
     public ReportSummary getNutritionSummary(Long userId, LocalDate start, LocalDate end);
+
+    // called when a workout challenge completes to update progress/achievements
+    public void onChallengeCompleted(Long userId, Long challengeId);
 }

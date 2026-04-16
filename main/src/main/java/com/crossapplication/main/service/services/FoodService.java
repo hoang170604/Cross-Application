@@ -65,7 +65,7 @@ public class FoodService implements FoodServiceInterface {
 
     @Override
     public FoodDTO createFood(FoodDTO dto) {
-        if (dto == null) return null;
+        if (dto == null) throw new IllegalArgumentException("dto required");
         Food f = new Food();
         f.setName(dto.getName());
         f.setCaloriesPer100g(dto.getCaloriesPer100g());
@@ -80,9 +80,9 @@ public class FoodService implements FoodServiceInterface {
 
     @Override
     public FoodDTO updateFood(Long id, FoodDTO dto) {
-        if (id == null || dto == null) return null;
+        if (id == null || dto == null) throw new IllegalArgumentException("id and dto required");
         Optional<Food> fopt = foodRepo.findById(id);
-        if (fopt.isEmpty()) return null;
+        if (fopt.isEmpty()) throw new IllegalArgumentException("food not found");
         Food existing = fopt.get();
         if (dto.getName() != null) existing.setName(dto.getName());
         existing.setCaloriesPer100g(dto.getCaloriesPer100g());
