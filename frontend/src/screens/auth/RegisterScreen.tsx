@@ -13,6 +13,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleRegister = async () => {
     if (!email.trim() || !password.trim()) {
@@ -26,6 +27,8 @@ export default function RegisterScreen() {
     }
 
     setIsLoading(true);
+    setErrorMessage('');
+
     try {
       const response = await registerUser(email.trim(), password);
       // Backend (sau khi sửa) đã tự động đăng nhập và trả về token
@@ -37,9 +40,22 @@ export default function RegisterScreen() {
         router.replace('/(tabs)/diary');
       }
     } catch (error: any) {
-      console.error("Đăng ký thất bại:", error);
-      const errorMessage = error.response?.data?.error || 'Không thể đăng ký. Vui lòng thử lại sau.';
-      Alert.alert('Đăng ký thất bại', errorMessage);
+      console.log('Backend Error Response:', error.response?.data);
+
+      const data = error.response?.data;
+      const rawError = (typeof data === 'string' ? data : (data?.message || data?.error)) || '';
+
+      // Map dịch lỗi sang tiếng Việt
+      const errorMap: { [key: string]: string } = {
+        'Invalid credentials': 'Thông tin không hợp lệ.',
+        'User already exists': 'Email này đã được sử dụng bởi tài khoản khác.',
+        'Email already taken': 'Email này đã được sử dụng bởi tài khoản khác.',
+        'Weak password': 'Mật khẩu quá yếu.',
+      };
+
+      const detailedError = errorMap[rawError] || rawError || 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
+
+      setErrorMessage(detailedError);
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +75,10 @@ export default function RegisterScreen() {
               style={styles.input}
               placeholder="Nhập email của bạn"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errorMessage) setErrorMessage('');
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -71,7 +90,10 @@ export default function RegisterScreen() {
               style={styles.input}
               placeholder="Nhập mật khẩu"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errorMessage) setErrorMessage('');
+              }}
               secureTextEntry
             />
           </View>
@@ -82,10 +104,17 @@ export default function RegisterScreen() {
               style={styles.input}
               placeholder="Nhập lại mật khẩu"
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (errorMessage) setErrorMessage('');
+              }}
               secureTextEntry
             />
           </View>
+
+          {errorMessage ? (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          ) : null}
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -135,6 +164,13 @@ const styles = StyleSheet.create({
   linkButton: { marginTop: 24, alignItems: 'center' },
   linkText: { color: '#6B7280', fontSize: 14 },
   linkTextBold: { color: '#00C48C', fontWeight: '700' },
+  errorText: { 
+    color: '#EF4444', 
+    fontSize: 14, 
+    marginBottom: 12, 
+    textAlign: 'center',
+    fontWeight: '500'
+  },
 });
 
 

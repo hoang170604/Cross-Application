@@ -4,3 +4,5 @@ frontend/.expo/
 
 # Ignore backend junk (dự phòng)
 main/target/
+
+main/src/main/resources/application.properties
