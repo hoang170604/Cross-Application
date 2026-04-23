@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.crossapplication.main.dto.ApiResponse;
 import com.crossapplication.main.dto.UserDTO;
 import com.crossapplication.main.dto.UserProfileDTO;
 import com.crossapplication.main.entity.NutritionGoal;
@@ -29,75 +31,74 @@ public class UserController {
 
     // POST /api/users/register
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
+    public ResponseEntity<ApiResponse<?>> register(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         String password = body.get("password");
         if (email == null || password == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email and password are required"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Email and password are required"));
         }
         try {
             User user = userService.register(email, password);
-            // Tự động login sau khi đăng ký thành công
             String token = "token-" + user.getId() + "-" + System.currentTimeMillis();
-            return ResponseEntity.ok(Map.of(
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(Map.of(
                 "token", token,
                 "userId", user.getId(),
                 "email", user.getEmail()
-            ));
+            ), "Registration successful"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "REGISTRATION_FAILED"));
         }
     }
 
     // POST /api/users/login
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+    public ResponseEntity<ApiResponse<?>> login(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         String password = body.get("password");
         if (email == null || password == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email and password are required"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Email and password are required"));
         }
         try {
             User user = userService.loginAndGetUser(email, password);
             String token = "token-" + user.getId() + "-" + System.currentTimeMillis();
-            return ResponseEntity.ok(Map.of(
+            return ResponseEntity.ok(ApiResponse.success(Map.of(
                 "token", token,
                 "userId", user.getId(),
                 "email", user.getEmail()
-            ));
+            ), "Login successful"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage(), "LOGIN_FAILED"));
         }
     }
 
     // GET /api/users/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<?>> getUserById(@PathVariable Long id) {
         Optional<UserDTO> userOpt = userService.getById(id);
         if (userOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("User not found", "USER_NOT_FOUND"));
         }
-        return ResponseEntity.ok(userOpt.get());
+        return ResponseEntity.ok(ApiResponse.success(userOpt.get()));
     }
 
     // PUT /api/users/{id}/password
     @PutMapping("/{id}/password")
-    public ResponseEntity<?> changePassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
+    public ResponseEntity<ApiResponse<?>> changePassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String newPassword = body.get("newPassword");
         if (newPassword == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "newPassword is required"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("New password is required"));
         }
         try {
             userService.changePassword(id, newPassword);
-            return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+            return ResponseEntity.ok(ApiResponse.success(null, "Password changed successfully"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "PASSWORD_CHANGE_FAILED"));
         }
     }
 
     // PUT /api/users/{id}/profile
     @PutMapping("/{id}/profile")
-    public ResponseEntity<?> updateProfileAndCalculateGoal(@PathVariable Long id,
+    public ResponseEntity<ApiResponse<?>> updateProfileAndCalculateGoal(@PathVariable Long id,
             @RequestBody UserProfileDTO profileDTO) {
         try {
             UserProfile profile = new UserProfile();
@@ -111,35 +112,39 @@ public class UserController {
             profile.setFastingGoal(profileDTO.getFastingGoal());
 
             NutritionGoal goal = userService.updateProfileAndCalculateGoal(id, profile);
-            return ResponseEntity.ok(goal);
+            return ResponseEntity.ok(ApiResponse.success(goal, "Profile updated successfully"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "PROFILE_UPDATE_FAILED"));
         }
     }
 
     // POST /api/users/password-reset
     @PostMapping("/password-reset")
-    public ResponseEntity<?> requestPasswordReset(@RequestBody Map<String, String> body) {
+    public ResponseEntity<ApiResponse<?>> requestPasswordReset(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         if (email == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Email is required"));
         }
         try {
             userService.requestPasswordReset(email);
-            return ResponseEntity.ok(Map.of("message", "Password reset email sent"));
+            return ResponseEntity.ok(ApiResponse.success(null, "Password reset email sent"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "PASSWORD_RESET_FAILED"));
         }
     }
 
     // POST /api/users/verify-email
     @PostMapping("/verify-email")
-    public ResponseEntity<?> verifyEmail(@RequestBody Map<String, String> body) {
+    public ResponseEntity<ApiResponse<?>> verifyEmail(@RequestBody Map<String, String> body) {
         String token = body.get("token");
         if (token == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Token is required"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Token is required"));
         }
-        userService.verifyEmail(token);
-        return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
+        try {
+            userService.verifyEmail(token);
+            return ResponseEntity.ok(ApiResponse.success(null, "Email verified successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "EMAIL_VERIFICATION_FAILED"));
+        }
     }
 }

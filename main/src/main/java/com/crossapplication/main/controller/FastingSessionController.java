@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.crossapplication.main.dto.ApiResponse;
 import com.crossapplication.main.dto.FastingSessionDTO;
 import com.crossapplication.main.entity.FastingSession;
 import com.crossapplication.main.service.interfaces.FastingSessionService;
@@ -26,37 +28,55 @@ public class FastingSessionController {
 	private FastingSessionService fastingSessionService;
 
 	@GetMapping("/user/{userId}")
-	public List<FastingSession> listForUser(@PathVariable Long userId) {
-		return fastingSessionService.listByUser(userId);
+	public ResponseEntity<ApiResponse<?>> listForUser(@PathVariable Long userId) {
+		try {
+			List<FastingSession> sessions = fastingSessionService.listByUser(userId);
+			return ResponseEntity.ok(ApiResponse.success(sessions));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "LIST_FAILED"));
+		}
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<?> get(@PathVariable Long id) {
-		Optional<FastingSession> opt = fastingSessionService.getById(id);
-		return opt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+	public ResponseEntity<ApiResponse<?>> get(@PathVariable Long id) {
+		try {
+			Optional<FastingSession> opt = fastingSessionService.getById(id);
+			if (opt.isPresent()) {
+				return ResponseEntity.ok(ApiResponse.success(opt.get()));
+			}
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Fasting session not found", "SESSION_NOT_FOUND"));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "GET_FAILED"));
+		}
 	}
 
 	@PostMapping
-	public ResponseEntity<?> create(@jakarta.validation.Valid @RequestBody FastingSessionDTO dto) {
+	public ResponseEntity<ApiResponse<?>> create(@jakarta.validation.Valid @RequestBody FastingSessionDTO dto) {
 		try {
-			return ResponseEntity.ok(fastingSessionService.create(dto));
+			FastingSession created = fastingSessionService.create(dto);
+			return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "Fasting session created successfully"));
 		} catch (IllegalArgumentException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "CREATE_FAILED"));
 		}
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<?> update(@PathVariable Long id, @RequestBody FastingSessionDTO dto) {
+	public ResponseEntity<ApiResponse<?>> update(@PathVariable Long id, @RequestBody FastingSessionDTO dto) {
 		try {
-			return ResponseEntity.ok(fastingSessionService.update(id, dto));
+			FastingSession updated = fastingSessionService.update(id, dto);
+			return ResponseEntity.ok(ApiResponse.success(updated, "Fasting session updated successfully"));
 		} catch (IllegalArgumentException e) {
-			return ResponseEntity.badRequest().body(e.getMessage());
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "UPDATE_FAILED"));
 		}
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<?> delete(@PathVariable Long id) {
-		fastingSessionService.delete(id);
-		return ResponseEntity.ok().build();
+	public ResponseEntity<ApiResponse<?>> delete(@PathVariable Long id) {
+		try {
+			fastingSessionService.delete(id);
+			return ResponseEntity.noContent().build();
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "DELETE_FAILED"));
+		}
 	}
 }
