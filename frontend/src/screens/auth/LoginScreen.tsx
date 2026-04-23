@@ -12,6 +12,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -20,19 +21,33 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+    setErrorMessage(''); // Xóa lỗi cũ khi bắt đầu đăng nhập
+
     try {
       const response = await loginUser(email.trim(), password);
       await login(response.token, response.userId);
       
-      // Nếu có dữ liệu onboarding chưa lưu
       if (pendingOnboardingSync) {
         router.replace('/SyncLoadingScreen');
       } else {
         router.replace('/(tabs)/diary');
       }
     } catch (error: any) {
-      console.error("Đăng nhập thất bại:", error);
-      Alert.alert('Đăng nhập thất bại', 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
+      console.log('Backend Error Response:', error.response?.data);
+      
+      const data = error.response?.data;
+      const rawError = (typeof data === 'string' ? data : (data?.message || data?.error)) || '';
+      
+      // Map dịch lỗi sang tiếng Việt
+      const errorMap: { [key: string]: string } = {
+        'Invalid credentials': 'Email hoặc mật khẩu không chính xác.',
+        'User not found': 'Không tìm thấy tài khoản này.',
+        'Missing required fields': 'Vui lòng nhập đầy đủ thông tin.',
+      };
+
+      const detailedError = errorMap[rawError] || rawError || 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
+        
+      setErrorMessage(detailedError);
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +67,10 @@ export default function LoginScreen() {
               style={styles.input}
               placeholder="Nhập email của bạn"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errorMessage) setErrorMessage('');
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -64,10 +82,17 @@ export default function LoginScreen() {
               style={styles.input}
               placeholder="Nhập mật khẩu"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errorMessage) setErrorMessage('');
+              }}
               secureTextEntry
             />
           </View>
+
+          {errorMessage ? (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          ) : null}
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -117,6 +142,13 @@ const styles = StyleSheet.create({
   linkButton: { marginTop: 24, alignItems: 'center' },
   linkText: { color: '#6B7280', fontSize: 14 },
   linkTextBold: { color: '#00C48C', fontWeight: '700' },
+  errorText: { 
+    color: '#EF4444', 
+    fontSize: 14, 
+    marginBottom: 12, 
+    textAlign: 'center',
+    fontWeight: '500'
+  },
 });
 
 
