@@ -6,6 +6,8 @@ import { SharedHeader } from '@/src/ui/SharedHeader';
 import { useAppStore } from '@/src/store/useAppStore';
 import { registerUser } from '@/src/api/authService';
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function RegisterScreen() {
   const router = useRouter();
   const { login, pendingOnboardingSync } = useAppStore();
@@ -15,24 +17,84 @@ export default function RegisterScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Inline validation errors (real-time)
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
+  // --- Real-time handlers ---
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (errorMessage) setErrorMessage('');
+    if (text.length > 0 && !emailRegex.test(text)) {
+      setEmailError('Email không đúng định dạng (VD: example@gmail.com)');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (errorMessage) setErrorMessage('');
+    if (text.length > 0 && text.length < 6) {
+      setPasswordError('Mật khẩu phải có ít nhất 6 ký tự');
+    } else {
+      setPasswordError('');
+    }
+    // Re-check confirm password if already typed
+    if (confirmPassword.length > 0 && text !== confirmPassword) {
+      setConfirmPasswordError('Mật khẩu xác nhận không khớp');
+    } else {
+      setConfirmPasswordError('');
+    }
+  };
+
+  const handleConfirmPasswordChange = (text: string) => {
+    setConfirmPassword(text);
+    if (errorMessage) setErrorMessage('');
+    if (text.length > 0 && text !== password) {
+      setConfirmPasswordError('Mật khẩu xác nhận không khớp');
+    } else {
+      setConfirmPasswordError('');
+    }
+  };
+
+  // --- Submit ---
   const handleRegister = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin!');
-      return;
+    let hasError = false;
+
+    if (!email.trim()) {
+      setEmailError('Vui lòng nhập email');
+      hasError = true;
+    } else if (!emailRegex.test(email.trim())) {
+      setEmailError('Email không đúng định dạng (VD: example@gmail.com)');
+      hasError = true;
     }
-    
-    if (password !== confirmPassword) {
-      Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp!');
-      return;
+
+    if (!password.trim()) {
+      setPasswordError('Vui lòng nhập mật khẩu');
+      hasError = true;
+    } else if (password.length < 6) {
+      setPasswordError('Mật khẩu phải có ít nhất 6 ký tự');
+      hasError = true;
     }
+
+    if (!confirmPassword.trim()) {
+      setConfirmPasswordError('Vui lòng xác nhận mật khẩu');
+      hasError = true;
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError('Mật khẩu xác nhận không khớp');
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     setIsLoading(true);
     setErrorMessage('');
 
     try {
       const response = await registerUser(email.trim(), password);
-      // Backend (sau khi sửa) đã tự động đăng nhập và trả về token
-      await login(response.token, response.userId);
+      await login(response.data.token, response.data.userId);
       
       if (pendingOnboardingSync) {
         router.replace('/SyncLoadingScreen');
@@ -41,20 +103,18 @@ export default function RegisterScreen() {
       }
     } catch (error: any) {
       console.log('Backend Error Response:', error.response?.data);
-
       const data = error.response?.data;
       const rawError = (typeof data === 'string' ? data : (data?.message || data?.error)) || '';
 
-      // Map dịch lỗi sang tiếng Việt
       const errorMap: { [key: string]: string } = {
         'Invalid credentials': 'Thông tin không hợp lệ.',
         'User already exists': 'Email này đã được sử dụng bởi tài khoản khác.',
         'Email already taken': 'Email này đã được sử dụng bởi tài khoản khác.',
+        'Email already registered': 'Email này đã được đăng ký bởi người khác.',
         'Weak password': 'Mật khẩu quá yếu.',
       };
 
       const detailedError = errorMap[rawError] || rawError || 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
-
       setErrorMessage(detailedError);
     } finally {
       setIsLoading(false);
@@ -69,49 +129,47 @@ export default function RegisterScreen() {
           <Text style={styles.title}>Đăng ký 🚀</Text>
           <Text style={styles.subtitle}>Tạo tài khoản để lưu trữ lộ trình của bạn</Text>
 
+          {/* Email */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="Nhập email của bạn"
               value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errorMessage) setErrorMessage('');
-              }}
+              onChangeText={handleEmailChange}
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            {emailError ? <Text style={styles.inlineError}>{emailError}</Text> : null}
           </View>
 
+          {/* Mật khẩu */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Mật khẩu</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Nhập mật khẩu"
+              style={[styles.input, passwordError ? styles.inputError : null]}
+              placeholder="Ít nhất 6 ký tự"
               value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errorMessage) setErrorMessage('');
-              }}
+              onChangeText={handlePasswordChange}
               secureTextEntry
             />
+            {passwordError ? <Text style={styles.inlineError}>{passwordError}</Text> : null}
           </View>
-          
+
+          {/* Xác nhận mật khẩu */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Xác nhận mật khẩu</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, confirmPasswordError ? styles.inputError : null]}
               placeholder="Nhập lại mật khẩu"
               value={confirmPassword}
-              onChangeText={(text) => {
-                setConfirmPassword(text);
-                if (errorMessage) setErrorMessage('');
-              }}
+              onChangeText={handleConfirmPasswordChange}
               secureTextEntry
             />
+            {confirmPasswordError ? <Text style={styles.inlineError}>{confirmPasswordError}</Text> : null}
           </View>
 
+          {/* Lỗi từ Server */}
           {errorMessage ? (
             <Text style={styles.errorText}>{errorMessage}</Text>
           ) : null}
@@ -142,7 +200,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
   title: { fontSize: 28, fontWeight: '700', marginBottom: 8 },
   subtitle: { fontSize: 16, color: '#6B7280', marginBottom: 32 },
-  inputGroup: { marginBottom: 20 },
+  inputGroup: { marginBottom: 16 },
   label: { fontSize: 14, color: '#374151', marginBottom: 8, fontWeight: '500' },
   input: {
     backgroundColor: '#F9FAFB',
@@ -151,6 +209,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+  },
+  inputError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  inlineError: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 4,
+    fontWeight: '500',
   },
   button: {
     backgroundColor: '#00C48C',
@@ -172,6 +241,3 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
 });
-
-
-

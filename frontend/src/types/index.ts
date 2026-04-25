@@ -7,3 +7,4 @@
 export type { FoodItem, DailyMeals, Macros } from './nutrition.types';
 export type { UserProfile } from './user.types';
 export { DEFAULT_PROFILE } from './user.types';
+export type { ApiResponse } from './api.types';

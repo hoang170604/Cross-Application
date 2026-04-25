@@ -4,6 +4,7 @@
  */
 
 import apiClient from './apiClient';
+import { ApiResponse } from '../types/api.types';
 
 export interface MealLogPayload {
   foodId: number;
@@ -20,8 +21,8 @@ export const addFoodToMeal = async (
   mealType: string,
   date: string,
   payload: MealLogPayload
-) => {
-  const response = await apiClient.post(
+): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post<ApiResponse<any>>(
     `/api/diary/users/${userId}/meals/${mealType}?date=${date}`,
     payload
   );
@@ -29,18 +30,18 @@ export const addFoodToMeal = async (
 };
 
 /** Lấy nhật ký bữa ăn theo ngày */
-export const getDiary = async (userId: number, date: string) => {
-  const response = await apiClient.get(`/api/diary/users/${userId}?date=${date}`);
+export const getDiary = async (userId: number, date: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/diary/users/${userId}?date=${date}`);
   return response.data;
 };
 
 /** Cập nhật một MealLog */
-export const updateMealLog = async (id: number, payload: Partial<MealLogPayload>) => {
-  const response = await apiClient.put(`/api/diary/meallogs/${id}`, payload);
+export const updateMealLog = async (id: number, payload: Partial<MealLogPayload>): Promise<ApiResponse<any>> => {
+  const response = await apiClient.put<ApiResponse<any>>(`/api/diary/meallogs/${id}`, payload);
   return response.data;
 };
 
 /** Xóa một MealLog */
-export const deleteMealLog = async (id: number) => {
+export const deleteMealLog = async (id: number): Promise<void> => {
   await apiClient.delete(`/api/diary/meallogs/${id}`);
 };

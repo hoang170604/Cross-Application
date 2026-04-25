@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
-    private boolean success;
+    private int status;
     private String message;
     private T data;
     private String errorCode;
@@ -12,47 +12,47 @@ public class ApiResponse<T> {
     public ApiResponse() {
     }
 
-    public ApiResponse(boolean success, String message) {
-        this.success = success;
+    public ApiResponse(int status, String message) {
+        this.status = status;
         this.message = message;
     }
 
-    public ApiResponse(boolean success, String message, T data) {
-        this.success = success;
+    public ApiResponse(int status, String message, T data) {
+        this.status = status;
         this.message = message;
         this.data = data;
     }
 
-    public ApiResponse(boolean success, String message, T data, String errorCode) {
-        this.success = success;
+    public ApiResponse(int status, String message, T data, String errorCode) {
+        this.status = status;
         this.message = message;
         this.data = data;
         this.errorCode = errorCode;
     }
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(true, "Success", data);
+        return new ApiResponse<>(200, "Success", data);
     }
 
     public static <T> ApiResponse<T> success(T data, String message) {
-        return new ApiResponse<>(true, message, data);
+        return new ApiResponse<>(200, message, data);
     }
 
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(false, message);
+        return new ApiResponse<>(400, message);
     }
 
     public static <T> ApiResponse<T> error(String message, String errorCode) {
-        return new ApiResponse<>(false, message, null, errorCode);
+        return new ApiResponse<>(400, message, null, errorCode);
     }
 
     // Getters and Setters
-    public boolean isSuccess() {
-        return success;
+    public int getStatus() {
+        return status;
     }
 
-    public void setSuccess(boolean success) {
-        this.success = success;
+    public void setStatus(int status) {
+        this.status = status;
     }
 
     public String getMessage() {

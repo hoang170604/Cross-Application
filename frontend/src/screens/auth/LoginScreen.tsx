@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SharedHeader } from '@/src/ui/SharedHeader';
 import { useAppStore } from '@/src/store/useAppStore';
 import { loginUser } from '@/src/api/authService';
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -14,18 +16,52 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Inline validation errors (real-time)
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  // --- Real-time handlers ---
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (errorMessage) setErrorMessage('');
+    if (text.length > 0 && !emailRegex.test(text)) {
+      setEmailError('Email không đúng định dạng (VD: example@gmail.com)');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (errorMessage) setErrorMessage('');
+    if (passwordError && text.length > 0) setPasswordError('');
+  };
+
+  // --- Submit ---
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập email và mật khẩu!');
-      return;
+    let hasError = false;
+
+    if (!email.trim()) {
+      setEmailError('Vui lòng nhập email');
+      hasError = true;
+    } else if (!emailRegex.test(email.trim())) {
+      setEmailError('Email không đúng định dạng (VD: example@gmail.com)');
+      hasError = true;
     }
 
+    if (!password.trim()) {
+      setPasswordError('Vui lòng nhập mật khẩu');
+      hasError = true;
+    }
+
+    if (hasError) return;
+
     setIsLoading(true);
-    setErrorMessage(''); // Xóa lỗi cũ khi bắt đầu đăng nhập
+    setErrorMessage('');
 
     try {
       const response = await loginUser(email.trim(), password);
-      await login(response.token, response.userId);
+      await login(response.data.token, response.data.userId);
       
       if (pendingOnboardingSync) {
         router.replace('/SyncLoadingScreen');
@@ -46,7 +82,6 @@ export default function LoginScreen() {
       };
 
       const detailedError = errorMap[rawError] || rawError || 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
-        
       setErrorMessage(detailedError);
     } finally {
       setIsLoading(false);
@@ -61,35 +96,34 @@ export default function LoginScreen() {
           <Text style={styles.title}>Đăng nhập 👋</Text>
           <Text style={styles.subtitle}>Chào mừng bạn quay lại với NutriTrack</Text>
 
+          {/* Email */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="Nhập email của bạn"
               value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errorMessage) setErrorMessage('');
-              }}
+              onChangeText={handleEmailChange}
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            {emailError ? <Text style={styles.inlineError}>{emailError}</Text> : null}
           </View>
 
+          {/* Mật khẩu */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Mật khẩu</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, passwordError ? styles.inputError : null]}
               placeholder="Nhập mật khẩu"
               value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errorMessage) setErrorMessage('');
-              }}
+              onChangeText={handlePasswordChange}
               secureTextEntry
             />
+            {passwordError ? <Text style={styles.inlineError}>{passwordError}</Text> : null}
           </View>
 
+          {/* Lỗi từ Server */}
           {errorMessage ? (
             <Text style={styles.errorText}>{errorMessage}</Text>
           ) : null}
@@ -120,7 +154,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
   title: { fontSize: 28, fontWeight: '700', marginBottom: 8 },
   subtitle: { fontSize: 16, color: '#6B7280', marginBottom: 32 },
-  inputGroup: { marginBottom: 20 },
+  inputGroup: { marginBottom: 16 },
   label: { fontSize: 14, color: '#374151', marginBottom: 8, fontWeight: '500' },
   input: {
     backgroundColor: '#F9FAFB',
@@ -129,6 +163,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+  },
+  inputError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  inlineError: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 4,
+    fontWeight: '500',
   },
   button: {
     backgroundColor: '#00C48C',
@@ -150,6 +195,3 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
 });
-
-
-
