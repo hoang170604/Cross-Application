@@ -8,8 +8,9 @@ import com.crossapplication.main.entity.UserProfile;
 
 @Mapper(componentModel = "spring")
 public interface UserProfileMapper {
+    UserProfileDTO toDto(UserProfile entity);
+
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "userId", ignore = true)
     UserProfile toEntity(UserProfileDTO dto);
-    UserProfileDTO toDto(UserProfile entity);
 }

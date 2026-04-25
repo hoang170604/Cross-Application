@@ -8,7 +8,7 @@ import com.crossapplication.main.entity.WorkoutChallenge;
 
 @Mapper(componentModel = "spring")
 public interface WorkoutChallengeMapper {
-    @org.mapstruct.Mapping(source = "user.id", target = "userId")
+    @Mapping(source = "user.id", target = "userId")
     WorkoutChallengeDTO toDto(WorkoutChallenge entity);
 
     @Mapping(target = "id", ignore = true)

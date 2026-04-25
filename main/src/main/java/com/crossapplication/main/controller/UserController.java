@@ -21,6 +21,7 @@ import com.crossapplication.main.entity.NutritionGoal;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.entity.UserProfile;
 import com.crossapplication.main.service.interfaces.UserServiceInterface;
+import com.crossapplication.main.util.JwtTokenProvider;
 
 @RestController
 @RequestMapping("/api/users")
@@ -28,6 +29,9 @@ public class UserController {
 
     @Autowired
     private UserServiceInterface userService;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     // POST /api/users/register
     @PostMapping("/register")
@@ -39,11 +43,12 @@ public class UserController {
         }
         try {
             User user = userService.register(email, password);
-            String token = "token-" + user.getId() + "-" + System.currentTimeMillis();
+            String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(Map.of(
                 "token", token,
                 "userId", user.getId(),
-                "email", user.getEmail()
+                "email", user.getEmail(),
+                "expiresIn", 86400
             ), "Registration successful"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "REGISTRATION_FAILED"));
@@ -60,11 +65,12 @@ public class UserController {
         }
         try {
             User user = userService.loginAndGetUser(email, password);
-            String token = "token-" + user.getId() + "-" + System.currentTimeMillis();
+            String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
             return ResponseEntity.ok(ApiResponse.success(Map.of(
                 "token", token,
                 "userId", user.getId(),
-                "email", user.getEmail()
+                "email", user.getEmail(),
+                "expiresIn", 86400
             ), "Login successful"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage(), "LOGIN_FAILED"));

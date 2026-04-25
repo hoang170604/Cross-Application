@@ -17,7 +17,7 @@ import jakarta.persistence.UniqueConstraint;
     }
 )
 public class DailyNutrition {
-    //CHƯA HOÀN THIỆN, TÌM HIỂU LẠI, CODE LẠI.
+    // Complete - tracks daily nutrition totals for user on specific date
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)

@@ -9,6 +9,5 @@ import com.crossapplication.main.entity.DailyNutrition;
 public interface DailyNutritionMapper {
     DailyNutritionDTO toDto(DailyNutrition entity);
 
-    @org.mapstruct.Mapping(target = "id", ignore = true)
     DailyNutrition toEntity(DailyNutritionDTO dto);
 }

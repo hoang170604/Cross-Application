@@ -27,5 +27,7 @@ public interface FoodServiceInterface {
 
     public void deleteFood(Long id);
 
+    public java.util.Optional<Food> getFoodById(Long id);
+
     public Page<Food> getAllFood(Pageable p);
 }

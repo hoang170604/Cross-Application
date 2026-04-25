@@ -2,6 +2,7 @@ package com.crossapplication.main.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 import com.crossapplication.main.dto.ActivityDTO;
 import com.crossapplication.main.entity.Activity;
@@ -12,10 +13,12 @@ public interface ActivityMapper {
     @Mapping(source = "user.id", target = "userId")
     ActivityDTO toDto(Activity entity);
 
-    @Mapping(source = "userId", target = "user")
+    @Mapping(target = "id", ignore = true)
+    @Mapping(source = "userId", target = "user", qualifiedByName = "mapIdToUser")
     Activity toEntity(ActivityDTO dto);
 
-    default User map(Long userId) {
+    @Named("mapIdToUser")
+    default User mapIdToUser(Long userId) {
         if (userId == null) return null;
         User u = new User();
         u.setId(userId);

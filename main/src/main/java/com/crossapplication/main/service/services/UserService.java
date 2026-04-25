@@ -13,6 +13,8 @@ import com.crossapplication.main.entity.UserProfile;
 import com.crossapplication.main.repository.interfaces.NutritionGoalRepository;
 import com.crossapplication.main.repository.interfaces.UserRepositoryInterface;
 import com.crossapplication.main.service.interfaces.UserServiceInterface;
+import com.crossapplication.main.util.JwtTokenProvider;
+import com.crossapplication.main.util.PasswordEncoder;
 
 @Service
 public class UserService implements UserServiceInterface {
@@ -23,13 +25,22 @@ public class UserService implements UserServiceInterface {
     @Autowired
     private NutritionGoalRepository goalRepo;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
     @Override
     public User register(String email, String password) {
         Optional<User> existing = userRepo.findByEmail(email);
         if (existing.isPresent()) throw new IllegalArgumentException("Email already registered");
+        if (email == null || email.isBlank() || password == null || password.length() < 8) {
+            throw new IllegalArgumentException("Email and password (min 8 chars) are required");
+        }
         User u = new User();
         u.setEmail(email);
-        u.setPassword(password);
+        u.setPassword(PasswordEncoder.encodePassword(password));
         u.setCreatedAt(LocalDate.now());
         userRepo.save(u);
         return u;
@@ -40,8 +51,8 @@ public class UserService implements UserServiceInterface {
         Optional<User> uopt = userRepo.findByEmail(email);
         if (uopt.isEmpty()) throw new IllegalArgumentException("Invalid credentials");
         User u = uopt.get();
-        if (!u.getPassword().equals(password)) throw new IllegalArgumentException("Invalid credentials");
-        return "token-" + u.getId() + "-" + System.currentTimeMillis();
+        if (!PasswordEncoder.matches(password, u.getPassword())) throw new IllegalArgumentException("Invalid credentials");
+        return jwtTokenProvider.generateToken(u.getId(), u.getEmail());
     }
 
     @Override
@@ -49,7 +60,7 @@ public class UserService implements UserServiceInterface {
         Optional<User> uopt = userRepo.findByEmail(email);
         if (uopt.isEmpty()) throw new IllegalArgumentException("Invalid credentials");
         User u = uopt.get();
-        if (!u.getPassword().equals(password)) throw new IllegalArgumentException("Invalid credentials");
+        if (!PasswordEncoder.matches(password, u.getPassword())) throw new IllegalArgumentException("Invalid credentials");
         return u;
     }
 
@@ -57,8 +68,11 @@ public class UserService implements UserServiceInterface {
     public void changePassword(Long userId, String newPassword) {
         Optional<User> uopt = userRepo.findById(userId);
         if (uopt.isEmpty()) throw new IllegalArgumentException("User not found");
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters");
+        }
         User u = uopt.get();
-        u.setPassword(newPassword);
+        u.setPassword(PasswordEncoder.encodePassword(newPassword));
         userRepo.updateUser(u);
     }
         // cá nhân hóa, tính chỉ số cơ thể

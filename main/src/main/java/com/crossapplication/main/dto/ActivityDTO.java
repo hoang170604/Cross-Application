@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public class ActivityDTO {
     private Long id;
     private Long userId;
+    @jakarta.validation.constraints.NotNull(message = "Activity type is required")
     private String activityType;
     private Integer durationMinutes;
     private Double caloriesBurned;

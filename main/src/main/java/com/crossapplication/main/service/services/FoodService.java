@@ -102,6 +102,12 @@ public class FoodService implements FoodServiceInterface {
     }
 
     @Override
+    public java.util.Optional<Food> getFoodById(Long id) {
+        if (id == null) return java.util.Optional.empty();
+        return foodRepo.findById(id);
+    }
+
+    @Override
     public Page<Food> getAllFood(Pageable p) {
         List<Food> all = foodRepo.findAllFood();
         int total = all.size();

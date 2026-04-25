@@ -1,6 +1,7 @@
 package com.crossapplication.main.dto;
 
 public class FoodDTO {
+    @jakarta.validation.constraints.NotBlank(message = "Food name is required")
     private String name;
     private float caloriesPer100g;
     private float proteinPer100g;

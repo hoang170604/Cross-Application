@@ -1,0 +1,15 @@
+export 'activity_entity.dart';
+export 'daily_nutrition_entity.dart';
+export 'fasting_session_entity.dart';
+export 'fasting_state_entity.dart';
+export 'food_entity.dart';
+export 'food_category_entity.dart';
+export 'meal_entity.dart';
+export 'meal_log_entity.dart';
+export 'nutrition_goal_entity.dart';
+export 'report_summary_entity.dart';
+export 'user_entity.dart';
+export 'user_profile_entity.dart';
+export 'water_log_entity.dart';
+export 'weight_log_entity.dart';
+export 'workout_challenge_entity.dart';

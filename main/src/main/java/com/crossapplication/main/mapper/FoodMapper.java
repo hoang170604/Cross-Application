@@ -10,8 +10,7 @@ import com.crossapplication.main.entity.Food;
 public interface FoodMapper {
     FoodDTO toDTO(Food entity);
 
-    @Mapping(target="id", ignore=true)
-    @Mapping(target="category", ignore=true)
-
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "category", ignore = true)
     Food toEntity(FoodDTO dto);
 }

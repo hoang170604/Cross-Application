@@ -8,8 +8,8 @@ import jakarta.validation.constraints.Positive;
 
 public class WorkoutChallengeDTO {
     private Long id;
-
-    @NotNull
+    
+    @NotNull(message = "User ID is required")
     private Long userId;
 
     @NotBlank
