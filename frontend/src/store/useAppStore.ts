@@ -23,11 +23,30 @@ interface AppState {
   // Trạng thái Hồ sơ người dùng
   userProfile: UserProfile;
 
+  // ─── Hoạt động thể chất (local, reset mỗi ngày) ─────────────────────
+  activityCalories: number;
+  lastActivityDate: string;
+  loggedActivities: any[];
+
+  // ─── App Preferences ────────────────────────────────────────────────
+  theme: 'light' | 'dark';
+
   // Các hàm thiết lập nội bộ
   setLoading: (status: boolean) => void;
   setError: (error: string | null) => void;
   setPendingSync: (val: boolean) => void;
   updateUserProfile: (data: Partial<UserProfile>) => void;
+
+  // Theme
+  toggleTheme: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+
+  // Activity actions
+  addActivityCalories: (kcal: number) => void;
+  resetActivityCalories: () => void;
+  resetActivityIfNewDay: () => void;
+  addLoggedActivity: (activity: any) => void;
+  removeLoggedActivity: (uid: string, cals: number) => void;
 
   // Các actions gọi API (Async)
   login: (token: string, userId: number) => Promise<void>;
@@ -51,11 +70,64 @@ export const useAppStore = create<AppState>()(
       
       userProfile: DEFAULT_PROFILE,
 
+      // ─── Activity State ─────────────────────────────────────────────
+      activityCalories: 0,
+      lastActivityDate: '',
+      loggedActivities: [],
+
+      // ─── App Preferences ────────────────────────────────────────────────
+      theme: 'light' as 'light' | 'dark',
+
       // --- Sync Actions ---
       setLoading: (status) => set({ isLoading: status }),
       setError: (error) => set({ error: error }),
       setPendingSync: (val) => set({ pendingOnboardingSync: val }),
       updateUserProfile: (data) => set((state) => ({ userProfile: { ...state.userProfile, ...data } })),
+
+      toggleTheme: () => set((state) => ({ theme: (state.theme === 'light' ? 'dark' : 'light') as 'light' | 'dark' })),
+      setTheme: (theme) => set({ theme }),
+
+      // ─── Activity Actions ─────────────────────────────────────────────────
+      addActivityCalories: (kcal) => {
+        const today = getLocalToday();
+        set((state) => ({
+          activityCalories: (state.lastActivityDate === today ? state.activityCalories : 0) + kcal,
+          lastActivityDate: today,
+        }));
+      },
+
+      resetActivityCalories: () => {
+        set({ activityCalories: 0 });
+      },
+
+      resetActivityIfNewDay: () => {
+        const today = getLocalToday();
+        set((state) => {
+          if (state.lastActivityDate !== today) {
+            return { activityCalories: 0, lastActivityDate: today, loggedActivities: [] };
+          }
+          return {};
+        });
+      },
+
+      addLoggedActivity: (activity) => {
+        const today = getLocalToday();
+        set((state) => {
+          const isNewDay = state.lastActivityDate !== today;
+          return {
+            loggedActivities: isNewDay ? [activity] : [...state.loggedActivities, activity],
+            activityCalories: (isNewDay ? 0 : state.activityCalories) + activity.caloriesBurned,
+            lastActivityDate: today,
+          };
+        });
+      },
+
+      removeLoggedActivity: (uid, cals) => {
+        set((state) => ({
+          loggedActivities: state.loggedActivities.filter((a) => a.uid !== uid),
+          activityCalories: Math.max(0, state.activityCalories - cals),
+        }));
+      },
 
       // --- Async API Actions ---
       login: async (token, userId) => {
@@ -214,6 +286,9 @@ export const useAppStore = create<AppState>()(
         token: state.token,
         pendingOnboardingSync: state.pendingOnboardingSync,
         userProfile: state.userProfile,
+        activityCalories: state.activityCalories,
+        lastActivityDate: state.lastActivityDate,
+        theme: state.theme,
       }),
     }
   )
