@@ -79,7 +79,7 @@ class ProgressRemoteDatasourceImpl implements ProgressRemoteDatasource {
   Future<dynamic> getLatestWeight(int userId) async {
     try {
       final response = await dio.get(
-        '$_baseUrl/weight/latest',
+        '$_baseUrl/latest-weight',
         queryParameters: {'userId': userId},
       );
       if (response.statusCode != 200) {
@@ -95,7 +95,7 @@ class ProgressRemoteDatasourceImpl implements ProgressRemoteDatasource {
   Future<void> logWeight(int userId, double weight, DateTime date) async {
     try {
       final response = await dio.post(
-        '$_baseUrl/weight/log',
+        '$_baseUrl/log-weight',
         data: {
           'userId': userId,
           'weight': weight,
@@ -114,7 +114,7 @@ class ProgressRemoteDatasourceImpl implements ProgressRemoteDatasource {
   Future<dynamic> getDailyNutrition(int userId, DateTime date) async {
     try {
       final response = await dio.get(
-        '$_baseUrl/nutrition/daily',
+        '$_baseUrl/nutrition',
         queryParameters: {
           'userId': userId,
           'date': date.toIso8601String().split('T')[0],
