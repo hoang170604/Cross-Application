@@ -9,6 +9,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FoodItem } from '@/src/types';
 import { FoodItemRow } from './FoodItemRow';
+import { useTheme } from '@/src/hooks/useTheme';
+import { ThemeColors } from '@/src/core/theme';
 
 interface MealCardProps {
   /** Tên bữa ăn (VD: Bữa sáng, Bữa trưa...) */
@@ -34,6 +36,9 @@ const MealCardComponent: React.FC<MealCardProps> = ({
   totalCalories,
   onAddPress
 }) => {
+  const colors = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
+
   return (
     <View style={styles.card}>
       {/* Tiêu đề & Tổng calo */}
@@ -78,15 +83,15 @@ const MealCardComponent: React.FC<MealCardProps> = ({
 
 export const MealCard = React.memo(MealCardComponent);
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: colors.card, 
     borderRadius: 24, 
     padding: 20, 
     marginBottom: 16, 
     borderWidth: 1, 
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: colors.cardBorder,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
@@ -100,11 +105,11 @@ const styles = StyleSheet.create({
   title: { 
     fontWeight: '800', 
     fontSize: 18,
-    color: '#1E293B',
+    color: colors.text,
   },
   timeLabel: { 
     fontSize: 12, 
-    color: '#64748B', 
+    color: colors.textSecondary, 
     marginTop: 4,
     fontWeight: '500',
   },
@@ -114,16 +119,16 @@ const styles = StyleSheet.create({
   calText: { 
     fontWeight: '800', 
     fontSize: 18,
-    color: '#1E293B',
+    color: colors.text,
   },
   unitText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: colors.textSecondary,
   },
   itemCount: { 
     fontSize: 12, 
-    color: '#64748B', 
+    color: colors.textSecondary, 
     marginTop: 4,
     fontWeight: '500',
   },
@@ -133,7 +138,7 @@ const styles = StyleSheet.create({
   },
   emptyText: { 
     fontSize: 14, 
-    color: '#94A3B8', 
+    color: colors.textSecondary, 
     fontStyle: 'italic', 
     marginBottom: 20,
     textAlign: 'center',
@@ -142,7 +147,7 @@ const styles = StyleSheet.create({
   addButton: { 
     width: '100%', 
     paddingVertical: 12, 
-    backgroundColor: '#F0FDF4', 
+    backgroundColor: colors.success + '1A', // 10% opacity
     borderRadius: 16, 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -153,14 +158,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#D1FAE5',
+    borderColor: colors.success + '40', // 25% opacity
   },
   addButtonText: { 
-    color: '#047857', 
+    color: colors.success, 
     fontWeight: '700',
     fontSize: 14,
   },

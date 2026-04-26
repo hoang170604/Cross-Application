@@ -6,6 +6,8 @@ import { LineChart } from 'react-native-chart-kit';
 // ─── Import Atomic Hooks & Components ─────────────────────────────────────────
 import { useNutrition } from '@/src/hooks';
 import apiClient from '@/src/api/apiClient';
+import { useTheme } from '@/src/hooks/useTheme';
+import { ThemeColors } from '@/src/core/theme';
 import { PhysiologyStatsCard } from '@/src/ui/PhysiologyStatsCard';
 import { NutritionSummaryCard } from '@/src/ui/NutritionSummaryCard';
 import WeightHistoryChart from '@/src/ui/WeightHistoryChart';
@@ -64,9 +66,11 @@ export default function StatisticsScreen() {
 
   const { width } = Dimensions.get('window');
   const chartWidth = width - 96;
+  const colors = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>THỐNG KÊ</Text>
         <View style={styles.tabContainer}>
@@ -121,15 +125,15 @@ export default function StatisticsScreen() {
                 segments={3}
                 yLabelsOffset={16}
                 chartConfig={{
-                  backgroundColor: '#fff',
-                  backgroundGradientFrom: '#fff',
-                  backgroundGradientTo: '#fff',
+                  backgroundColor: colors.card,
+                  backgroundGradientFrom: colors.card,
+                  backgroundGradientTo: colors.card,
                   decimalPlaces: 0,
                   color: (opacity = 1) => `rgba(0, 196, 140, ${opacity})`,
-                  labelColor: () => '#94A3B8',
+                  labelColor: () => colors.textSecondary,
                   propsForBackgroundLines: {
                     strokeDasharray: "4",
-                    stroke: "#F1F5F9",
+                    stroke: colors.cardBorder,
                   },
                 }}
                 bezier={false}
@@ -140,7 +144,7 @@ export default function StatisticsScreen() {
                     r: index === 6 ? "7" : "5",
                     stroke: "#00C48C",
                     strokeWidth: index === 6 ? "3" : "0",
-                    fill: index === 6 ? "#fff" : "#00C48C"
+                    fill: index === 6 ? colors.card : "#00C48C"
                   };
                 }}
                 renderDotContent={({ x, y, index, indexData }) => {
@@ -153,13 +157,13 @@ export default function StatisticsScreen() {
                         position: 'absolute', 
                         top: y - 36, 
                         left: x - 20, 
-                        backgroundColor: '#1E293B', 
+                        backgroundColor: colors.text, 
                         paddingHorizontal: 8, 
                         paddingVertical: 4, 
                         borderRadius: 8 
                       }}
                     >
-                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>
+                      <Text style={{ color: colors.background, fontSize: 11, fontWeight: '800' }}>
                         {Math.round(indexData as number)}
                       </Text>
                     </View>
@@ -183,16 +187,16 @@ export default function StatisticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: '#F9FAFB' },
-  headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: 2, marginBottom: 24, color: '#1E293B' },
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
+  header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: colors.background },
+  headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: 2, marginBottom: 24, color: colors.text },
   tabContainer: { flexDirection: 'row', gap: 12 },
   activeTab: { paddingHorizontal: 32, paddingVertical: 10, backgroundColor: '#00C48C', borderRadius: 999, shadowColor: '#00C48C', shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   activeTabText: { color: '#fff', fontWeight: '800', fontSize: 14 },
-  inactiveTab: { paddingHorizontal: 32, paddingVertical: 10, backgroundColor: '#fff', borderRadius: 999, borderWidth: 1, borderColor: '#F1F5F9' },
-  inactiveTabText: { color: '#94A3B8', fontWeight: '700', fontSize: 14 },
-  chartCard: { backgroundColor: '#fff', borderRadius: 24, padding: 24, marginBottom: 24, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
-  chartTitle: { fontWeight: '800', fontSize: 16, color: '#1E293B', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  inactiveTab: { paddingHorizontal: 32, paddingVertical: 10, backgroundColor: colors.card, borderRadius: 999, borderWidth: 1, borderColor: colors.cardBorder },
+  inactiveTabText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
+  chartCard: { backgroundColor: colors.card, borderRadius: 24, padding: 24, marginBottom: 24, borderWidth: 1, borderColor: colors.cardBorder, shadowColor: colors.shadow, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+  chartTitle: { fontWeight: '800', fontSize: 16, color: colors.text, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
 });
 
 

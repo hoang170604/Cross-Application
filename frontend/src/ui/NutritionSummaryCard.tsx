@@ -7,6 +7,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ProgressBar } from './core/ProgressBar';
+import { useTheme } from '@/src/hooks/useTheme';
+import { ThemeColors } from '@/src/core/theme';
 
 interface NutritionSummaryCardProps {
   consumed: number;
@@ -16,6 +18,8 @@ interface NutritionSummaryCardProps {
 export const NutritionSummaryCard: React.FC<NutritionSummaryCardProps> = ({ consumed, target }) => {
   const isOver = consumed > target;
   const progress = target > 0 ? consumed / target : 0;
+  const colors = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
 
   return (
     <View style={styles.card}>
@@ -40,15 +44,15 @@ export const NutritionSummaryCard: React.FC<NutritionSummaryCardProps> = ({ cons
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 24,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: colors.cardBorder,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
@@ -57,7 +61,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 20,
     fontSize: 16,
-    color: '#1E293B',
+    color: colors.text,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -69,12 +73,12 @@ const styles = StyleSheet.create({
   mainValue: {
     fontSize: 34,
     fontWeight: '900',
-    color: '#1E293B',
+    color: colors.text,
   },
   targetValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: colors.textSecondary,
     marginLeft: 8,
   },
   progressSection: {

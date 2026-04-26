@@ -8,6 +8,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '@/src/store/useAppStore';
 import { resetAllStorage } from '@/scripts/resetStorage';
 
+// ─── Import UI Components & Core ────────────────────────────────────────────
+import { GoalSelectionModal } from '@/src/ui/GoalSelectionModal';
+import { ThemeSelectionModal } from '@/src/ui/ThemeSelectionModal';
+import { useState, useMemo } from 'react';
+import { useTheme } from '@/src/hooks/useTheme';
+import { ThemeColors } from '@/src/core/theme';
+
 /**
  * Màn hình Hồ sơ người dùng (Profile Tab).
  * Đồng bộ hóa với kiến trúc Modular và Global State.
@@ -19,8 +26,16 @@ export default function ProfileScreen() {
   // Truy cập dữ liệu toàn cục qua Context — bao gồm logout
   const { 
     userProfile,
-    logout 
+    logout,
+    theme,
+    setTheme
   } = useAppStore();
+
+  const colors = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
+  const [isGoalModalVisible, setGoalModalVisible] = useState(false);
+  const [isThemeModalVisible, setThemeModalVisible] = useState(false);
 
   const height = userProfile.height || 170;
   const currentWeight = userProfile.currentWeight !== undefined ? userProfile.currentWeight : (userProfile.weight || 70);
@@ -77,25 +92,29 @@ export default function ProfileScreen() {
   // Danh sách các tùy chọn cài đặt
   const settingsItems = [
     { 
+      id: 'goal',
       icon: '🎯', 
       title: 'Mục tiêu của tôi', 
       subtitle: userProfile.goal === 'lose_weight' ? 'Giảm cân' : userProfile.goal === 'gain_muscle' ? 'Tăng cơ' : 'Giữ dáng' 
     },
 
     { 
+      id: 'stats',
       icon: '👤', 
       title: 'Chỉ số sinh lý', 
       subtitle: `${gender}, ${age} tuổi, ${height}cm, ${currentWeight}kg` 
     },
     { 
+      id: 'noti',
       icon: '🔔', 
       title: 'Thông báo', 
       subtitle: 'Đã bật' 
     },
     { 
-      icon: '🌙', 
+      id: 'theme',
+      icon: theme === 'system' ? '⚙️' : theme === 'dark' ? '🌙' : '☀️', 
       title: 'Giao diện', 
-      subtitle: 'Chế độ sáng' 
+      subtitle: theme === 'system' ? 'Theo hệ thống' : theme === 'dark' ? 'Chế độ tối' : 'Chế độ sáng' 
     },
   ];
 
@@ -127,7 +146,17 @@ export default function ProfileScreen() {
         {/* Danh sách cài đặt mở rộng */}
         <View style={styles.settingsList}>
           {settingsItems.map((item, idx) => (
-            <TouchableOpacity key={idx} style={styles.settingItem}>
+            <TouchableOpacity 
+              key={idx} 
+              style={styles.settingItem}
+              onPress={() => {
+                if (item.id === 'goal') {
+                  setGoalModalVisible(true);
+                } else if (item.id === 'theme') {
+                  setThemeModalVisible(true);
+                }
+              }}
+            >
               <View style={styles.iconBox}>
                 <Text style={{ fontSize: 24 }}>{item.icon}</Text>
               </View>
@@ -143,9 +172,9 @@ export default function ProfileScreen() {
         {/* Nút Reset Data (Dev) */}
         <TouchableOpacity
           onPress={handleResetData}
-          style={[styles.logoutButton, { backgroundColor: '#FFF7ED', marginBottom: 12 }]}
+          style={[styles.logoutButton, { backgroundColor: theme === 'dark' ? '#451A1A' : '#FFF7ED', marginBottom: 12 }]}
         >
-          <Text style={[styles.logoutText, { color: '#F59E0B' }]}>🗑️ Reset toàn bộ dữ liệu</Text>
+          <Text style={[styles.logoutText, { color: theme === 'dark' ? '#FCA5A5' : '#F59E0B' }]}>🗑️ Reset toàn bộ dữ liệu</Text>
         </TouchableOpacity>
 
         {/* Nút đăng xuất */}
@@ -160,19 +189,28 @@ export default function ProfileScreen() {
           NUTRITRACK v1.2.0 • KIẾN TRÚC MODULAR
         </Text>
       </ScrollView>
+
+      <GoalSelectionModal 
+        visible={isGoalModalVisible} 
+        onClose={() => setGoalModalVisible(false)} 
+      />
+      <ThemeSelectionModal
+        visible={isThemeModalVisible}
+        onClose={() => setThemeModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 },
-  headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: 2, marginBottom: 24, color: '#1E293B' },
+  headerTitle: { fontSize: 18, fontWeight: '900', letterSpacing: 2, marginBottom: 24, color: colors.text },
   userCard: {
-    backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 8,
+    backgroundColor: colors.card, borderRadius: 24, padding: 20, marginBottom: 8,
     flexDirection: 'row', alignItems: 'center', gap: 16,
-    borderWidth: 1, borderColor: '#F3F4F6',
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+    borderWidth: 1, borderColor: colors.cardBorder,
+    shadowColor: colors.shadow, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
   avatar: {
     width: 60, height: 60, borderRadius: 30, backgroundColor: '#00C48C',
@@ -180,26 +218,25 @@ const styles = StyleSheet.create({
     shadowColor: '#86EFAC', shadowOpacity: 0.4, shadowRadius: 6, elevation: 3,
   },
   avatarText: { color: '#fff', fontSize: 24, fontWeight: '900' },
-  userName: { fontWeight: '800', fontSize: 18, color: '#1E293B' },
-  userEmail: { fontSize: 13, fontWeight: '600', color: '#94A3B8' },
-  editIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
+  userName: { fontWeight: '800', fontSize: 18, color: colors.text },
+  userEmail: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  editIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.iconBg, alignItems: 'center', justifyContent: 'center' },
   scrollView: { flex: 1, paddingHorizontal: 24 },
   scrollContent: { paddingBottom: 32 },
   settingsList: { gap: 12, marginBottom: 32, marginTop: 16 },
   settingItem: {
-    width: '100%', backgroundColor: '#fff', borderRadius: 20, padding: 16,
+    width: '100%', backgroundColor: colors.card, borderRadius: 20, padding: 16,
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1, borderColor: '#F3F4F6',
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+    borderWidth: 1, borderColor: colors.cardBorder,
+    shadowColor: colors.shadow, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
-  iconBox: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
-  settingTitle: { fontWeight: '700', fontSize: 15, color: '#1E293B' },
-  settingSubtitle: { fontSize: 13, color: '#94A3B8', fontWeight: '500', marginTop: 1 },
+  iconBox: { width: 48, height: 48, borderRadius: 12, backgroundColor: colors.iconBg, alignItems: 'center', justifyContent: 'center' },
+  settingTitle: { fontWeight: '700', fontSize: 15, color: colors.text },
+  settingSubtitle: { fontSize: 13, color: colors.textSecondary, fontWeight: '500', marginTop: 1 },
   logoutButton: {
-    width: '100%', paddingVertical: 18, backgroundColor: '#FEF2F2', borderRadius: 999,
+    width: '100%', paddingVertical: 18, backgroundColor: colors.background === '#0F172A' ? '#451A1A' : '#FEF2F2', borderRadius: 999,
     alignItems: 'center',
   },
-  logoutText: { color: '#EF4444', fontWeight: '800', fontSize: 15 },
-  versionText: { textAlign: 'center', fontSize: 12, fontWeight: '700', color: '#CBD5E1', marginTop: 32 },
+  logoutText: { color: colors.danger, fontWeight: '800', fontSize: 15 },
+  versionText: { textAlign: 'center', fontSize: 12, fontWeight: '700', color: colors.iconColor, marginTop: 32 },
 });
-
