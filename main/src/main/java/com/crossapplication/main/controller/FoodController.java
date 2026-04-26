@@ -21,6 +21,7 @@ import com.crossapplication.main.dto.ApiResponse;
 import com.crossapplication.main.dto.FoodDTO;
 import com.crossapplication.main.entity.Food;
 import com.crossapplication.main.entity.FoodCategory;
+import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.service.interfaces.FoodServiceInterface;
 
 import jakarta.validation.Valid;
@@ -83,22 +84,26 @@ public class FoodController {
         }
     }
 
-    // POST /api/foods
-    @PostMapping
-    public ResponseEntity<ApiResponse<?>> createFood(@Valid @RequestBody FoodDTO foodDTO) {
+    // POST /api/meals/{userId}/{mealId}/foods?foodId=1&weight=100
+    @PostMapping("/meals/{userId}/{mealId}/foods")
+    public ResponseEntity<ApiResponse<?>> addFoodToMeal(
+            @PathVariable Long userId,
+            @PathVariable Long mealId,
+            @RequestParam Long foodId,
+            @RequestParam Double weight) {
         try {
-            if (foodDTO == null || foodDTO.getName() == null) {
+            if (userId == null || mealId == null || foodId == null || weight == null || weight <= 0) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Food name is required", "INVALID_FOOD"));
+                        .body(ApiResponse.error("userId, mealId, foodId, and weight (positive) are required", "INVALID_PARAMS"));
             }
-            FoodDTO created = foodService.createFood(foodDTO);
+            MealLog mealLog = foodService.addFoodToMeal(userId, mealId, foodId, weight);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(created, "Food created successfully"));
+                    .body(ApiResponse.success(mealLog, "Food added to meal successfully"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "CREATE_FAILED"));
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "ADD_FOOD_FAILED"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage(), "CREATE_ERROR"));
+                    .body(ApiResponse.error(e.getMessage(), "ADD_FOOD_ERROR"));
         }
     }
 

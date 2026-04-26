@@ -14,8 +14,12 @@ import org.springframework.stereotype.Service;
 import com.crossapplication.main.dto.FoodDTO;
 import com.crossapplication.main.entity.Food;
 import com.crossapplication.main.entity.FoodCategory;
+import com.crossapplication.main.entity.Meal;
+import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.repository.interfaces.FoodCategoryRepository;
 import com.crossapplication.main.repository.interfaces.FoodRepositoryInterface;
+import com.crossapplication.main.repository.interfaces.MealLogRepository;
+import com.crossapplication.main.repository.interfaces.MealRepositoryInterface;
 import com.crossapplication.main.service.interfaces.FoodServiceInterface;
 
 @Service
@@ -26,6 +30,12 @@ public class FoodService implements FoodServiceInterface {
 
     @Autowired
     private FoodCategoryRepository categoryRepo;
+
+    @Autowired
+    private MealRepositoryInterface mealRepo;
+
+    @Autowired
+    private MealLogRepository mealLogRepo;
 
     @Override
     public List<Food> getAllFood() {
@@ -64,18 +74,35 @@ public class FoodService implements FoodServiceInterface {
     }
 
     @Override
-    public FoodDTO createFood(FoodDTO dto) {
-        if (dto == null) throw new IllegalArgumentException("dto required");
-        Food f = new Food();
-        f.setName(dto.getName());
-        f.setCaloriesPer100g(dto.getCaloriesPer100g());
-        f.setProteinPer100g(dto.getProteinPer100g());
-        f.setCarbPer100g(dto.getCarbPer100g());
-        f.setFatPer100g(dto.getFatPer100g());
-        Food saved = foodRepo.saveFood(f);
-        FoodDTO out = new FoodDTO(saved.getCaloriesPer100g(), saved.getProteinPer100g(), saved.getCarbPer100g(), saved.getFatPer100g());
-        out.setName(saved.getName());
-        return out;
+    public MealLog addFoodToMeal(Long userId, Long mealId, Long foodId, double weightInGrams) {
+        if (userId == null || mealId == null || foodId == null || weightInGrams <= 0) {
+            throw new IllegalArgumentException("userId, mealId, foodId required and weight must be positive");
+        }
+
+        Optional<Food> foodOpt = foodRepo.findById(foodId);
+        if (foodOpt.isEmpty()) {
+            throw new IllegalArgumentException("Food not found with id: " + foodId);
+        }
+
+        List<Meal> meals = mealRepo.findByUserIdAndDate(userId, java.time.LocalDate.now());
+        Meal targetMeal = meals.stream()
+                .filter(m -> m.getId().equals(mealId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Meal not found or does not belong to user"));
+
+        Food food = foodOpt.get();
+        Map<String, Double> nutrition = calculateNutrition(foodId, weightInGrams);
+
+        MealLog mealLog = new MealLog();
+        mealLog.setMeal(targetMeal);
+        mealLog.setFood(food);
+        mealLog.setQuantity(weightInGrams);
+        mealLog.setCalories(nutrition.get("calories"));
+        mealLog.setProtein(nutrition.get("protein"));
+        mealLog.setCarb(nutrition.get("carb"));
+        mealLog.setFat(nutrition.get("fat"));
+
+        return mealLogRepo.save(mealLog);
     }
 
     @Override

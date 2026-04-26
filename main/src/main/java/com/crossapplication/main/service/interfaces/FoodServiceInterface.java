@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import com.crossapplication.main.dto.FoodDTO;
 import com.crossapplication.main.entity.Food;
 import com.crossapplication.main.entity.FoodCategory;
+import com.crossapplication.main.entity.MealLog;
 
 public interface FoodServiceInterface {
     public List<Food> getAllFood();
@@ -21,7 +22,7 @@ public interface FoodServiceInterface {
 
     public Map<String, Double> calculateNutrition(Long id, double weightInGrams);
 
-    public FoodDTO createFood(FoodDTO dto);
+    public MealLog addFoodToMeal(Long userId, Long mealId, Long foodId, double weightInGrams);
 
     public FoodDTO updateFood(Long id, FoodDTO dto);
 
