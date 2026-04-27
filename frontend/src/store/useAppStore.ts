@@ -40,6 +40,13 @@ interface AppState {
   // ─── App Preferences ───────────────────────────────────────────────────
   theme: 'light' | 'dark' | 'system';
 
+  // ─── Tracking (Water & Weight) ───────────────────────────────────────
+  waterIntake: number;
+  waterTarget: number;
+  latestWeight: number | null;
+  isWaterLoading: boolean;
+  isWeightLoading: boolean;
+
   // Các hàm thiết lập nội bộ
   setLoading: (status: boolean) => void;
   setError: (error: string | null) => void;
@@ -57,6 +64,7 @@ interface AppState {
   logout: () => Promise<void>;
   addFood: (mealType: keyof DailyMeals, food: FoodItem) => Promise<void>;
   updateCurrentWeight: (newWeight: number) => Promise<void>;
+  logWeight: (weight: number, date?: string) => Promise<void>;
   fetchDiaryFromServer: (date: string) => Promise<void>;
   syncAllDataToCloud: () => Promise<void>;
 
@@ -77,6 +85,8 @@ interface AppState {
   // ─── Daily Nutrition Actions ─────────────────────────────────────────
   fetchDailyNutrition: (date?: string) => Promise<void>;
   logWater: (amountMl: number) => Promise<void>;
+  fetchWaterIntake: (date?: string) => Promise<void>;
+  fetchLatestWeight: () => Promise<void>;
   recalculateGoals: () => void;
 }
 
@@ -107,6 +117,13 @@ export const useAppStore = create<AppState>()(
 
       // ─── App Preferences ───────────────────────────────────────────────
       theme: 'system' as 'light' | 'dark' | 'system',
+
+      // ─── Tracking (Water & Weight) ───────────────────────────────────────
+      waterIntake: 0,
+      waterTarget: 2000,
+      latestWeight: null,
+      isWaterLoading: false,
+      isWeightLoading: false,
 
       // --- Sync Actions ---
       setLoading: (status) => set({ isLoading: status }),
@@ -320,6 +337,9 @@ export const useAppStore = create<AppState>()(
             console.log('[Store] Goal fetch not found or error (new user):', e.message);
           }
 
+          get().fetchWaterIntake();
+          get().fetchLatestWeight();
+
           // Fetch thông tin profile đầy đủ từ server (nếu user đã có profile trước đó)
           try {
             const userRes = await userApi.getUserProfile(userId);
@@ -366,6 +386,8 @@ export const useAppStore = create<AppState>()(
             lastActivityDate: '',
             loggedActivities: [],
             pendingOnboardingSync: false,
+            waterIntake: 0,
+            latestWeight: null,
           });
           await AsyncStorage.clear();
         } catch (error: any) {
@@ -452,6 +474,23 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      logWeight: async (weight, date) => {
+        const { userId } = get();
+        if (!userId) return;
+        const logDate = date || getLocalToday();
+
+        try {
+          set({ isWeightLoading: true });
+          await progressApi.logWeight(userId, logDate, weight);
+          // Auto-refresh after POST
+          await get().fetchLatestWeight();
+        } catch (error: any) {
+          console.warn('[Store] logWeight failed:', error.message);
+        } finally {
+          set({ isWeightLoading: false });
+        }
+      },
+
       fetchDiaryFromServer: async (date) => {
         const { userId, userProfile } = get();
         if (!userId) return;
@@ -471,6 +510,10 @@ export const useAppStore = create<AppState>()(
 
           // 3. Fetch danh sách hoạt động từ server
           await get().fetchActivities(date);
+
+          // 4. Fetch tracking (water, weight)
+          await get().fetchWaterIntake(date);
+          await get().fetchLatestWeight();
         } catch (error: any) {
           if (error?.message?.includes('Network Error') || error.response?.status === 404) {
             console.warn('[NutriTrack] Server không phản hồi GET diary. Lấy tạm từ Local');
@@ -638,13 +681,64 @@ export const useAppStore = create<AppState>()(
         const today = getLocalToday();
 
         try {
+          set({ isWaterLoading: true });
           // 1. Gọi API
           await progressApi.logWater(userId, amountMl, today);
           
-          // 2. Fetch lại daily nutrition để cập nhật UI
+          // 2. Fetch lại daily nutrition & water intake để cập nhật UI
           await get().fetchDailyNutrition(today);
+          await get().fetchWaterIntake(today);
         } catch (error: any) {
           console.warn('[Store] logWater failed:', error.message);
+        } finally {
+          set({ isWaterLoading: false });
+        }
+      },
+
+      fetchWaterIntake: async (date) => {
+        const { userId } = get();
+        if (!userId) return;
+        const targetDate = date || getLocalToday();
+
+        try {
+          set({ isWaterLoading: true });
+          const res = await progressApi.getDailyWaterTotal(userId, targetDate);
+          if (res && res.data !== undefined) {
+            set({ waterIntake: res.data });
+          }
+        } catch (error: any) {
+          console.warn('[Store] fetchWaterIntake failed:', error.message);
+        } finally {
+          set({ isWaterLoading: false });
+        }
+      },
+
+      fetchLatestWeight: async () => {
+        const { userId } = get();
+        if (!userId) return;
+
+        try {
+          set({ isWeightLoading: true });
+          const res = await progressApi.getLatestWeight(userId);
+          if (res && res.data) {
+            set({ latestWeight: res.data.weight });
+          }
+        } catch (error: any) {
+          if (error.response?.status === 404) {
+            // Fallback to user profile
+            try {
+               const userRes = await userApi.getUserProfile(userId);
+               if (userRes && userRes.data) {
+                 set({ latestWeight: userRes.data.currentWeight || userRes.data.weight });
+               }
+            } catch (e: any) {
+               console.warn('[Store] fetchLatestWeight fallback failed:', e.message);
+            }
+          } else {
+            console.warn('[Store] fetchLatestWeight failed:', error.message);
+          }
+        } finally {
+          set({ isWeightLoading: false });
         }
       },
 
@@ -680,6 +774,7 @@ export const useAppStore = create<AppState>()(
         activityCalories: state.activityCalories,
         lastActivityDate: state.lastActivityDate,
         theme: state.theme,
+        waterTarget: state.waterTarget,
       }),
     }
   )

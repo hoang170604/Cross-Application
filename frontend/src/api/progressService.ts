@@ -20,6 +20,13 @@ export const getWeightHistory = async (userId: number, startDate: string, endDat
   return response.data;
 };
 
+export const getLatestWeight = async (userId: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/api/progress/latest-weight?userId=${userId}`
+  );
+  return response.data;
+};
+
 // ─── Water ───────────────────────────────────────────────────────────
 
 export const logWater = async (userId: number, amountMl: number, logDate: string): Promise<ApiResponse<any>> => {

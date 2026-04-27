@@ -11,6 +11,7 @@ import {
   Keyboard,
   TouchableOpacity 
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +28,7 @@ import { CalorieCircle } from '@/src/ui/CalorieCircle';
 import { MealCard } from '@/src/ui/MealCard';
 import { MacroRings } from '@/src/ui/MacroRings';
 import { ActivitySection } from '@/src/ui/ActivitySection';
+import { TrackingSection } from '@/src/ui/TrackingSection';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -47,9 +49,16 @@ export default function DiaryDashboardScreen() {
   } = useNutrition();
 
   // ── Activity state ────────────────────────────────────────────────
-  const { activityCalories } = useAppStore();
+  const { activityCalories, fetchWaterIntake, fetchLatestWeight } = useAppStore();
 
   const colors = useTheme();
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchWaterIntake();
+      fetchLatestWeight();
+    }, [fetchWaterIntake, fetchLatestWeight])
+  );
 
 
 
@@ -127,6 +136,9 @@ export default function DiaryDashboardScreen() {
               dailyMeals={userProfile.dailyMeals}
               targetCalories={userProfile.targetCalories || 2000}
             />
+
+            {/* Theo dõi Nước & Cân nặng */}
+            <TrackingSection />
           </ScrollView>
         </SafeAreaView>
       </TouchableWithoutFeedback>
