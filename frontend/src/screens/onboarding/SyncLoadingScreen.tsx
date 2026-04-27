@@ -33,13 +33,17 @@ export default function SyncLoadingScreen() {
         
         // Cập nhật lại state với các chỉ số mục tiêu do BE tính toán
         // Backend trả về ApiResponse<NutritionGoal>, dữ liệu thật nằm trong .data
-        if (responseData?.data) {
+        if (responseData?.data && responseData.data.targetCalories) {
           updateUserProfile({
-            targetCalories: Math.round(responseData.data.targetCalories || 0),
+            targetCalories: Math.round(responseData.data.targetCalories),
             targetProtein: Math.round(responseData.data.targetProtein || 0),
             targetCarb: Math.round(responseData.data.targetCarb || 0),
             targetFat: Math.round(responseData.data.targetFat || 0)
           });
+        } else {
+          // Fallback local calculation
+          const { recalculateGoals } = useAppStore.getState();
+          recalculateGoals();
         }
 
         // Xóa cờ pending sync

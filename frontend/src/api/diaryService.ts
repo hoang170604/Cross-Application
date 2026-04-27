@@ -23,7 +23,7 @@ export const addFoodToMeal = async (
   payload: MealLogPayload
 ): Promise<ApiResponse<any>> => {
   const response = await apiClient.post<ApiResponse<any>>(
-    `/api/diary/users/${userId}/meals/${mealType}?date=${date}`,
+    `/api/diaries/users/${userId}/meals/${mealType}?date=${date}`,
     payload
   );
   return response.data;
@@ -31,17 +31,17 @@ export const addFoodToMeal = async (
 
 /** Lấy nhật ký bữa ăn theo ngày */
 export const getDiary = async (userId: number, date: string): Promise<ApiResponse<any>> => {
-  const response = await apiClient.get<ApiResponse<any>>(`/api/diary/users/${userId}?date=${date}`);
+  const response = await apiClient.get<ApiResponse<any>>(`/api/diaries/users/${userId}?date=${date}`);
   return response.data;
 };
 
 /** Cập nhật một MealLog */
 export const updateMealLog = async (id: number, payload: Partial<MealLogPayload>): Promise<ApiResponse<any>> => {
-  const response = await apiClient.put<ApiResponse<any>>(`/api/diary/meallogs/${id}`, payload);
+  const response = await apiClient.put<ApiResponse<any>>(`/api/diaries/meal-logs/${id}`, payload);
   return response.data;
 };
 
 /** Xóa một MealLog */
 export const deleteMealLog = async (id: number): Promise<void> => {
-  await apiClient.delete(`/api/diary/meallogs/${id}`);
+  await apiClient.delete(`/api/diaries/meal-logs/${id}`);
 };

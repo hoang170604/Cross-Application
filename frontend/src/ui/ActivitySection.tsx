@@ -30,8 +30,11 @@ interface LocalActivity {
   caloriesBurned: number;
 }
 
-// ─── Activity Chip ────────────────────────────────────────────────────────────
-const ActivityChip: React.FC<{ item: LocalActivity; onDelete: (uid: string, cals: number) => void }> = ({ item, onDelete }) => {
+// ─── Activity Item (Vertical Row) ─────────────────────────────────────────────
+const ActivityItem: React.FC<{ 
+  item: any; 
+  onPress: () => void;
+}> = ({ item, onPress }) => {
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
   
@@ -39,26 +42,31 @@ const ActivityChip: React.FC<{ item: LocalActivity; onDelete: (uid: string, cals
   const uiInfo = ACTIVITIES.find(a => a.id === item.id) || ACTIVITIES[0];
 
   return (
-    <View style={styles.chip}>
-      <View style={[styles.chipIcon, { backgroundColor: uiInfo.bgColor }]}>
-        <MaterialCommunityIcons name={uiInfo.icon as any} size={18} color={uiInfo.iconColor} />
+    <TouchableOpacity 
+      style={styles.row} 
+      activeOpacity={0.6}
+      onPress={onPress}
+    >
+      {/* Icon Circle (matching MealCard style) */}
+      <View style={styles.iconContainer}>
+        <View style={[styles.emojiCircle, { backgroundColor: uiInfo.bgColor + '40' }]}>
+          <MaterialCommunityIcons name={uiInfo.icon as any} size={20} color={uiInfo.iconColor} />
+        </View>
       </View>
-      <View style={styles.chipText}>
-        <Text style={styles.chipName} numberOfLines={1}>{uiInfo.name}</Text>
-        <Text style={styles.chipCals}>{item.minutes} ph · {item.caloriesBurned} kcal</Text>
+
+      {/* Details (Title & Params) */}
+      <View style={styles.detailsContainer}>
+        <View style={styles.titleRow}>
+          <Text style={styles.activityName}>{uiInfo.name}</Text>
+          <MaterialCommunityIcons name="chevron-right" size={16} color={colors.textSecondary} style={{ marginLeft: 4 }} />
+        </View>
+        <Text style={styles.activityStats}>
+          {item.minutes} phút · {item.caloriesBurned} kcal
+        </Text>
       </View>
-      <TouchableOpacity
-        onPress={() => onDelete(item.uid, item.caloriesBurned)}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        style={styles.chipDelete}
-        activeOpacity={0.6}
-      >
-        <MaterialCommunityIcons name="close-circle" size={18} color={colors.iconColor} />
-      </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 };
-
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -66,93 +74,125 @@ const ActivitySectionComponent: React.FC = () => {
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
 
-  // ── State: bật/tắt Modal ──────────────────────────────────────────────────────
+  // ── State: bật/tắt Modal & Chỉnh sửa ─────────────────────────────────────────
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   // ── Store ────────────────────────────────────────────────────────────
-  const { loggedActivities: activities, addLoggedActivity, removeLoggedActivity, fetchActivities } = useAppStore();
+  const { 
+    loggedActivities: activities, 
+    addLoggedActivity, 
+    updateLoggedActivity,
+    removeLoggedActivity, 
+    fetchActivities,
+    fetchActivityTypes
+  } = useAppStore();
 
   useEffect(() => {
     fetchActivities();
-  }, [fetchActivities]);
+    fetchActivityTypes();
+  }, [fetchActivities, fetchActivityTypes]);
 
   // ── Handler: nhận bài tập từ Modal ───────────────────────────────────
   const handleSelectActivity = useCallback((activity: Activity, minutes: number) => {
     const cals = Math.round(activity.caloriesPerMin * minutes);
-    console.log('[ActivitySection] handleSelectActivity:', { activityId: activity.id, minutes, cals });
-    addLoggedActivity({ id: activity.id, minutes, caloriesBurned: cals });
-  }, [addLoggedActivity]);
+    
+    if (editingItem) {
+      // Gọi API update thay vì xóa/thêm mới
+      updateLoggedActivity(editingItem.uid, {
+        id: activity.id,
+        minutes,
+        caloriesBurned: cals
+      });
+    } else {
+      addLoggedActivity({ id: activity.id, minutes, caloriesBurned: cals });
+    }
+    
+    setEditingItem(null);
+  }, [addLoggedActivity, updateLoggedActivity, editingItem]);
 
 
-  // ── Handler: xóa hoạt động ──────────────────────────────────────────
-  const handleDelete = useCallback((uid: string, cals: number) => {
-    removeLoggedActivity(uid, cals);
-  }, [removeLoggedActivity]);
+  // ── Handler: bắt đầu chỉnh sửa ────────────────────────────────────────
+  const handleEditActivity = useCallback((item: any) => {
+    console.log('[ActivitySection] Chỉnh sửa hoạt động:', item.id);
+    setEditingItem(item);
+    setModalVisible(true);
+  }, []);
+
+  // ── Handler: đóng modal ─────────────────────────────────────────────
+  const handleCloseModal = useCallback(() => {
+    setModalVisible(false);
+    setEditingItem(null);
+  }, []);
 
   // ── Tổng calo đốt cháy ────────────────────────────────────────────────────
   const totalBurned = activities.reduce((sum: any, a: any) => sum + (a.caloriesBurned || 0), 0);
 
   return (
-    <>
-      <View style={styles.card}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <View style={styles.headerIconCircle}>
-              <MaterialCommunityIcons name="fire" size={18} color="#EF4444" />
-            </View>
-            <View>
-              <Text style={styles.title}>Hoạt động</Text>
-              {totalBurned > 0 && (
-                <Text style={styles.subtitle}>Đốt cháy: {totalBurned} kcal</Text>
-              )}
-            </View>
-          </View>
-
-          {/* Nút (+) mở Modal */}
-          <TouchableOpacity
-            style={styles.addButton}
-            activeOpacity={0.75}
-            onPress={() => setModalVisible(true)}
-          >
-            <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Header outside the card like MealCard */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Hoạt động</Text>
+          {/* {totalBurned > 0 && (
+            <Text style={styles.headerSubtitle}>Đốt cháy {totalBurned} kcal</Text>
+          )} */}
         </View>
+        <TouchableOpacity
+          style={styles.headerAddButton}
+          activeOpacity={0.75}
+          onPress={() => {
+            setEditingItem(null);
+            setModalVisible(true);
+          }}
+        >
+          <MaterialCommunityIcons name="plus" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
 
-        {/* Danh sách ngang hoặc placeholder */}
+      <View style={styles.card}>
         {activities.length === 0 ? (
           <TouchableOpacity 
             style={styles.emptyState} 
             activeOpacity={0.6}
-            onPress={() => setModalVisible(true)}
+            onPress={() => {
+              setEditingItem(null);
+              setModalVisible(true);
+            }}
           >
-            <MaterialCommunityIcons name="run" size={28} color="#CBD5E1" />
-            <Text style={styles.emptyText}>Chưa có hoạt động nào{'\n'}Nhấn vào đây để thêm</Text>
+            <View style={styles.emptyIconCircle}>
+              <MaterialCommunityIcons name="run" size={24} color={colors.textSecondary} />
+            </View>
+            <View style={styles.emptyTextContainer}>
+              <Text style={styles.emptyTitle}>Chưa có hoạt động</Text>
+              <Text style={styles.emptySubtitle}>Bắt đầu luyện tập ngay hôm nay</Text>
+            </View>
+            <MaterialCommunityIcons name="plus" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
-            {activities.map((item: any) => (
-              <ActivityChip
-                key={item.uid || item.id}
-                item={item}
-                onDelete={handleDelete}
-              />
+          <View>
+            {activities.map((item: any, index: number) => (
+              <React.Fragment key={item.uid || item.id}>
+                <ActivityItem
+                  item={item}
+                  onPress={() => handleEditActivity(item)}
+                />
+                {index < activities.length - 1 && <View style={styles.divider} />}
+              </React.Fragment>
             ))}
-          </ScrollView>
+          </View>
         )}
       </View>
 
       {/* ─── Modal chọn bài tập ──────────────────────────────────────── */}
       <AddActivityModal
         visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        onClose={handleCloseModal}
         onSelectActivity={handleSelectActivity}
+        initialActivity={editingItem ? ACTIVITIES.find(a => a.id === editingItem.id) : null}
+        initialMinutes={editingItem?.minutes || 30}
       />
-    </>
+    </View>
   );
 };
 
@@ -161,54 +201,31 @@ export const ActivitySection = React.memo(ActivitySectionComponent);
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    shadowColor: colors.shadow,
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+  container: {
+    marginBottom: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  headerIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: colors.danger + '20', // Opacity 20%
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 22,
     fontWeight: '800',
     color: colors.text,
   },
-  subtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    marginTop: 1,
+  headerSubtitle: {
+    fontSize: 14,
+    color: colors.danger,
+    fontWeight: '600',
+    marginTop: -2,
   },
-
-  // Nút +
-  addButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  headerAddButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#EF4444',
     alignItems: 'center',
     justifyContent: 'center',
@@ -217,62 +234,100 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-
-  // Empty State
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 16,
-    gap: 6,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-
-  // Scroll ngang
-  scrollContent: {
-    gap: 10,
-    paddingVertical: 2,
-  },
-
-  // Chip
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 10,
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 24,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  chipIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  emojiCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+  },
+  detailsContainer: {
+    flex: 1,
     justifyContent: 'center',
   },
-  chipText: {
-    flexDirection: 'column',
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
   },
-  chipName: {
-    fontSize: 13,
+  activityName: {
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
-  chipCals: {
-    fontSize: 11,
+  activityStats: {
+    fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
-    marginTop: 1,
   },
-  chipDelete: {
-    marginLeft: 2,
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.cardBorder,
+    marginHorizontal: 16,
+  },
+  // Empty State
+  emptyState: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  emptyIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  emptyTextContainer: {
+    flex: 1,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
 });

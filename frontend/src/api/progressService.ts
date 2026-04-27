@@ -9,26 +9,26 @@ import { ApiResponse } from '../types/api.types';
 // ─── Weight ──────────────────────────────────────────────────────────
 
 export const logWeight = async (userId: number, date: string, weight: number): Promise<ApiResponse<any>> => {
-  const response = await apiClient.post<ApiResponse<any>>('/api/progress/weight', { userId, date, weight });
+  const response = await apiClient.post<ApiResponse<any>>('/api/progress/log-weight', { userId, date, weight });
   return response.data;
 };
 
 export const getWeightHistory = async (userId: number, startDate: string, endDate: string): Promise<ApiResponse<any>> => {
   const response = await apiClient.get<ApiResponse<any>>(
-    `/api/progress/weight/history?userId=${userId}&startDate=${startDate}&endDate=${endDate}`
+    `/api/progress/weight?userId=${userId}&startDate=${startDate}&endDate=${endDate}`
   );
   return response.data;
 };
 
 // ─── Water ───────────────────────────────────────────────────────────
 
-export const logWater = async (amountMl: number, logDate: string): Promise<ApiResponse<any>> => {
-  const response = await apiClient.post<ApiResponse<any>>('/api/water', { amountMl, logDate });
+export const logWater = async (userId: number, amountMl: number, logDate: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post<ApiResponse<any>>('/api/water/log', { userId, amountMl, timestamp: logDate });
   return response.data;
 };
 
 export const getDailyWaterTotal = async (userId: number, date: string): Promise<ApiResponse<any>> => {
-  const response = await apiClient.get<ApiResponse<any>>(`/api/water/daily?userId=${userId}&date=${date}`);
+  const response = await apiClient.get<ApiResponse<any>>(`/api/water/daily-total?userId=${userId}&date=${date}`);
   return response.data;
 };
 

@@ -134,7 +134,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textSecondary, 
     marginTop: 4, 
     fontWeight: '600',
-    textTransform: 'uppercase',
+    // textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   circleWrapper: {

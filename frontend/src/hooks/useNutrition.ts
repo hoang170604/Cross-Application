@@ -54,16 +54,6 @@ export function useNutrition() {
     };
   }, [userProfile.dailyMeals, store.dailyNutrition]);
 
-  // ─── Tương thích ngược: Hành động không nằm trong Store cốt lõi ─────────
-  const logWater = async (amountMl: number) => {
-      try {
-          const today = getLocalToday();
-          await apiClient.post('/api/water', { amountMl, logDate: today });
-      } catch (error: any) {
-          console.warn('API Nước chưa hoàn thiện, lỗi:', error.message);
-      }
-  };
-
   return {
     ...store,
     bmr,
@@ -71,7 +61,6 @@ export function useNutrition() {
     bmi,
     totalEatenCalories,
     totalEatenMacros,
-    logWater
   };
 }
 

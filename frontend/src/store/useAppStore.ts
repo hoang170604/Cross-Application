@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, DEFAULT_PROFILE, FoodItem, DailyMeals, WorkoutChallenge, DailyNutrition, ActivityTypeInfo } from '../types';
 import { getLocalToday } from '../core/dateFormatter';
+import { calculateNutritionalGoals } from '../core/calculateNutrition';
 
 // ─── API Service Imports (Layer-based) ────────────────────────────────────
 import * as diaryApi from '../api/diaryService';
@@ -63,6 +64,7 @@ interface AppState {
   fetchActivities: (date?: string) => Promise<void>;
   fetchActivityTypes: () => Promise<void>;
   addLoggedActivity: (activity: any) => Promise<void>;
+  updateLoggedActivity: (uid: string | number, activity: any) => Promise<void>;
   removeLoggedActivity: (uid: string | number, cals: number) => Promise<void>;
 
   // ─── Workout Challenge Actions ─────────────────────────────────────────
@@ -74,6 +76,8 @@ interface AppState {
 
   // ─── Daily Nutrition Actions ─────────────────────────────────────────
   fetchDailyNutrition: (date?: string) => Promise<void>;
+  logWater: (amountMl: number) => Promise<void>;
+  recalculateGoals: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -108,7 +112,14 @@ export const useAppStore = create<AppState>()(
       setLoading: (status) => set({ isLoading: status }),
       setError: (error) => set({ error: error }),
       setPendingSync: (val) => set({ pendingOnboardingSync: val }),
-      updateUserProfile: (data) => set((state) => ({ userProfile: { ...state.userProfile, ...data } })),
+      updateUserProfile: (data) => {
+        set((state) => ({ userProfile: { ...state.userProfile, ...data } }));
+        // Tự động tính toán lại mục tiêu nếu thay đổi các chỉ số cơ bản
+        const keys = Object.keys(data);
+        if (keys.some(k => ['weight', 'height', 'age', 'gender', 'goal', 'activityLevel', 'currentWeight'].includes(k))) {
+          get().recalculateGoals();
+        }
+      },
 
       toggleTheme: () => set((state) => ({
         theme: state.theme === 'dark' ? 'light' : state.theme === 'light' ? 'dark' : 'system'
@@ -117,17 +128,50 @@ export const useAppStore = create<AppState>()(
 
       // ─── Activity Actions ─────────────────────────────────────────────────
       fetchActivityTypes: async () => {
-        // Backend không có GET /types endpoint, giữ mock data tại frontend
-        return;
+        try {
+          const res = await progressApi.getActivityTypes();
+          if (res && res.data) {
+            set({ activityTypes: res.data });
+          }
+        } catch (error: any) {
+          console.warn('[Store] fetchActivityTypes failed:', error.message);
+        }
       },
 
       fetchActivities: async (date) => {
-        // Backend không có GET /users/{id} endpoint cho activities
-        // Dùng local state từ persist store
-        const today = getLocalToday();
-        const { lastActivityDate } = get();
-        if (lastActivityDate !== today) {
-          set({ activityCalories: 0, lastActivityDate: today, loggedActivities: [] });
+        const { userId } = get();
+        if (!userId) return;
+        
+        const targetDate = date || getLocalToday();
+        try {
+          set({ isLoading: true });
+          // Lấy hoạt động cho một ngày cụ thể (start=end)
+          const res = await progressApi.getActivitiesBetween(userId, targetDate, targetDate);
+          
+          if (res && res.data) {
+            // Map backend data sang local format nếu cần
+            const mapped = res.data.map((a: any) => ({
+              ...a,
+              id: a.activityType, // Map activityType sang id dùng trong UI
+              uid: a.id,          // Map backend primary key sang uid
+            }));
+            
+            set({ 
+              loggedActivities: mapped,
+              activityCalories: mapped.reduce((sum: number, a: any) => sum + (a.caloriesBurned || 0), 0),
+              lastActivityDate: targetDate
+            });
+          }
+        } catch (error: any) {
+          console.warn('[Store] fetchActivities failed:', error.message);
+          // Fallback logic cho local state
+          const today = getLocalToday();
+          const { lastActivityDate } = get();
+          if (lastActivityDate !== today) {
+            set({ activityCalories: 0, lastActivityDate: today, loggedActivities: [] });
+          }
+        } finally {
+          set({ isLoading: false });
         }
       },
 
@@ -158,34 +202,85 @@ export const useAppStore = create<AppState>()(
         const today = getLocalToday();
 
         // 1. Cập nhật local state ngay lập tức (optimistic)
-        const uid = `${activity.id}_${Date.now()}`;
-        const newEntry = { ...activity, uid };
+        const tempUid = `temp_${Date.now()}`;
+        const newEntry = { ...activity, uid: tempUid };
         set((state) => ({
           loggedActivities: [...state.loggedActivities, newEntry],
           activityCalories: state.activityCalories + (activity.caloriesBurned || 0),
           lastActivityDate: today,
         }));
 
-        // 2. Gửi lên backend (fire-and-forget, không block UI)
+        // 2. Gửi lên backend
         if (userId) {
           try {
-            await progressApi.addActivity(userId, {
+            const res = await progressApi.addActivity(userId, {
+              activityType: activity.id,
+              durationMinutes: activity.minutes,
+              caloriesBurned: activity.caloriesBurned,
+            });
+            
+            // Nếu thành công, update lại uid bằng real ID từ backend
+            if (res && res.data) {
+              set((state) => ({
+                loggedActivities: state.loggedActivities.map(a => 
+                  a.uid === tempUid ? { ...a, uid: res.data.id } : a
+                )
+              }));
+            }
+          } catch (error: any) {
+            console.warn('[Store] addLoggedActivity sync failed:', error.message);
+          }
+        }
+      },
+
+      updateLoggedActivity: async (uid, activity) => {
+        const { userId, loggedActivities } = get();
+        if (!userId) return;
+
+        const oldEntry = loggedActivities.find(a => a.uid === uid);
+        if (!oldEntry) return;
+
+        const calDiff = (activity.caloriesBurned || 0) - (oldEntry.caloriesBurned || 0);
+
+        // 1. Optimistic Update
+        set((state) => ({
+          loggedActivities: state.loggedActivities.map(a => 
+            a.uid === uid ? { ...a, ...activity, id: activity.id || a.id } : a
+          ),
+          activityCalories: state.activityCalories + calDiff
+        }));
+
+        // 2. Sync to Backend (Nếu uid không phải là temp)
+        if (typeof uid === 'number' || !uid.startsWith('temp_')) {
+          try {
+            await progressApi.updateActivity(uid as number, {
               activityType: activity.id,
               durationMinutes: activity.minutes,
               caloriesBurned: activity.caloriesBurned,
             });
           } catch (error: any) {
-            console.warn('[Store] addLoggedActivity sync failed (local still saved):', error?.response?.data || error.message);
+            console.warn('[Store] updateLoggedActivity failed:', error.message);
           }
         }
       },
 
       removeLoggedActivity: async (uid, cals) => {
-        // Xóa local state ngay lập tức
+        const { userId } = get();
+        
+        // 1. Xóa local state ngay lập tức
         set((state) => ({
-          loggedActivities: state.loggedActivities.filter((a) => a.uid !== uid && a.id !== uid),
+          loggedActivities: state.loggedActivities.filter((a) => a.uid !== uid),
           activityCalories: Math.max(0, state.activityCalories - cals),
         }));
+
+        // 2. Sync to Backend
+        if (userId && (typeof uid === 'number' || !uid.startsWith('temp_'))) {
+          try {
+            await progressApi.deleteActivity(uid as number);
+          } catch (error: any) {
+            console.warn('[Store] removeLoggedActivity failed:', error.message);
+          }
+        }
       },
 
       // --- Async API Actions ---
@@ -243,6 +338,9 @@ export const useAppStore = create<AppState>()(
                   goal: d.goal || state.userProfile.goal,
                 }
               }));
+              
+              // QUAN TRỌNG: Tính toán lại mục tiêu ngay sau khi có profile để Home có data ngay lập tức
+              get().recalculateGoals();
             }
           } catch (e: any) {
             console.log('[Store] User profile fetch error (might be new user):', e.message);
@@ -413,6 +511,9 @@ export const useAppStore = create<AppState>()(
                 targetFat: res.data.targetFat,
               }
             }));
+          } else {
+            // Fallback nếu server không trả về data tính toán
+            get().recalculateGoals();
           }
 
           set({ pendingOnboardingSync: false });
@@ -507,12 +608,10 @@ export const useAppStore = create<AppState>()(
         } catch (error: any) {
           set({ error: error.message || 'Không thể cập nhật tiến độ' });
           console.error('[Store] updateChallengeProgress:', error);
-        } finally {
+} finally {
           set({ isLoading: false });
         }
       },
-
-      // ─── Daily Nutrition Async Actions ────────────────────────────────────
 
       fetchDailyNutrition: async (date) => {
         const { userId } = get();
@@ -531,6 +630,43 @@ export const useAppStore = create<AppState>()(
             set({ dailyNutrition: null });
           }
         }
+      },
+
+      logWater: async (amountMl: number) => {
+        const { userId } = get();
+        if (!userId) return;
+        const today = getLocalToday();
+
+        try {
+          // 1. Gọi API
+          await progressApi.logWater(userId, amountMl, today);
+          
+          // 2. Fetch lại daily nutrition để cập nhật UI
+          await get().fetchDailyNutrition(today);
+        } catch (error: any) {
+          console.warn('[Store] logWater failed:', error.message);
+        }
+      },
+
+      recalculateGoals: () => {
+        const { userProfile } = get();
+        if (!userProfile.weight || !userProfile.height || !userProfile.age) return;
+
+        const goals = calculateNutritionalGoals({
+          weight: userProfile.currentWeight || userProfile.weight,
+          height: userProfile.height,
+          age: userProfile.age,
+          gender: userProfile.gender,
+          goal: userProfile.goal || 'maintain_weight',
+          activityLevel: userProfile.activityLevel || 1.2
+        });
+
+        set((state) => ({
+          userProfile: {
+            ...state.userProfile,
+            ...goals
+          }
+        }));
       },
     }),
     {

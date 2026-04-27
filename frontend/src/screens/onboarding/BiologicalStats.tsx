@@ -145,7 +145,6 @@ export default function BiologicalStatsScreen() {
               age: currentAgeValue, 
               height: currentHeightValue, 
               weight: currentWeightValue,
-              targetCalories: 0
             });
             router.push('/AhaMoment');
           }}

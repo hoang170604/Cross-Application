@@ -29,13 +29,17 @@ export default function AhaMomentScreen() {
             targetFat: undefined
           });
 
-          if (responseData) {
+          if (responseData && responseData.targetCalories) {
              updateUserProfile({
-                targetCalories: Math.round(responseData.targetCalories || 0),
+                targetCalories: Math.round(responseData.targetCalories),
                 targetProtein: Math.round(responseData.targetProtein || 0),
                 targetCarb: Math.round(responseData.targetCarb || 0),
                 targetFat: Math.round(responseData.targetFat || 0)
              });
+          } else {
+            // Fallback: Nếu backend chưa kịp trả về hoặc lỗi, tính toán local để user không thấy số 0
+            const { recalculateGoals } = useAppStore.getState();
+            recalculateGoals();
           }
         }
       } catch (error) {

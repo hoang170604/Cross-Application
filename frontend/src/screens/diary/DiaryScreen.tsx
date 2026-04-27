@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   View, 
   Text, 
-  FlatList, 
+  ScrollView, 
   TextInput, 
   Alert, 
   KeyboardAvoidingView, 
@@ -28,13 +28,7 @@ import { MealCard } from '@/src/ui/MealCard';
 import { MacroRings } from '@/src/ui/MacroRings';
 import { ActivitySection } from '@/src/ui/ActivitySection';
 
-// ─── Định cấu hình dữ liệu tĩnh ───────────────────────────────────────────────
-const MEALS_DATA = [
-  { id: 'breakfast', name: 'Bữa sáng', time: '7:00 - 9:00' },
-  { id: 'lunch', name: 'Bữa trưa', time: '12:00 - 14:00' },
-  { id: 'dinner', name: 'Bữa tối', time: '18:00 - 20:00' },
-  { id: 'snack', name: 'Bữa phụ', time: 'Bất kỳ' },
-] as const;
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const DATE_FMT: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
@@ -77,21 +71,7 @@ export default function DiaryDashboardScreen() {
 
 
 
-  /** Hàm callback để truy xuất và hiển thị dữ liệu của từng thẻ bữa ăn hằng ngày */
-  const renderMeal = useCallback(({ item: meal }: { item: typeof MEALS_DATA[number] }) => {
-    const mealItems = userProfile.dailyMeals?.[meal.id as keyof DailyMeals] || [];
-    const mealCals = mealItems.reduce((s, i) => s + i.calories, 0);
-    
-    return (
-      <MealCard 
-        title={meal.name}
-        time={meal.time}
-        items={mealItems}
-        totalCalories={mealCals}
-        onAddPress={() => router.push({ pathname: '/SearchScan', params: { mealType: meal.id } })}
-      />
-    );
-  }, [userProfile.dailyMeals, router]);
+
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -109,48 +89,45 @@ export default function DiaryDashboardScreen() {
             <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '500', textTransform: 'capitalize' }}>{todayString}</Text>
           </View>
 
-          <FlatList
-            data={MEALS_DATA}
-            renderItem={renderMeal}
-            keyExtractor={item => item.id}
+          <ScrollView
             keyboardShouldPersistTaps="handled"
             style={{ flex: 1, paddingHorizontal: 24 }}
             contentContainerStyle={{ paddingBottom: 24 }}
             showsVerticalScrollIndicator={false}
-            initialNumToRender={5}
-            windowSize={5}
-            removeClippedSubviews={true}
-            ListHeaderComponent={
-              <View style={{ marginBottom: 8 }}>
-                {/* Organism: Biểu đồ Calo tập trung */}
-                <View style={{ backgroundColor: colors.card, borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' }}>
-                  <View style={{ padding: 24 }}>
-                    <CalorieCircle 
-                      consumed={calStats.consumed}
-                      burned={calStats.burned}
-                      remaining={calStats.remainingDisplay}
-                      isOver={calStats.isOverCalorie}
-                      progress={calStats.progressPercent}
-                    />
-                  </View>
-                  {/* Macro rings: Carbs / Fat / Protein */}
-                  <MacroRings
-                    carbEaten={totalEatenMacros.carb}
-                    carbTarget={userProfile.targetCarb ?? 0}
-                    fatEaten={totalEatenMacros.fat}
-                    fatTarget={userProfile.targetFat ?? 0}
-                    proteinEaten={totalEatenMacros.protein}
-                    proteinTarget={userProfile.targetProtein ?? 0}
+          >
+            <View style={{ marginBottom: 8 }}>
+              {/* Organism: Biểu đồ Calo tập trung */}
+              <View style={{ backgroundColor: colors.card, borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' }}>
+                <View style={{ padding: 24 }}>
+                  <CalorieCircle 
+                    consumed={calStats.consumed}
+                    burned={calStats.burned}
+                    remaining={calStats.remainingDisplay}
+                    isOver={calStats.isOverCalorie}
+                    progress={calStats.progressPercent}
                   />
                 </View>
-
-
-                {/* Hoạt động thể chất */}
-                <ActivitySection />
+                {/* Macro rings: Carbs / Fat / Protein */}
+                <MacroRings
+                  carbEaten={totalEatenMacros.carb}
+                  carbTarget={userProfile.targetCarb ?? 0}
+                  fatEaten={totalEatenMacros.fat}
+                  fatTarget={userProfile.targetFat ?? 0}
+                  proteinEaten={totalEatenMacros.protein}
+                  proteinTarget={userProfile.targetProtein ?? 0}
+                />
               </View>
-            }
-            ListFooterComponent={<View />}
-          />
+
+              {/* Hoạt động thể chất */}
+              <ActivitySection />
+            </View>
+
+            {/* Thẻ Nutrition mới */}
+            <MealCard 
+              dailyMeals={userProfile.dailyMeals}
+              targetCalories={userProfile.targetCalories || 2000}
+            />
+          </ScrollView>
         </SafeAreaView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

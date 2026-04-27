@@ -34,6 +34,9 @@ interface AddActivityModalProps {
   onClose: () => void;
   /** Trả về activity + số phút đã chọn */
   onSelectActivity: (activity: Activity, minutes: number) => void;
+  /** Phục vụ chế độ chỉnh sửa */
+  initialActivity?: Activity | null;
+  initialMinutes?: number;
 }
 
 interface DurationStepProps {
@@ -203,6 +206,8 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({
   visible,
   onClose,
   onSelectActivity,
+  initialActivity,
+  initialMinutes = DEFAULT_MINUTES,
 }) => {
   const [step, setStep] = useState<'select' | 'duration'>('select');
   const [selected, setSelected] = useState<Activity | null>(null);
@@ -217,11 +222,19 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({
   }, [onClose]);
 
   useEffect(() => {
-    if (!visible) {
+    if (visible) {
+      if (initialActivity) {
+        setSelected(initialActivity);
+        setStep('duration');
+      } else {
+        setStep('select');
+        setSelected(null);
+      }
+    } else {
       setStep('select');
       setSelected(null);
     }
-  }, [visible]);
+  }, [visible, initialActivity]);
 
   const handlePickActivity = useCallback((activity: Activity) => {
     setSelected(activity);
@@ -265,7 +278,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({
         {isStep2 ? (
           <DurationStep
             activity={selected!}
-            initialMinutes={DEFAULT_MINUTES}
+            initialMinutes={initialMinutes}
             onConfirm={handleConfirm}
             onBack={() => setStep('select')}
           />
