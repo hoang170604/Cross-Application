@@ -82,11 +82,11 @@ export const useAppStore = create<AppState>()(
       // --- Initial State ---
       isLoading: false,
       error: null,
-      
+
       userId: null,
       token: null,
       pendingOnboardingSync: false,
-      
+
       userProfile: DEFAULT_PROFILE,
 
       // ─── Activity State ─────────────────────────────────────────────────
@@ -192,7 +192,61 @@ export const useAppStore = create<AppState>()(
       login: async (token, userId) => {
         try {
           set({ isLoading: true, error: null });
-          set({ token, userId });
+
+          // Reset toàn bộ state thuộc về user cũ trước khi gán user mới.
+          // Nếu không reset, dữ liệu profile/nutrition của user trước sẽ bị "rò rỉ"
+          // sang session mới do Zustand persist giữ lại trong AsyncStorage.
+          set({
+            token,
+            userId,
+            userProfile: DEFAULT_PROFILE,
+            dailyNutrition: null,
+            workoutChallenges: [],
+            activityCalories: 0,
+            lastActivityDate: '',
+            loggedActivities: [],
+          });
+
+          // Sau khi gán userId mới, thử fetch mục tiêu dinh dưỡng (nếu đã có profile)
+          try {
+            const goalRes = await userApi.getUserGoal(userId);
+            if (goalRes && goalRes.data) {
+              set((state) => ({
+                userProfile: {
+                  ...state.userProfile,
+                  targetCalories: goalRes.data.targetCalories,
+                  targetProtein: goalRes.data.targetProtein,
+                  targetCarb: goalRes.data.targetCarb,
+                  targetFat: goalRes.data.targetFat,
+                }
+              }));
+            }
+          } catch (e: any) {
+            console.log('[Store] Goal fetch not found or error (new user):', e.message);
+          }
+
+          // Fetch thông tin profile đầy đủ từ server (nếu user đã có profile trước đó)
+          try {
+            const userRes = await userApi.getUserProfile(userId);
+            if (userRes && userRes.data) {
+              const d = userRes.data;
+              set((state) => ({
+                userProfile: {
+                  ...state.userProfile,
+                  name: d.name || state.userProfile.name,
+                  age: d.age || state.userProfile.age,
+                  gender: d.gender || state.userProfile.gender,
+                  height: d.height || state.userProfile.height,
+                  weight: d.weight || state.userProfile.weight,
+                  currentWeight: d.currentWeight || d.weight || state.userProfile.currentWeight,
+                  activityLevel: d.activityLevel || state.userProfile.activityLevel,
+                  goal: d.goal || state.userProfile.goal,
+                }
+              }));
+            }
+          } catch (e: any) {
+            console.log('[Store] User profile fetch error (might be new user):', e.message);
+          }
         } catch (error: any) {
           set({ error: error.message || 'Lỗi đăng nhập' });
         } finally {
@@ -262,7 +316,7 @@ export const useAppStore = create<AppState>()(
           const history = userProfile.weightHistory || [];
           const existingIndex = history.findIndex(h => h.date === today);
           let newHistory = [...history];
-          
+
           if (existingIndex >= 0) {
             newHistory[existingIndex] = { date: today, weight: newWeight };
           } else {
@@ -282,7 +336,7 @@ export const useAppStore = create<AppState>()(
           if (error.response?.status !== 404) {
             set({ error: error.message || 'Lỗi khi cập nhật cân nặng' });
           } else {
-             console.warn('API chưa sẵn sàng ở BE, dùng Local Data tạm thời');
+            console.warn('API chưa sẵn sàng ở BE, dùng Local Data tạm thời');
           }
         } finally {
           set({ isLoading: false });
@@ -298,11 +352,11 @@ export const useAppStore = create<AppState>()(
 
           // Gọi API qua Service Layer
           const data = await diaryApi.getDiary(userId, date);
-          
+
           if (data) {
             set({ userProfile: { ...userProfile, dailyMeals: data } });
           }
-          
+
           // 2. Fetch daily nutrition từ server cho ngày này
           await get().fetchDailyNutrition(date);
 
@@ -325,7 +379,7 @@ export const useAppStore = create<AppState>()(
 
         try {
           set({ isLoading: true, error: null });
-          
+
           // Gọi API qua Service Layer
           const res = await userApi.updateProfileAndCalculateGoal(userId, {
             age: userProfile.age,
@@ -337,8 +391,8 @@ export const useAppStore = create<AppState>()(
             name: userProfile.name,
             fastingGoal: userProfile.fastingGoal
           });
-          
-          if (res && res.success && res.data) {
+
+          if (res && res.data) {
             set((state) => ({
               userProfile: {
                 ...state.userProfile,
@@ -349,7 +403,7 @@ export const useAppStore = create<AppState>()(
               }
             }));
           }
-          
+
           set({ pendingOnboardingSync: false });
         } catch (error: any) {
           set({ error: error.message || 'Đồng bộ hóa dữ liệu thất bại' });
@@ -365,7 +419,7 @@ export const useAppStore = create<AppState>()(
         if (!userId) return;
         try {
           const res = await workoutApi.listUserChallenges(userId);
-          if (res?.success && Array.isArray(res.data)) {
+          if (res && Array.isArray(res.data)) {
             set({ workoutChallenges: res.data });
           }
         } catch (error: any) {
@@ -381,7 +435,7 @@ export const useAppStore = create<AppState>()(
         try {
           set({ isLoading: true, error: null });
           const res = await workoutApi.createChallenge({ ...payload, userId });
-          if (res?.success && res.data) {
+          if (res && res.data) {
             set((state) => ({
               workoutChallenges: [...state.workoutChallenges, res.data],
             }));
@@ -398,7 +452,7 @@ export const useAppStore = create<AppState>()(
         try {
           set({ isLoading: true, error: null });
           const res = await workoutApi.updateChallenge(id, payload);
-          if (res?.success && res.data) {
+          if (res && res.data) {
             set((state) => ({
               workoutChallenges: state.workoutChallenges.map((c) =>
                 c.id === id ? { ...c, ...res.data } : c
@@ -432,7 +486,7 @@ export const useAppStore = create<AppState>()(
         try {
           set({ isLoading: true, error: null });
           const res = await workoutApi.updateChallenge(id, { currentValue: newValue });
-          if (res?.success && res.data) {
+          if (res && res.data) {
             set((state) => ({
               workoutChallenges: state.workoutChallenges.map((c) =>
                 c.id === id ? { ...c, currentValue: newValue } : c
@@ -455,7 +509,7 @@ export const useAppStore = create<AppState>()(
         const targetDate = date || getLocalToday();
         try {
           const res = await progressApi.getDailyNutrition(userId, targetDate);
-          if (res?.success && res.data) {
+          if (res && res.data) {
             set({ dailyNutrition: res.data });
           }
         } catch (error: any) {
