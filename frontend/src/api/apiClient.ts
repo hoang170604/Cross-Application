@@ -1,6 +1,6 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { getToken } from '../utils/tokenStorage';
 
 const apiClient = axios.create({
   baseURL: 'http://localhost:8081',
@@ -10,12 +10,12 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await getToken();
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('Lỗi khi lấy token từ AsyncStorage', error);
+      console.error('Lỗi khi lấy token từ SecureStore', error);
     }
     return config;
   },

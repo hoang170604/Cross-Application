@@ -1,0 +1,370 @@
+import axios from 'axios';
+import { Alert } from 'react-native';
+import { getToken } from '../utils/tokenStorage';
+
+const apiClient = axios.create({
+  baseURL: 'http://localhost:8081',
+  timeout: 10000,
+});
+
+apiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await getToken();
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy token từ SecureStore', error);
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Global Response Interceptor
+apiClient.interceptors.response.use(
+  (response) => {
+    // Return standardized response directly or its data
+    return response;
+  },
+  (error) => {
+    if (!error.response || error.message === 'Network Error') {
+      console.warn('[Network] Máy chủ không thể truy cập, đang chuyển sang Offline Mode.');
+      Alert.alert('Lỗi Mạng', 'Máy chủ không thể truy cập, đang chuyển sang Offline Mode.');
+    } else {
+      // Backend returned standardized error format with status and message
+      const serverMessage = error.response.data?.message;
+      if (serverMessage) {
+        Alert.alert('Thông báo từ Server', serverMessage);
+      } else if (error.response.status >= 500) {
+        console.error('[Server Error] Lỗi nghiêm trọng từ Backend:', error.response.status);
+        Alert.alert('Lỗi Server', 'Đã có lỗi nghiêm trọng xảy ra ở máy chủ.');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default apiClient;
+import apiClient from './apiClient';
+import { ApiResponse } from '../types/api.types';
+
+export interface AuthResponse {
+  token: string;
+  userId: number;
+  email: string;
+}
+
+export const registerUser = async (email: string, password: string): Promise<ApiResponse<AuthResponse>> => {
+  const response = await apiClient.post<ApiResponse<AuthResponse>>('/api/users/register', { email, password });
+  return response.data;
+};
+
+export const loginUser = async (email: string, password: string): Promise<ApiResponse<AuthResponse>> => {
+  // const response = await apiClient.post<ApiResponse<AuthResponse>>('/api/users/login', { email, password });
+  // return response.data;
+  return new Promise((resolve) => {
+    // Dùng setTimeout để giả lập độ trễ của mạng (ví dụ 1 giây) cho cảm giác chân thực
+    setTimeout(() => {
+      resolve({
+        status: 200,
+        // Tùy thuộc vào việc interface ApiResponse của bạn định nghĩa thế nào, 
+        // bạn cần điều chỉnh các trường (status, message...) cho khớp.
+        success: true, 
+        message: 'Đăng nhập giả lập thành công',
+        data: {
+          token: 'fake-jwt-token-123456789-abcdef', // Đây là token giả
+          userId: 999, // Một ID bất kỳ
+          email: email, // Lấy luôn email bạn vừa gõ trên UI
+        }
+      } as ApiResponse<AuthResponse>); // Ép kiểu để TypeScript không báo lỗi
+    }, 1000); 
+  });
+};
+
+export const syncOnboardingProfile = async (userId: number, profileData: any): Promise<ApiResponse<any>> => {
+  const response = await apiClient.put<ApiResponse<any>>(`/api/users/${userId}/profile`, profileData);
+  return response.data;
+};
+/**
+ * @file diaryService.ts
+ * @description API Layer cho module Nhật ký dinh dưỡng (Diary / Meals).
+ */
+
+import apiClient from './apiClient';
+import { ApiResponse } from '../types/api.types';
+
+export interface MealLogPayload {
+  foodId: number;
+  quantity: number;
+  calories: number;
+  protein: number;
+  carb: number;
+  fat: number;
+}
+
+/** Thêm món ăn vào bữa */
+export const addFoodToMeal = async (
+  userId: number,
+  mealType: string,
+  date: string,
+  payload: MealLogPayload
+): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post<ApiResponse<any>>(
+    `/api/diaries/users/${userId}/meals/${mealType}?date=${date}`,
+    payload
+  );
+  return response.data;
+};
+
+/** Lấy nhật ký bữa ăn theo ngày */
+export const getDiary = async (userId: number, date: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/diaries/users/${userId}?date=${date}`);
+  return response.data;
+};
+
+/** Cập nhật một MealLog */
+export const updateMealLog = async (id: number, payload: Partial<MealLogPayload>): Promise<ApiResponse<any>> => {
+  const response = await apiClient.put<ApiResponse<any>>(`/api/diaries/meal-logs/${id}`, payload);
+  return response.data;
+};
+
+/** Xóa một MealLog */
+export const deleteMealLog = async (id: number): Promise<void> => {
+  await apiClient.delete(`/api/diaries/meal-logs/${id}`);
+};
+/**
+ * @file progressService.ts
+ * @description API Layer cho module Tiến trình (Cân nặng, Nước, Hoạt động, Dinh dưỡng).
+ */
+
+import apiClient from './apiClient';
+import { ApiResponse } from '../types/api.types';
+
+// ─── Weight ──────────────────────────────────────────────────────────
+
+export const logWeight = async (userId: number, date: string, weight: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post<ApiResponse<any>>('/api/progress/log-weight', { userId, date, weight });
+  return response.data;
+};
+
+export const getWeightHistory = async (userId: number, startDate: string, endDate: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/api/progress/weight?userId=${userId}&startDate=${startDate}&endDate=${endDate}`
+  );
+  return response.data;
+};
+
+export const getLatestWeight = async (userId: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/api/progress/latest-weight?userId=${userId}`
+  );
+  return response.data;
+};
+
+// ─── Water ───────────────────────────────────────────────────────────
+
+export const logWater = async (userId: number, amountMl: number, logDate: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post<ApiResponse<any>>('/api/water/log', { userId, amountMl, timestamp: logDate });
+  return response.data;
+};
+
+export const getDailyWaterTotal = async (userId: number, date: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/water/daily-total?userId=${userId}&date=${date}`);
+  return response.data;
+};
+
+// ─── Activity ────────────────────────────────────────────────────────
+
+export interface ActivityPayload {
+  activityType: string;
+  durationMinutes: number;
+  caloriesBurned: number;
+  startTime?: string;
+  distanceKm?: number;
+  steps?: number;
+  source?: string;
+  externalId?: string;
+}
+
+export const addActivity = async (userId: number, payload: ActivityPayload): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post<ApiResponse<any>>(`/api/activities/users/${userId}`, payload);
+  return response.data;
+};
+
+export const updateActivity = async (id: number, payload: Partial<ActivityPayload>): Promise<ApiResponse<any>> => {
+  const response = await apiClient.put<ApiResponse<any>>(`/api/activities/${id}`, payload);
+  return response.data;
+};
+
+export const deleteActivity = async (id: number): Promise<void> => {
+  await apiClient.delete(`/api/activities/${id}`);
+};
+
+/** Lấy danh mục các loại hoạt động (từ backend dictionary) */
+export const getActivityTypes = async (): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>('/api/activities/types');
+  return response.data;
+};
+
+/** Lấy danh sách hoạt động của user trong khoảng ngày */
+export const getActivitiesBetween = async (
+  userId: number,
+  startDate: string,
+  endDate: string
+): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/api/activities/users/${userId}?startDate=${startDate}&endDate=${endDate}`
+  );
+  return response.data;
+};
+
+// ─── Daily Nutrition (Carb / Fat / Protein tổng hợp) ─────────────────────────
+
+/** Lấy tổng dinh dưỡng theo ngày (calories, protein, carb, fat) */
+export const getDailyNutrition = async (userId: number, date: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/api/progress/nutrition?userId=${userId}&date=${date}`
+  );
+  return response.data;
+};
+
+/** Lấy báo cáo dinh dưỡng theo khoảng ngày */
+export const getNutritionReport = async (
+  userId: number,
+  startDate: string,
+  endDate: string
+): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/api/progress/report?userId=${userId}&startDate=${startDate}&endDate=${endDate}`
+  );
+  return response.data;
+};
+
+/** Lấy tóm tắt dinh dưỡng theo khoảng ngày */
+export const getNutritionSummary = async (
+  userId: number,
+  startDate: string,
+  endDate: string
+): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(
+    `/api/progress/nutrition/summary?userId=${userId}&startDate=${startDate}&endDate=${endDate}`
+  );
+  return response.data;
+};
+/**
+ * @file userService.ts
+ * @description API Layer cho module Người dùng (Profile, Password).
+ */
+
+import apiClient from './apiClient';
+import { ApiResponse } from '../types/api.types';
+
+export interface UserProfilePayload {
+  age: number;
+  gender: string;
+  height: number;
+  weight: number;
+  activityLevel: number;
+  goal: string;
+  name?: string;
+  fastingGoal?: string;
+}
+
+/** Lấy thông tin user theo ID */
+export const getUserById = async (userId: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/users/${userId}`);
+  return response.data;
+};
+
+/** Lấy hồ sơ cá nhân (profile) của user */
+export const getUserProfile = async (userId: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/users/${userId}/profile`);
+  return response.data;
+};
+
+/** Lấy mục tiêu dinh dưỡng hiện tại của user */
+export const getUserGoal = async (userId: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/users/${userId}/goal`);
+  return response.data;
+};
+
+/** Cập nhật hồ sơ và tính toán mục tiêu dinh dưỡng */
+export const updateProfileAndCalculateGoal = async (userId: number, profile: UserProfilePayload): Promise<ApiResponse<any>> => {
+  const response = await apiClient.put<ApiResponse<any>>(`/api/users/${userId}/profile`, profile);
+  return response.data;
+};
+
+/** Đổi mật khẩu */
+export const changePassword = async (userId: number, newPassword: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.put<ApiResponse<any>>(`/api/users/${userId}/password`, { newPassword });
+  return response.data;
+};
+
+/** Yêu cầu đặt lại mật khẩu */
+export const requestPasswordReset = async (email: string): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post<ApiResponse<any>>('/api/users/password-reset', { email });
+  return response.data;
+};
+/**
+ * @file workoutService.ts
+ * @description API Layer cho module Thử thách Tập luyện (WorkoutChallenge).
+ * Endpoints: GET /api/workout-challenges, POST, PUT, DELETE
+ */
+
+import apiClient from './apiClient';
+import { ApiResponse } from '../types/api.types';
+
+export interface WorkoutChallengePayload {
+  userId: number;
+  challengeName: string;
+  targetValue: number;
+  currentValue?: number;
+  unit?: string;
+  isActive?: boolean;
+  startDate?: string;
+  endDate?: string;
+}
+
+// ─── Workout Challenge ────────────────────────────────────────────────
+
+/** Lấy tất cả thử thách tập luyện (public) */
+export const listAllChallenges = async (): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>('/api/workout-challenges');
+  return response.data;
+};
+
+/** Lấy thử thách của một user */
+export const listUserChallenges = async (userId: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/workout-challenges/user/${userId}`);
+  return response.data;
+};
+
+/** Lấy chi tiết một thử thách */
+export const getChallengeById = async (id: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/workout-challenges/${id}`);
+  return response.data;
+};
+
+/** Tạo thử thách mới */
+export const createChallenge = async (payload: WorkoutChallengePayload): Promise<ApiResponse<any>> => {
+  const response = await apiClient.post<ApiResponse<any>>('/api/workout-challenges', payload);
+  return response.data;
+};
+
+/** Cập nhật thử thách */
+export const updateChallenge = async (
+  id: number,
+  payload: Partial<WorkoutChallengePayload>
+): Promise<ApiResponse<any>> => {
+  const response = await apiClient.put<ApiResponse<any>>(`/api/workout-challenges/${id}`, payload);
+  return response.data;
+};
+
+/** Xóa thử thách */
+export const deleteChallenge = async (id: number): Promise<void> => {
+  await apiClient.delete(`/api/workout-challenges/${id}`);
+};

@@ -32,7 +32,7 @@ public class WorkoutChallengeServiceTest {
         try {
             // reflectively obtain UserRepositoryInterface bean
             org.springframework.context.ApplicationContext ctx = org.springframework.test.context.TestContextManager.class.getDeclaredConstructor(Class.class).newInstance(this.getClass()).getTestContext().getApplicationContext();
-            com.crossapplication.main.repository.impl.UserRepository userRepo = ctx.getBean(com.crossapplication.main.repository.impl.UserRepository.class);
+            com.crossapplication.main.repository.interfaces.UserRepositoryInterface userRepo = ctx.getBean(com.crossapplication.main.repository.interfaces.UserRepositoryInterface.class);
             userRepo.save(testUser);
             userId = testUser.getId();
         } catch (Exception ex) {

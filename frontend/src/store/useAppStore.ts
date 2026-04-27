@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, DEFAULT_PROFILE, FoodItem, DailyMeals, WorkoutChallenge, DailyNutrition, ActivityTypeInfo } from '../types';
 import { getLocalToday } from '../core/dateFormatter';
 import { calculateNutritionalGoals } from '../core/calculateNutrition';
+import { saveToken, clearTokens } from '../utils/tokenStorage';
 
 // ─── API Service Imports (Layer-based) ────────────────────────────────────
 import * as diaryApi from '../api/diaryService';
@@ -319,6 +320,9 @@ export const useAppStore = create<AppState>()(
             loggedActivities: [],
           });
 
+          // Lưu token vào SecureStore (hoặc AsyncStorage nếu trên Web)
+          await saveToken(token);
+
           // Sau khi gán userId mới, thử fetch mục tiêu dinh dưỡng (nếu đã có profile)
           try {
             const goalRes = await userApi.getUserGoal(userId);
@@ -389,6 +393,7 @@ export const useAppStore = create<AppState>()(
             waterIntake: 0,
             latestWeight: null,
           });
+          await clearTokens();
           await AsyncStorage.clear();
         } catch (error: any) {
           set({ error: error.message || 'Lỗi đăng xuất' });

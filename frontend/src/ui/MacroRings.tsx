@@ -53,7 +53,7 @@ const MacroRingItem: React.FC<MacroRingItemProps> = ({
   return (
     <View style={styles.ringItem}>
       {/* SVG Ring */}
-      <View style={{ width: size, height: size }}>
+      <View style={{ width: size, height: size, transform: [{ rotate: '-90deg' }] }}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {/* Track */}
           <Circle
@@ -75,8 +75,6 @@ const MacroRingItem: React.FC<MacroRingItemProps> = ({
             strokeDasharray={`${circumference} ${circumference}`}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
-            rotation="-90"
-            origin={`${size / 2}, ${size / 2}`}
           />
         </Svg>
       </View>
