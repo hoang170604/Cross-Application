@@ -1,6 +1,8 @@
 package com.crossapplication.main.service.services;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +64,11 @@ public class UserService implements UserServiceInterface {
         User u = uopt.get();
         if (!PasswordEncoder.matches(password, u.getPassword())) throw new IllegalArgumentException("Invalid credentials");
         return u;
+    }
+    
+    // Generate token with role
+    public String generateTokenWithRole(Long userId, String email, String role) {
+        return jwtTokenProvider.generateToken(userId, email, role);
     }
 
     @Override
@@ -143,6 +150,7 @@ public class UserService implements UserServiceInterface {
         dto.setId(u.getId());
         dto.setEmail(u.getEmail());
         dto.setCreatedAt(u.getCreatedAt());
+        dto.setRole(u.getRole());
         return Optional.of(dto);
     }
 
@@ -156,5 +164,20 @@ public class UserService implements UserServiceInterface {
     @Override
     public void verifyEmail(String token) {
         // stub: token verification not implemented
+    }
+    
+    @Override
+    public List<UserDTO> getAllUsers() {
+        List<User> users = userRepo.findAll();
+        List<UserDTO> dtos = new ArrayList<>();
+        for (User u : users) {
+            UserDTO dto = new UserDTO();
+            dto.setId(u.getId());
+            dto.setEmail(u.getEmail());
+            dto.setCreatedAt(u.getCreatedAt());
+            dto.setRole(u.getRole());
+            dtos.add(dto);
+        }
+        return dtos;
     }
 }

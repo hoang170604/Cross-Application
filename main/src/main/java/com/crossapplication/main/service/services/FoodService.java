@@ -143,4 +143,18 @@ public class FoodService implements FoodServiceInterface {
         List<Food> content = start > end ? List.of() : all.subList(start, end);
         return new PageImpl<>(content, p, total);
     }
+
+    @Override
+    public Food createFood(FoodDTO dto) {
+        if (dto == null || dto.getName() == null || dto.getName().isBlank()) {
+            throw new IllegalArgumentException("Food name is required");
+        }
+        Food food = new Food();
+        food.setName(dto.getName());
+        food.setCaloriesPer100g(dto.getCaloriesPer100g());
+        food.setProteinPer100g(dto.getProteinPer100g());
+        food.setCarbPer100g(dto.getCarbPer100g());
+        food.setFatPer100g(dto.getFatPer100g());
+        return foodRepo.saveFood(food);
+    }
 }

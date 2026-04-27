@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +30,7 @@ public class FastingController {
     private FastingSessionService fastingSessionService;
 
     @PostMapping("/start")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> start(@jakarta.validation.Valid @RequestBody FastingStateDTO dto) {
         try {
             if (dto.getUserId() == null || dto.getStartTime() == null) {
@@ -42,6 +44,7 @@ public class FastingController {
     }
 
     @PostMapping("/stop")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> stop(@jakarta.validation.Valid @RequestBody FastingStateDTO dto) {
         try {
             if (dto.getUserId() == null || dto.getEndTime() == null) {
@@ -55,6 +58,7 @@ public class FastingController {
     }
 
     @GetMapping("/sessions/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> sessions(@PathVariable Long userId) {
         try {
             return ResponseEntity.ok(ApiResponse.success(fastingSessionService.listByUser(userId)));
@@ -64,6 +68,7 @@ public class FastingController {
     }
 
     @GetMapping("/sessions/{userId}/open")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> openSession(@PathVariable Long userId) {
         try {
             Optional<FastingSession> opt = fastingSessionService.listByUser(userId).stream()

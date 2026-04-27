@@ -2,9 +2,13 @@ package com.crossapplication.main.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -32,9 +36,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         try {
             // Extract JWT from Authorization header
@@ -43,14 +47,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Validate and process JWT
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
                 Long userId = jwtTokenProvider.getUserIdFromToken(jwt);
-                String email = jwtTokenProvider.getEmailFromToken(jwt);
+                String role = jwtTokenProvider.getRoleFromToken(jwt);
 
-                // Create authentication token
+                // Create list of authorities from role
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + (role != null ? role : "USER")));
+
+                // Create authentication token with role-based authorities
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 userId,
                                 null,
-                                new ArrayList<>() // No authorities/roles for now
+                                authorities
                         );
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 

@@ -3,6 +3,7 @@ package com.crossapplication.main.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,7 @@ public class ActivityController {
     private ActivityServiceInterface activityService;
 
     @PostMapping("/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> addActivity(@PathVariable Long userId, @RequestBody ActivityDTO activityDTO) {
         try {
             Activity saved = activityService.addActivity(
@@ -44,6 +46,7 @@ public class ActivityController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<ApiResponse<?>> updateActivity(@PathVariable Long id, @RequestBody ActivityDTO update) {
         try {
             Activity saved = activityService.updateActivity(id, update);
@@ -54,6 +57,7 @@ public class ActivityController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<ApiResponse<?>> deleteActivity(@PathVariable Long id) {
         try {
             activityService.deleteActivity(id);

@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +29,7 @@ public class WorkoutChallengeController {
     private WorkoutChallengeService workoutChallengeService;
 
     @GetMapping
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> listAll() {
         try {
             List<WorkoutChallenge> challenges = workoutChallengeService.listAll();
@@ -38,6 +40,7 @@ public class WorkoutChallengeController {
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> listForUser(@PathVariable Long userId) {
         try {
             List<WorkoutChallenge> challenges = workoutChallengeService.listByUser(userId);
@@ -48,6 +51,7 @@ public class WorkoutChallengeController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> get(@PathVariable Long id) {
         try {
             Optional<WorkoutChallenge> opt = workoutChallengeService.getById(id);
@@ -61,6 +65,7 @@ public class WorkoutChallengeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> create(@jakarta.validation.Valid @RequestBody WorkoutChallengeDTO dto) {
         try {
             WorkoutChallenge created = workoutChallengeService.create(dto);
@@ -71,6 +76,7 @@ public class WorkoutChallengeController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> update(@PathVariable Long id, @RequestBody WorkoutChallengeDTO dto) {
         try {
             WorkoutChallenge updated = workoutChallengeService.update(id, dto);
@@ -81,6 +87,7 @@ public class WorkoutChallengeController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> delete(@PathVariable Long id) {
         try {
             workoutChallengeService.delete(id);

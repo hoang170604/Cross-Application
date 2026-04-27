@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,6 +36,7 @@ public class FoodController {
 
     // GET /api/foods
     @GetMapping
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> getAllFood() {
         try {
             List<Food> foods = foodService.getAllFood();
@@ -44,8 +46,28 @@ public class FoodController {
         }
     }
 
+    // POST /api/foods (ADMIN: Create new food)
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> createFood(@Valid @RequestBody FoodDTO foodDTO) {
+        try {
+            if (foodDTO == null || foodDTO.getName() == null || foodDTO.getName().isBlank()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Food name is required", "INVALID_FOOD"));
+            }
+            Food created = foodService.createFood(foodDTO);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(created, "Food created successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "CREATE_FAILED"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(e.getMessage(), "CREATE_ERROR"));
+        }
+    }
+
     // GET /api/foods/search?name=keyword
     @GetMapping("/search")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> searchByName(@RequestParam(required = true) String name) {
         try {
             if (name == null || name.isBlank()) {
@@ -60,6 +82,7 @@ public class FoodController {
 
     // GET /api/foods/categories
     @GetMapping("/categories")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> getAllCategories() {
         try {
             List<FoodCategory> categories = foodService.getAllCategories();
@@ -71,6 +94,7 @@ public class FoodController {
 
     // GET /api/foods/{id}
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> getFoodById(@PathVariable Long id) {
         try {
             Optional<Food> food = foodService.getFoodById(id);
@@ -86,6 +110,7 @@ public class FoodController {
 
     // POST /api/meals/{userId}/{mealId}/foods?foodId=1&weight=100
     @PostMapping("/meals/{userId}/{mealId}/foods")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> addFoodToMeal(
             @PathVariable Long userId,
             @PathVariable Long mealId,
@@ -109,6 +134,7 @@ public class FoodController {
 
     // PUT /api/foods/{id}
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> updateFood(@PathVariable Long id, @Valid @RequestBody FoodDTO foodDTO) {
         try {
             if (id == null || foodDTO == null) {
@@ -126,6 +152,7 @@ public class FoodController {
 
     // DELETE /api/foods/{id}
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> deleteFood(@PathVariable Long id) {
         try {
             if (id == null) {
@@ -140,6 +167,7 @@ public class FoodController {
 
     // GET /api/foods/{id}/calculate?weight=100
     @GetMapping("/{id}/calculate")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> calculateNutrition(@PathVariable Long id, @RequestParam Double weight) {
         try {
             if (id == null || weight == null || weight <= 0) {

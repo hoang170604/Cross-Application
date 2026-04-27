@@ -6,6 +6,7 @@ public class UserDTO {
     private Long id;
     private String email;
     private LocalDate createdAt;
+    private String role;
 
     public Long getId() {
         return id;
@@ -29,5 +30,13 @@ public class UserDTO {
 
     public void setCreatedAt(LocalDate createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

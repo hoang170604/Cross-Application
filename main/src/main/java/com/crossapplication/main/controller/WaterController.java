@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +31,7 @@ public class WaterController {
 
     // POST /api/water/log
     @PostMapping("/log")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> logWater(@Valid @RequestBody LogWaterRequest request) {
         try {
             if (request.getUserId() == null || request.getAmountMl() == null || request.getAmountMl() <= 0) {
@@ -52,6 +54,7 @@ public class WaterController {
 
     // GET /api/water/daily-total?userId=1&date=2024-01-15
     @GetMapping("/daily-total")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getDailyTotal(
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -70,6 +73,7 @@ public class WaterController {
 
     // GET /api/water/logs?userId=1&startDate=2024-01-01&endDate=2024-01-31
     @GetMapping("/logs")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getLogsBetween(
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,

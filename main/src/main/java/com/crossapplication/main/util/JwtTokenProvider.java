@@ -35,6 +35,15 @@ public class JwtTokenProvider {
         return createToken(claims, String.valueOf(userId));
     }
     
+    // Generate JWT token for user with role
+    public String generateToken(Long userId, String email, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("email", email);
+        claims.put("role", role != null ? role : "USER");
+        return createToken(claims, String.valueOf(userId));
+    }
+    
     private String createToken(Map<String, Object> claims, String subject) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
@@ -109,6 +118,24 @@ public class JwtTokenProvider {
             return (String) claims.get("email");
         } catch (Exception e) {
             throw new RuntimeException("Invalid token: " + e.getMessage());
+        }
+    }
+    
+    // Get role from token
+    public String getRoleFromToken(String token) {
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            
+            var claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            
+            String role = (String) claims.get("role");
+            return role != null ? role : "USER";
+        } catch (Exception e) {
+            return "USER";
         }
     }
 }

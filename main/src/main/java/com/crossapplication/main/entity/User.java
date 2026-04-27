@@ -26,6 +26,9 @@ public class User {
     @Column(name="created_at")
     private LocalDate createdAt;
 
+    @Column(name="role")
+    private String role = "USER";
+
     public User(){}
 
     public Long getId() {
@@ -58,5 +61,13 @@ public class User {
 
     public void setCreatedAt(LocalDate createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,7 @@ public class DiaryController {
     private DiaryService diaryService;
 
     @PostMapping("/users/{userId}/meals/{mealType}")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> addFood(@PathVariable Long userId, @PathVariable String mealType,
             @RequestBody MealLogDTO mealLogDto, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         try {
@@ -56,6 +58,7 @@ public class DiaryController {
     }
 
     @PutMapping("/meal-logs/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<ApiResponse<?>> updateMealLog(@PathVariable Long id, @RequestBody MealLogDTO update) {
         try {
             MealLog saved = diaryService.updateMealLog(id, update);
@@ -66,6 +69,7 @@ public class DiaryController {
     }
 
     @DeleteMapping("/meal-logs/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<ApiResponse<?>> deleteMealLog(@PathVariable Long id) {
         try {
             diaryService.removeFoodFromLog(id);

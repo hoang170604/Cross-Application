@@ -23,4 +23,9 @@ public interface UserServiceInterface {
     public void requestPasswordReset(String email);
 
     public void verifyEmail(String token);
+    
+    /**
+     * ADMIN: Get all users for management
+     */
+    public java.util.List<UserDTO> getAllUsers();
 }

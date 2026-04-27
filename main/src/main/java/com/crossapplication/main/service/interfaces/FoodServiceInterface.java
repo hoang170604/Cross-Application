@@ -31,4 +31,9 @@ public interface FoodServiceInterface {
     public java.util.Optional<Food> getFoodById(Long id);
 
     public Page<Food> getAllFood(Pageable p);
+    
+    /**
+     * ADMIN: Create/Add new food to library
+     */
+    public Food createFood(FoodDTO dto);
 }

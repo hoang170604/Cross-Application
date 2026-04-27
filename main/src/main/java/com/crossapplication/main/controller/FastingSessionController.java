@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +29,7 @@ public class FastingSessionController {
 	private FastingSessionService fastingSessionService;
 
 	@GetMapping("/user/{userId}")
+	@PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
 	public ResponseEntity<ApiResponse<?>> listForUser(@PathVariable Long userId) {
 		try {
 			List<FastingSession> sessions = fastingSessionService.listByUser(userId);
@@ -38,6 +40,7 @@ public class FastingSessionController {
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
 	public ResponseEntity<ApiResponse<?>> get(@PathVariable Long id) {
 		try {
 			Optional<FastingSession> opt = fastingSessionService.getById(id);
@@ -51,6 +54,7 @@ public class FastingSessionController {
 	}
 
 	@PostMapping
+	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<?>> create(@jakarta.validation.Valid @RequestBody FastingSessionDTO dto) {
 		try {
 			FastingSession created = fastingSessionService.create(dto);
@@ -61,6 +65,7 @@ public class FastingSessionController {
 	}
 
 	@PutMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
 	public ResponseEntity<ApiResponse<?>> update(@PathVariable Long id, @RequestBody FastingSessionDTO dto) {
 		try {
 			FastingSession updated = fastingSessionService.update(id, dto);
@@ -71,6 +76,7 @@ public class FastingSessionController {
 	}
 
 	@DeleteMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
 	public ResponseEntity<ApiResponse<?>> delete(@PathVariable Long id) {
 		try {
 			fastingSessionService.delete(id);

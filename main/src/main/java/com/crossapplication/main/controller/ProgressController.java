@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +32,7 @@ public class ProgressController {
 
     // GET /api/progress/weight?userId=1&startDate=2024-01-01&endDate=2024-01-31
     @GetMapping("/weight")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getWeightHistory(
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -50,6 +52,7 @@ public class ProgressController {
 
     // GET /api/progress/report?userId=1&startDate=2024-01-01&endDate=2024-01-31
     @GetMapping("/report")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getNutritionReport(
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -69,6 +72,7 @@ public class ProgressController {
 
     // GET /api/progress/nutrition?userId=1&date=2024-01-15
     @GetMapping("/nutrition")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getDailyNutrition(
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -87,6 +91,7 @@ public class ProgressController {
 
     // GET /api/progress/nutrition/summary?userId=1&startDate=2024-01-01&endDate=2024-01-31
     @GetMapping("/nutrition/summary")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getNutritionSummary(
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -106,6 +111,7 @@ public class ProgressController {
 
     // GET /api/progress/latest-weight?userId=1
     @GetMapping("/latest-weight")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getLatestWeight(@RequestParam Long userId) {
         try {
             if (userId == null) {
@@ -122,6 +128,7 @@ public class ProgressController {
 
     // POST /api/progress/log-weight
     @PostMapping("/log-weight")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> logWeight(@Valid @RequestBody LogWeightRequest request) {
         try {
             if (request.getUserId() == null || request.getWeight() == null || request.getWeight() <= 0) {

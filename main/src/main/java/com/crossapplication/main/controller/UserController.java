@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,11 +44,12 @@ public class UserController {
         }
         try {
             User user = userService.register(email, password);
-            String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
+            String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(Map.of(
                 "token", token,
                 "userId", user.getId(),
                 "email", user.getEmail(),
+                "role", user.getRole(),
                 "expiresIn", 86400
             ), "Registration successful"));
         } catch (IllegalArgumentException e) {
@@ -65,11 +67,12 @@ public class UserController {
         }
         try {
             User user = userService.loginAndGetUser(email, password);
-            String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
+            String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());
             return ResponseEntity.ok(ApiResponse.success(Map.of(
                 "token", token,
                 "userId", user.getId(),
                 "email", user.getEmail(),
+                "role", user.getRole(),
                 "expiresIn", 86400
             ), "Login successful"));
         } catch (IllegalArgumentException e) {
@@ -79,6 +82,7 @@ public class UserController {
 
     // GET /api/users/{id}
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getUserById(@PathVariable Long id) {
         Optional<UserDTO> userOpt = userService.getById(id);
         if (userOpt.isEmpty()) {
@@ -87,8 +91,22 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(userOpt.get()));
     }
 
+    // GET /api/users/admin/all (ADMIN: Get all users for management)
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> getAllUsers() {
+        try {
+            java.util.List<UserDTO> users = userService.getAllUsers();
+            return ResponseEntity.ok(ApiResponse.success(users, "Retrieved " + users.size() + " users"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(e.getMessage(), "USERS_FETCH_FAILED"));
+        }
+    }
+
     // PUT /api/users/{id}/password
     @PutMapping("/{id}/password")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")
     public ResponseEntity<ApiResponse<?>> changePassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String newPassword = body.get("newPassword");
         if (newPassword == null) {
@@ -104,6 +122,7 @@ public class UserController {
 
     // PUT /api/users/{id}/profile
     @PutMapping("/{id}/profile")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")
     public ResponseEntity<ApiResponse<?>> updateProfileAndCalculateGoal(@PathVariable Long id,
             @RequestBody UserProfileDTO profileDTO) {
         try {
