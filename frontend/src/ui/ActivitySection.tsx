@@ -17,37 +17,36 @@ import {
   ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { AddActivityModal, Activity } from './AddActivityModal';
+import { AddActivityModal, Activity, ACTIVITIES } from './AddActivityModal';
 import { useAppStore } from '@/src/store/useAppStore';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface LoggedActivity extends Activity {
-  /** ID duy nhất để xóa đúng mục */
+// ─── Local Activity format ──────────────────────────────────────────────────
+interface LocalActivity {
   uid: string;
-  /** Số phút tập */
+  id: string;        // activityType (ví dụ: 'running')
   minutes: number;
-  /** Calo đã đốt = caloriesPerMin × minutes */
   caloriesBurned: number;
 }
 
-// ─── Activity Chip (item trong ScrollView ngang) ──────────────────────────────
-
-const ActivityChip: React.FC<{ item: LoggedActivity; onDelete: (uid: string, cals: number) => void }> = ({ item, onDelete }) => {
+// ─── Activity Chip ────────────────────────────────────────────────────────────
+const ActivityChip: React.FC<{ item: LocalActivity; onDelete: (uid: string, cals: number) => void }> = ({ item, onDelete }) => {
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
+  
+  // Ánh xạ từ activityType sang icon/màu sắc UI
+  const uiInfo = ACTIVITIES.find(a => a.id === item.id) || ACTIVITIES[0];
+
   return (
     <View style={styles.chip}>
-      <View style={[styles.chipIcon, { backgroundColor: item.bgColor }]}>
-        <MaterialCommunityIcons name={item.icon} size={18} color={item.iconColor} />
+      <View style={[styles.chipIcon, { backgroundColor: uiInfo.bgColor }]}>
+        <MaterialCommunityIcons name={uiInfo.icon as any} size={18} color={uiInfo.iconColor} />
       </View>
       <View style={styles.chipText}>
-        <Text style={styles.chipName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.chipName} numberOfLines={1}>{uiInfo.name}</Text>
         <Text style={styles.chipCals}>{item.minutes} ph · {item.caloriesBurned} kcal</Text>
       </View>
-      {/* Nút X xóa */}
       <TouchableOpacity
         onPress={() => onDelete(item.uid, item.caloriesBurned)}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -60,6 +59,7 @@ const ActivityChip: React.FC<{ item: LoggedActivity; onDelete: (uid: string, cal
   );
 };
 
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ActivitySectionComponent: React.FC = () => {
@@ -70,23 +70,19 @@ const ActivitySectionComponent: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
 
   // ── Store ────────────────────────────────────────────────────────────
-  const { loggedActivities: activities, addLoggedActivity, removeLoggedActivity, resetActivityIfNewDay } = useAppStore();
+  const { loggedActivities: activities, addLoggedActivity, removeLoggedActivity, fetchActivities } = useAppStore();
 
   useEffect(() => {
-    resetActivityIfNewDay();
-    // Self-healing: Nếu mảng rỗng nhưng tổng calo vẫn còn (do cache cũ), thì reset tổng calo về 0
-    const state = useAppStore.getState();
-    if (state.loggedActivities.length === 0 && state.activityCalories > 0) {
-      useAppStore.setState({ activityCalories: 0 });
-    }
-  }, [resetActivityIfNewDay]);
+    fetchActivities();
+  }, [fetchActivities]);
 
   // ── Handler: nhận bài tập từ Modal ───────────────────────────────────
   const handleSelectActivity = useCallback((activity: Activity, minutes: number) => {
     const cals = Math.round(activity.caloriesPerMin * minutes);
-    const uid = `${activity.id}_${Date.now()}`;
-    addLoggedActivity({ ...activity, uid, minutes, caloriesBurned: cals });
+    console.log('[ActivitySection] handleSelectActivity:', { activityId: activity.id, minutes, cals });
+    addLoggedActivity({ id: activity.id, minutes, caloriesBurned: cals });
   }, [addLoggedActivity]);
+
 
   // ── Handler: xóa hoạt động ──────────────────────────────────────────
   const handleDelete = useCallback((uid: string, cals: number) => {
@@ -94,7 +90,7 @@ const ActivitySectionComponent: React.FC = () => {
   }, [removeLoggedActivity]);
 
   // ── Tổng calo đốt cháy ────────────────────────────────────────────────────
-  const totalBurned = activities.reduce((sum: any, a: any) => sum + a.caloriesBurned, 0);
+  const totalBurned = activities.reduce((sum: any, a: any) => sum + (a.caloriesBurned || 0), 0);
 
   return (
     <>
@@ -139,9 +135,9 @@ const ActivitySectionComponent: React.FC = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {activities.map((item) => (
+            {activities.map((item: any) => (
               <ActivityChip
-                key={item.uid}
+                key={item.uid || item.id}
                 item={item}
                 onDelete={handleDelete}
               />

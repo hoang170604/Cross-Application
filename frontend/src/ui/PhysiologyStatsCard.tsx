@@ -6,6 +6,8 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '@/src/hooks/useTheme';
+import { ThemeColors } from '@/src/core/theme';
 
 interface PhysiologyStatsCardProps {
   tdee: number;
@@ -14,6 +16,8 @@ interface PhysiologyStatsCardProps {
 }
 
 export const PhysiologyStatsCard: React.FC<PhysiologyStatsCardProps> = ({ tdee, bmr, bmi }) => {
+  const colors = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Chỉ số Sinh lý</Text>
@@ -37,15 +41,15 @@ export const PhysiologyStatsCard: React.FC<PhysiologyStatsCardProps> = ({ tdee, 
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 24,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: colors.cardBorder,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
@@ -54,7 +58,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 20,
     fontSize: 16,
-    color: '#1E293B',
+    color: colors.text,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -73,13 +77,13 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     marginTop: 6,
     fontWeight: '600',
   },
   divider: {
     width: 1,
     height: '60%',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.cardBorder,
   },
 });

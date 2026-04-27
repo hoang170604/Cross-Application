@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserProfile, DEFAULT_PROFILE, FoodItem, DailyMeals } from '../types';
+import { UserProfile, DEFAULT_PROFILE, FoodItem, DailyMeals, WorkoutChallenge, DailyNutrition, ActivityTypeInfo } from '../types';
 import { getLocalToday } from '../core/dateFormatter';
 
-// ─── API Service Imports (Layer-based) ───────────────────────────────
+// ─── API Service Imports (Layer-based) ────────────────────────────────────
 import * as diaryApi from '../api/diaryService';
 import * as progressApi from '../api/progressService';
 import * as userApi from '../api/userService';
+import * as workoutApi from '../api/workoutService';
 
 // Cấu trúc hợp đồng dữ liệu cho Store
 interface AppState {
@@ -27,9 +28,16 @@ interface AppState {
   activityCalories: number;
   lastActivityDate: string;
   loggedActivities: any[];
+  activityTypes: ActivityTypeInfo[];
 
-  // ─── App Preferences ────────────────────────────────────────────────
-  theme: 'light' | 'dark';
+  // ─── Workout Challenges ───────────────────────────────────────────────
+  workoutChallenges: WorkoutChallenge[];
+
+  // ─── Daily Nutrition (carb, fat, protein tổng hợp từ server) ─────────────
+  dailyNutrition: DailyNutrition | null;
+
+  // ─── App Preferences ───────────────────────────────────────────────────
+  theme: 'light' | 'dark' | 'system';
 
   // Các hàm thiết lập nội bộ
   setLoading: (status: boolean) => void;
@@ -39,14 +47,9 @@ interface AppState {
 
   // Theme
   toggleTheme: () => void;
-  setTheme: (theme: 'light' | 'dark') => void;
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
 
-  // Activity actions
-  addActivityCalories: (kcal: number) => void;
-  resetActivityCalories: () => void;
-  resetActivityIfNewDay: () => void;
-  addLoggedActivity: (activity: any) => void;
-  removeLoggedActivity: (uid: string, cals: number) => void;
+
 
   // Các actions gọi API (Async)
   login: (token: string, userId: number) => Promise<void>;
@@ -55,6 +58,22 @@ interface AppState {
   updateCurrentWeight: (newWeight: number) => Promise<void>;
   fetchDiaryFromServer: (date: string) => Promise<void>;
   syncAllDataToCloud: () => Promise<void>;
+
+  // ─── Activity Actions (Async) ───────────────────────────────────────
+  fetchActivities: (date?: string) => Promise<void>;
+  fetchActivityTypes: () => Promise<void>;
+  addLoggedActivity: (activity: any) => Promise<void>;
+  removeLoggedActivity: (uid: string | number, cals: number) => Promise<void>;
+
+  // ─── Workout Challenge Actions ─────────────────────────────────────────
+  fetchWorkoutChallenges: () => Promise<void>;
+  createWorkoutChallenge: (payload: Omit<WorkoutChallenge, 'id'>) => Promise<void>;
+  updateWorkoutChallenge: (id: number, payload: Partial<WorkoutChallenge>) => Promise<void>;
+  deleteWorkoutChallenge: (id: number) => Promise<void>;
+  updateChallengeProgress: (id: number, newValue: number) => Promise<void>;
+
+  // ─── Daily Nutrition Actions ─────────────────────────────────────────
+  fetchDailyNutrition: (date?: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -70,13 +89,20 @@ export const useAppStore = create<AppState>()(
       
       userProfile: DEFAULT_PROFILE,
 
-      // ─── Activity State ─────────────────────────────────────────────
+      // ─── Activity State ─────────────────────────────────────────────────
       activityCalories: 0,
       lastActivityDate: '',
       loggedActivities: [],
+      activityTypes: [],
 
-      // ─── App Preferences ────────────────────────────────────────────────
-      theme: 'light' as 'light' | 'dark',
+      // ─── Workout Challenges State ─────────────────────────────────────
+      workoutChallenges: [],
+
+      // ─── Daily Nutrition State ───────────────────────────────────────
+      dailyNutrition: null,
+
+      // ─── App Preferences ───────────────────────────────────────────────
+      theme: 'system' as 'light' | 'dark' | 'system',
 
       // --- Sync Actions ---
       setLoading: (status) => set({ isLoading: status }),
@@ -84,10 +110,27 @@ export const useAppStore = create<AppState>()(
       setPendingSync: (val) => set({ pendingOnboardingSync: val }),
       updateUserProfile: (data) => set((state) => ({ userProfile: { ...state.userProfile, ...data } })),
 
-      toggleTheme: () => set((state) => ({ theme: (state.theme === 'light' ? 'dark' : 'light') as 'light' | 'dark' })),
+      toggleTheme: () => set((state) => ({
+        theme: state.theme === 'dark' ? 'light' : state.theme === 'light' ? 'dark' : 'system'
+      } as { theme: 'light' | 'dark' | 'system' })),
       setTheme: (theme) => set({ theme }),
 
       // ─── Activity Actions ─────────────────────────────────────────────────
+      fetchActivityTypes: async () => {
+        // Backend không có GET /types endpoint, giữ mock data tại frontend
+        return;
+      },
+
+      fetchActivities: async (date) => {
+        // Backend không có GET /users/{id} endpoint cho activities
+        // Dùng local state từ persist store
+        const today = getLocalToday();
+        const { lastActivityDate } = get();
+        if (lastActivityDate !== today) {
+          set({ activityCalories: 0, lastActivityDate: today, loggedActivities: [] });
+        }
+      },
+
       addActivityCalories: (kcal) => {
         const today = getLocalToday();
         set((state) => ({
@@ -110,21 +153,37 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      addLoggedActivity: (activity) => {
+      addLoggedActivity: async (activity) => {
+        const { userId } = get();
         const today = getLocalToday();
-        set((state) => {
-          const isNewDay = state.lastActivityDate !== today;
-          return {
-            loggedActivities: isNewDay ? [activity] : [...state.loggedActivities, activity],
-            activityCalories: (isNewDay ? 0 : state.activityCalories) + activity.caloriesBurned,
-            lastActivityDate: today,
-          };
-        });
+
+        // 1. Cập nhật local state ngay lập tức (optimistic)
+        const uid = `${activity.id}_${Date.now()}`;
+        const newEntry = { ...activity, uid };
+        set((state) => ({
+          loggedActivities: [...state.loggedActivities, newEntry],
+          activityCalories: state.activityCalories + (activity.caloriesBurned || 0),
+          lastActivityDate: today,
+        }));
+
+        // 2. Gửi lên backend (fire-and-forget, không block UI)
+        if (userId) {
+          try {
+            await progressApi.addActivity(userId, {
+              activityType: activity.id,
+              durationMinutes: activity.minutes,
+              caloriesBurned: activity.caloriesBurned,
+            });
+          } catch (error: any) {
+            console.warn('[Store] addLoggedActivity sync failed (local still saved):', error?.response?.data || error.message);
+          }
+        }
       },
 
-      removeLoggedActivity: (uid, cals) => {
+      removeLoggedActivity: async (uid, cals) => {
+        // Xóa local state ngay lập tức
         set((state) => ({
-          loggedActivities: state.loggedActivities.filter((a) => a.uid !== uid),
+          loggedActivities: state.loggedActivities.filter((a) => a.uid !== uid && a.id !== uid),
           activityCalories: Math.max(0, state.activityCalories - cals),
         }));
       },
@@ -182,6 +241,9 @@ export const useAppStore = create<AppState>()(
               }
             }
           });
+
+          // 3. Fetch lại daily nutrition để lấy tổng hợp calo/macro từ backend
+          await get().fetchDailyNutrition(today);
         } catch (error: any) {
           set({ error: error.message || 'Lỗi khi thêm thức ăn' });
           console.error('[Store] addFood error:', error);
@@ -240,6 +302,12 @@ export const useAppStore = create<AppState>()(
           if (data) {
             set({ userProfile: { ...userProfile, dailyMeals: data } });
           }
+          
+          // 2. Fetch daily nutrition từ server cho ngày này
+          await get().fetchDailyNutrition(date);
+
+          // 3. Fetch danh sách hoạt động từ server
+          await get().fetchActivities(date);
         } catch (error: any) {
           if (error?.message?.includes('Network Error') || error.response?.status === 404) {
             console.warn('[NutriTrack] Server không phản hồi GET diary. Lấy tạm từ Local');
@@ -259,7 +327,7 @@ export const useAppStore = create<AppState>()(
           set({ isLoading: true, error: null });
           
           // Gọi API qua Service Layer
-          await userApi.updateProfileAndCalculateGoal(userId, {
+          const res = await userApi.updateProfileAndCalculateGoal(userId, {
             age: userProfile.age,
             gender: userProfile.gender,
             height: userProfile.height,
@@ -270,13 +338,135 @@ export const useAppStore = create<AppState>()(
             fastingGoal: userProfile.fastingGoal
           });
           
+          if (res && res.success && res.data) {
+            set((state) => ({
+              userProfile: {
+                ...state.userProfile,
+                targetCalories: res.data.targetCalories,
+                targetProtein: res.data.targetProtein,
+                targetCarb: res.data.targetCarb,
+                targetFat: res.data.targetFat,
+              }
+            }));
+          }
+          
           set({ pendingOnboardingSync: false });
         } catch (error: any) {
           set({ error: error.message || 'Đồng bộ hóa dữ liệu thất bại' });
         } finally {
           set({ isLoading: false });
         }
-      }
+      },
+
+      // ─── Workout Challenge Async Actions ──────────────────────────────────
+
+      fetchWorkoutChallenges: async () => {
+        const { userId } = get();
+        if (!userId) return;
+        try {
+          const res = await workoutApi.listUserChallenges(userId);
+          if (res?.success && Array.isArray(res.data)) {
+            set({ workoutChallenges: res.data });
+          }
+        } catch (error: any) {
+          if (error.response?.status !== 404) {
+            console.warn('[Store] fetchWorkoutChallenges:', error.message);
+          }
+        }
+      },
+
+      createWorkoutChallenge: async (payload) => {
+        const { userId } = get();
+        if (!userId) return;
+        try {
+          set({ isLoading: true, error: null });
+          const res = await workoutApi.createChallenge({ ...payload, userId });
+          if (res?.success && res.data) {
+            set((state) => ({
+              workoutChallenges: [...state.workoutChallenges, res.data],
+            }));
+          }
+        } catch (error: any) {
+          set({ error: error.message || 'Không thể tạo thử thách' });
+          console.error('[Store] createWorkoutChallenge:', error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      updateWorkoutChallenge: async (id, payload) => {
+        try {
+          set({ isLoading: true, error: null });
+          const res = await workoutApi.updateChallenge(id, payload);
+          if (res?.success && res.data) {
+            set((state) => ({
+              workoutChallenges: state.workoutChallenges.map((c) =>
+                c.id === id ? { ...c, ...res.data } : c
+              ),
+            }));
+          }
+        } catch (error: any) {
+          set({ error: error.message || 'Không thể cập nhật thử thách' });
+          console.error('[Store] updateWorkoutChallenge:', error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      deleteWorkoutChallenge: async (id) => {
+        try {
+          set({ isLoading: true, error: null });
+          await workoutApi.deleteChallenge(id);
+          set((state) => ({
+            workoutChallenges: state.workoutChallenges.filter((c) => c.id !== id),
+          }));
+        } catch (error: any) {
+          set({ error: error.message || 'Không thể xóa thử thách' });
+          console.error('[Store] deleteWorkoutChallenge:', error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      updateChallengeProgress: async (id, newValue) => {
+        try {
+          set({ isLoading: true, error: null });
+          const res = await workoutApi.updateChallenge(id, { currentValue: newValue });
+          if (res?.success && res.data) {
+            set((state) => ({
+              workoutChallenges: state.workoutChallenges.map((c) =>
+                c.id === id ? { ...c, currentValue: newValue } : c
+              ),
+            }));
+          }
+        } catch (error: any) {
+          set({ error: error.message || 'Không thể cập nhật tiến độ' });
+          console.error('[Store] updateChallengeProgress:', error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      // ─── Daily Nutrition Async Actions ────────────────────────────────────
+
+      fetchDailyNutrition: async (date) => {
+        const { userId } = get();
+        if (!userId) return;
+        const targetDate = date || getLocalToday();
+        try {
+          const res = await progressApi.getDailyNutrition(userId, targetDate);
+          if (res?.success && res.data) {
+            set({ dailyNutrition: res.data });
+          }
+        } catch (error: any) {
+          if (error.response?.status !== 404) {
+            console.warn('[Store] fetchDailyNutrition:', error.message);
+          } else {
+            // Ngày chưa có dữ liệu – giữ null
+            set({ dailyNutrition: null });
+          }
+        }
+      },
     }),
     {
       name: '@nutritrack_state',

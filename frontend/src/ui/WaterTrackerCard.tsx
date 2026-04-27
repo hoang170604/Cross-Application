@@ -8,6 +8,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ProgressBar } from './core/ProgressBar';
+import { useTheme } from '@/src/hooks/useTheme';
+import { ThemeColors } from '@/src/core/theme';
 
 interface WaterTrackerCardProps {
   /** Lượng nước đã uống (ml) */
@@ -16,6 +18,8 @@ interface WaterTrackerCardProps {
   target: number;
   /** Hàm xử lý khi thêm nước */
   onAddWater: () => void;
+  /** Hàm xử lý khi reset lượng nước */
+  onReset?: () => void;
 }
 
 /**
@@ -25,8 +29,12 @@ interface WaterTrackerCardProps {
 export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
   intake,
   target,
-  onAddWater
+  onAddWater,
+  onReset,
 }) => {
+  const colors = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
+
   const cups = Math.floor(intake / 200);
   const targetCups = Math.floor(target / 200);
   const progress = target > 0 ? intake / target : 0;
@@ -57,12 +65,25 @@ export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
           </View>
         </View>
 
-        {/* statsWrapper: Chứa con số đếm bên phải */}
-        <View style={styles.statsWrapper}>
-          <Text style={styles.statsValue}>
-            {cups} / {targetCups}
-          </Text>
-          <Text style={styles.statsUnit}>cốc</Text>
+        <View style={styles.headerRight}>
+          {/* statsWrapper: Chứa con số đếm bên phải */}
+          <View style={styles.statsWrapper}>
+            <Text style={styles.statsValue}>
+              {cups} / {targetCups}
+            </Text>
+            <Text style={styles.statsUnit}>cốc</Text>
+          </View>
+          {/* Nút reset */}
+          {onReset && (
+            <TouchableOpacity
+              onPress={onReset}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.resetButton}
+              activeOpacity={0.6}
+            >
+              <Ionicons name="refresh" size={15} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -82,15 +103,15 @@ export const WaterTrackerCard: React.FC<WaterTrackerCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 16, // Cân đối padding theo yêu cầu
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000',
+    borderColor: colors.cardBorder,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
@@ -115,7 +136,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#3B82F6' + '20', // Opacity
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0, // Không bao giờ bị bóp méo
@@ -123,11 +144,11 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: '800',
     fontSize: 16,
-    color: '#1E293B',
+    color: colors.text,
   },
   subTitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     marginTop: 2,
     fontWeight: '500',
   },
@@ -136,6 +157,20 @@ const styles = StyleSheet.create({
     flexShrink: 0, // Đảm bảo con số luôn hiển thị đủ
     minWidth: 60,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  resetButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.iconBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   statsValue: {
     fontWeight: '800',
     color: '#3B82F6',
@@ -143,7 +178,7 @@ const styles = StyleSheet.create({
   },
   statsUnit: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   footer: {

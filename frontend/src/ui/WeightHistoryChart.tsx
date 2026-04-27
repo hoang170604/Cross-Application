@@ -10,6 +10,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { useTheme } from '@/src/hooks/useTheme';
+import { ThemeColors } from '@/src/core/theme';
 
 interface WeightHistoryChartProps {
   /** Lịch sử cân nặng lấy từ userProfile */
@@ -19,7 +21,9 @@ interface WeightHistoryChartProps {
 const WeightHistoryChartComponent: React.FC<WeightHistoryChartProps> = ({
   history = []
 }) => {
-  const screenWidth = Dimensions.get('window').width - 48; // Giảm padding 24 (lề tab Statistics)
+  const screenWidth = Dimensions.get('window').width - 48;
+  const colors = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
 
   // 1. Xử lý dữ liệu biểu đồ
   // Xử lý đồ thị với tối đa 7 điểm dữ liệu mới nhất được nạp vào
@@ -53,31 +57,31 @@ const WeightHistoryChartComponent: React.FC<WeightHistoryChartProps> = ({
   };
 
   const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
-    decimalPlaces: 1, // Số chữ số thập phân
+    backgroundColor: colors.card,
+    backgroundGradientFrom: colors.card,
+    backgroundGradientTo: colors.card,
+    decimalPlaces: 1,
     color: (opacity = 1) => `rgba(0, 196, 140, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+    labelColor: (opacity = 1) => colors.textSecondary,
     style: {
       borderRadius: 16
     },
     propsForDots: {
       r: '6',
       strokeWidth: '2',
-      stroke: '#ffffff'
+      stroke: colors.card
     },
     propsForBackgroundLines: {
-      strokeDasharray: '', // Bỏ gạch đứt đoạn
-      stroke: '#F3F4F6',
+      strokeDasharray: '',
+      stroke: colors.cardBorder,
     },
     variant: 'bezier',
     fillShadowGradientFrom: '#00C48C',
-    fillShadowGradientTo: '#ffffff',
-    fillShadowGradientOpacity: 0.2, // Đổ bóng nhẹ phía dưới
+    fillShadowGradientTo: colors.card,
+    fillShadowGradientOpacity: 0.2,
     useShadowColorFromDataset: false,
     horizontalLines: true,
-    verticalLines: false, // Ẩn đường lưới dọc cho thanh thoát
+    verticalLines: false,
   };
 
   return (
@@ -101,35 +105,35 @@ const WeightHistoryChartComponent: React.FC<WeightHistoryChartProps> = ({
 const WeightHistoryChart = React.memo(WeightHistoryChartComponent);
 export default WeightHistoryChart;
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 24,
     paddingVertical: 20,
     paddingHorizontal: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.cardBorder,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
   },
   emptyCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 24,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.cardBorder,
     minHeight: 200,
   },
   title: {
     fontWeight: '800',
     marginBottom: 16,
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
     alignSelf: 'flex-start',
@@ -148,12 +152,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1E293B',
+    color: colors.text,
     textAlign: 'center',
   },
   emptySubText: {
     fontSize: 13,
-    color: '#94A3B8',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     fontWeight: '500',

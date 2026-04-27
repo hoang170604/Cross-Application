@@ -4,14 +4,12 @@ import { useColorScheme } from 'react-native';
 
 export function useTheme(): ThemeColors {
   const { theme } = useAppStore();
-  const systemColorScheme = useColorScheme();
+  const systemColorScheme = useColorScheme(); // 'light' | 'dark' | null | undefined
 
-  // Nếu bạn muốn hỗ trợ 'system', có thể đọc systemColorScheme ở đây
-  // Hiện tại đang hỗ trợ 2 chế độ 'light' | 'dark' rõ ràng.
+  // Nếu người dùng chọn 'system', theo hệ thống
+  const resolvedTheme = theme === 'system'
+    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
+    : theme;
 
-  if (theme === 'dark') {
-    return darkColors;
-  }
-  
-  return lightColors;
+  return resolvedTheme === 'dark' ? darkColors : lightColors;
 }

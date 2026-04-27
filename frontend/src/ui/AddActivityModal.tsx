@@ -22,18 +22,12 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
+import { ActivityTypeInfo } from '../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface Activity {
-  id: string;
-  name: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  iconColor: string;
-  bgColor: string;
-  /** kcal/phút (ước tính) */
-  caloriesPerMin: number;
-}
+// Re-export Activity = ActivityTypeInfo để các component khác import
+export type Activity = ActivityTypeInfo;
 
 interface AddActivityModalProps {
   visible: boolean;
@@ -51,7 +45,7 @@ interface DurationStepProps {
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
-const ACTIVITIES: Activity[] = [
+export const ACTIVITIES: Activity[] = [
   { id: 'swimming',       name: 'Bơi lội',   icon: 'swim',         iconColor: '#3B82F6', bgColor: '#EFF6FF', caloriesPerMin: 8  },
   { id: 'jump_rope',      name: 'Nhảy dây',  icon: 'jump-rope',    iconColor: '#F59E0B', bgColor: '#FEF3C7', caloriesPerMin: 11 },
   { id: 'yoga',           name: 'Yoga',      icon: 'yoga',         iconColor: '#8B5CF6', bgColor: '#EDE9FE', caloriesPerMin: 4  },
@@ -59,7 +53,6 @@ const ACTIVITIES: Activity[] = [
   { id: 'cycling',        name: 'Đạp xe',    icon: 'bike',         iconColor: '#10B981', bgColor: '#D1FAE5', caloriesPerMin: 7  },
   { id: 'weight_training',name: 'Tập tạ',    icon: 'dumbbell',     iconColor: '#64748B', bgColor: '#F1F5F9', caloriesPerMin: 6  },
 ];
-
 const DEFAULT_MINUTES = 30;
 const MIN_MINUTES = 5;
 const MAX_MINUTES = 300;
@@ -73,7 +66,7 @@ const ActivityRow: React.FC<{ item: Activity; onPress: (a: Activity) => void }> 
   return (
     <TouchableOpacity style={styles.row} onPress={() => onPress(item)} activeOpacity={0.7}>
       <View style={[styles.iconCircle, { backgroundColor: item.bgColor }]}>
-        <MaterialCommunityIcons name={item.icon} size={24} color={item.iconColor} />
+        <MaterialCommunityIcons name={item.icon as any} size={24} color={item.iconColor} />
       </View>
       <View style={styles.rowText}>
         <Text style={styles.rowName}>{item.name}</Text>
@@ -133,7 +126,7 @@ const DurationStep: React.FC<DurationStepProps> = ({
       <View style={styles.stepContainer}>
         <View style={styles.selectedActivity}>
           <View style={[styles.iconCircle, { backgroundColor: activity.bgColor }]}>
-            <MaterialCommunityIcons name={activity.icon} size={24} color={activity.iconColor} />
+            <MaterialCommunityIcons name={activity.icon as any} size={24} color={activity.iconColor} />
           </View>
           <View>
             <Text style={styles.selectedName}>{activity.name}</Text>

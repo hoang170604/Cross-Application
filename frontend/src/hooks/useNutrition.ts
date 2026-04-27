@@ -31,6 +31,17 @@ export function useNutrition() {
   [userProfile.currentWeight, userProfile.weight, userProfile.height]);
 
   const { totalEatenCalories, totalEatenMacros } = useMemo(() => {
+    if (store.dailyNutrition) {
+      return {
+        totalEatenCalories: store.dailyNutrition.totalCalories || 0,
+        totalEatenMacros: {
+          carb: store.dailyNutrition.totalCarb || 0,
+          protein: store.dailyNutrition.totalProtein || 0,
+          fat: store.dailyNutrition.totalFat || 0,
+        }
+      };
+    }
+    // Fallback khi chưa có dữ liệu từ server
     const meals = userProfile.dailyMeals || { breakfast: [], lunch: [], dinner: [], snack: [] };
     const allFoods = Object.values(meals).flat();
     return {
@@ -41,7 +52,7 @@ export function useNutrition() {
         fat: allFoods.reduce((sum, item) => sum + (item.fat || 0), 0),
       }
     };
-  }, [userProfile.dailyMeals]);
+  }, [userProfile.dailyMeals, store.dailyNutrition]);
 
   // ─── Tương thích ngược: Hành động không nằm trong Store cốt lõi ─────────
   const logWater = async (amountMl: number) => {

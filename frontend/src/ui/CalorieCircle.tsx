@@ -8,6 +8,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { useTheme } from '@/src/hooks/useTheme';
+import { ThemeColors } from '@/src/core/theme';
 
 interface CalorieCircleProps {
   /** Lượng Calo đã nạp (kcal) */
@@ -32,6 +34,9 @@ export const CalorieCircle: React.FC<CalorieCircleProps> = ({
   isOver,
   progress
 }) => {
+  const colors = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
+
   const size = 160;
   const strokeWidth = 14;
   const radius = (size - strokeWidth) / 2;
@@ -64,7 +69,7 @@ export const CalorieCircle: React.FC<CalorieCircleProps> = ({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke="#F1F5F9"
+            stroke={colors.surface}
             strokeWidth={strokeWidth - 2}
             fill="none"
             strokeLinecap="round"
@@ -86,7 +91,7 @@ export const CalorieCircle: React.FC<CalorieCircleProps> = ({
 
         {/* Chữ trung tâm */}
         <View style={styles.centerTextOverlay}>
-          <Text style={[styles.remainingValue, { color: isOver ? '#F43F5E' : '#111827' }]}>
+          <Text style={[styles.remainingValue, { color: isOver ? colors.danger : colors.text }]}>
             {isOver ? `-${remaining}` : remaining.toLocaleString()}
           </Text>
           <Text style={styles.remainingLabel}>
@@ -100,11 +105,14 @@ export const CalorieCircle: React.FC<CalorieCircleProps> = ({
         <Text style={styles.statsValue}>{burned.toLocaleString()}</Text>
         <Text style={styles.statsLabel}>Đốt cháy</Text>
       </View>
+      
     </View>
+
+    
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -119,11 +127,11 @@ const styles = StyleSheet.create({
   statsValue: {
     fontSize: 22, 
     fontWeight: '800', 
-    color: '#1E293B',
+    color: colors.text,
   },
   statsLabel: {
     fontSize: 12, 
-    color: '#64748B', 
+    color: colors.textSecondary, 
     marginTop: 4, 
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -136,8 +144,8 @@ const styles = StyleSheet.create({
   },
   shadowRing: {
     position: 'absolute',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#64748B',
+    backgroundColor: colors.card,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
@@ -153,7 +161,7 @@ const styles = StyleSheet.create({
   },
   remainingLabel: {
     fontSize: 12, 
-    color: '#64748B', 
+    color: colors.textSecondary, 
     marginTop: 2, 
     fontWeight: '700',
   },
