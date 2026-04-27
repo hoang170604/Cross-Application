@@ -20,6 +20,10 @@ public interface UserServiceInterface {
 
     public Optional<UserDTO> getById(Long id);
 
+    public Optional<NutritionGoal> getLatestGoal(Long userId);
+
+    public Optional<UserProfile> getProfile(Long userId);
+
     public void requestPasswordReset(String email);
 
     public void verifyEmail(String token);

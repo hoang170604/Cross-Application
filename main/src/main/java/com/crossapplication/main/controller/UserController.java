@@ -143,6 +143,35 @@ public class UserController {
         }
     }
 
+    // GET /api/users/{id}/goal
+    @GetMapping("/{id}/goal")
+    public ResponseEntity<ApiResponse<?>> getUserGoal(@PathVariable Long id) {
+        Optional<NutritionGoal> goalOpt = userService.getLatestGoal(id);
+        if (goalOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Goal not found", "GOAL_NOT_FOUND"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(goalOpt.get()));
+    }
+
+    // GET /api/users/{id}/profile
+    @GetMapping("/{id}/profile")
+    public ResponseEntity<ApiResponse<?>> getUserProfile(@PathVariable Long id) {
+        Optional<UserProfile> profileOpt = userService.getProfile(id);
+        if (profileOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Profile not found", "PROFILE_NOT_FOUND"));
+        }
+        UserProfile p = profileOpt.get();
+        return ResponseEntity.ok(ApiResponse.success(Map.of(
+            "name", p.getName() != null ? p.getName() : "",
+            "age", p.getAge(),
+            "gender", p.getGender() != null ? p.getGender() : "",
+            "height", p.getHeight(),
+            "weight", p.getWeight(),
+            "activityLevel", p.getActivityLevel(),
+            "goal", p.getGoal() != null ? p.getGoal() : ""
+        )));
+    }
+
     // POST /api/users/password-reset
     @PostMapping("/password-reset")
     public ResponseEntity<ApiResponse<?>> requestPasswordReset(@RequestBody Map<String, String> body) {

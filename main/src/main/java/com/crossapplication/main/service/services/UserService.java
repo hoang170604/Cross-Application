@@ -13,6 +13,7 @@ import com.crossapplication.main.entity.NutritionGoal;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.entity.UserProfile;
 import com.crossapplication.main.repository.interfaces.NutritionGoalRepository;
+import com.crossapplication.main.repository.interfaces.UserProfileRepository;
 import com.crossapplication.main.repository.interfaces.UserRepositoryInterface;
 import com.crossapplication.main.service.interfaces.UserServiceInterface;
 import com.crossapplication.main.util.JwtTokenProvider;
@@ -26,6 +27,9 @@ public class UserService implements UserServiceInterface {
 
     @Autowired
     private NutritionGoalRepository goalRepo;
+
+    @Autowired
+    private UserProfileRepository profileRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -89,6 +93,10 @@ public class UserService implements UserServiceInterface {
         if (uopt.isEmpty()) throw new IllegalArgumentException("User not found");
         User u = uopt.get();
 
+        // Persist UserProfile
+        profile.setUser(u);
+        profileRepo.save(profile);
+
         // 1. Tính Tỷ lệ trao đổi chất cơ bản (BMR) theo phương trình Mifflin-St Jeor
         double bmr;
         double weight = profile.getWeight();
@@ -139,6 +147,16 @@ public class UserService implements UserServiceInterface {
         ng.setTargetCarb(Math.round(carbCalories / 4.0));
         ng.setTargetFat(Math.round(fatCalories / 9.0));
         return goalRepo.save(ng);
+    }
+
+    @Override
+    public Optional<NutritionGoal> getLatestGoal(Long userId) {
+        return goalRepo.findFirstByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    @Override
+    public Optional<UserProfile> getProfile(Long userId) {
+        return profileRepo.findByUserId(userId);
     }
 
     @Override
