@@ -23,6 +23,18 @@ export const getUserById = async (userId: number): Promise<ApiResponse<any>> => 
   return response.data;
 };
 
+/** Lấy hồ sơ cá nhân (profile) của user */
+export const getUserProfile = async (userId: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/users/${userId}/profile`);
+  return response.data;
+};
+
+/** Lấy mục tiêu dinh dưỡng hiện tại của user */
+export const getUserGoal = async (userId: number): Promise<ApiResponse<any>> => {
+  const response = await apiClient.get<ApiResponse<any>>(`/api/users/${userId}/goal`);
+  return response.data;
+};
+
 /** Cập nhật hồ sơ và tính toán mục tiêu dinh dưỡng */
 export const updateProfileAndCalculateGoal = async (userId: number, profile: UserProfilePayload): Promise<ApiResponse<any>> => {
   const response = await apiClient.put<ApiResponse<any>>(`/api/users/${userId}/profile`, profile);

@@ -131,7 +131,7 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      addActivityCalories: (kcal) => {
+      addActivityCalories: (kcal: number) => {
         const today = getLocalToday();
         set((state) => ({
           activityCalories: (state.lastActivityDate === today ? state.activityCalories : 0) + kcal,
@@ -257,7 +257,18 @@ export const useAppStore = create<AppState>()(
       logout: async () => {
         try {
           set({ isLoading: true, error: null });
-          set({ token: null, userId: null, userProfile: DEFAULT_PROFILE });
+          // Reset toàn bộ state thuộc về user
+          set({
+            token: null,
+            userId: null,
+            userProfile: DEFAULT_PROFILE,
+            dailyNutrition: null,
+            workoutChallenges: [],
+            activityCalories: 0,
+            lastActivityDate: '',
+            loggedActivities: [],
+            pendingOnboardingSync: false,
+          });
           await AsyncStorage.clear();
         } catch (error: any) {
           set({ error: error.message || 'Lỗi đăng xuất' });
@@ -353,8 +364,8 @@ export const useAppStore = create<AppState>()(
           // Gọi API qua Service Layer
           const data = await diaryApi.getDiary(userId, date);
 
-          if (data) {
-            set({ userProfile: { ...userProfile, dailyMeals: data } });
+          if (data && data.data) {
+            set({ userProfile: { ...userProfile, dailyMeals: data.data } });
           }
 
           // 2. Fetch daily nutrition từ server cho ngày này
