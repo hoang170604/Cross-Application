@@ -10,7 +10,7 @@ import Svg, { Circle } from 'react-native-svg';
 export default function AhaMomentScreen() {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
-  const { userProfile, userId, updateUserProfile } = useAppStore();
+  const { userProfile, userId, token, updateUserProfile } = useAppStore();
 
   useEffect(() => {
     let currentProgress = 0;
@@ -19,7 +19,7 @@ export default function AhaMomentScreen() {
     // Kích hoạt đồng bộ Backend ngay khi vào màn hình
     const triggerSync = async () => {
       try {
-        if (userId) {
+        if (userId && token) {
           const responseData = await syncOnboardingProfile(userId, {
             ...userProfile,
             // Đảm bảo không gửi các field target cũ nếu có
@@ -29,12 +29,12 @@ export default function AhaMomentScreen() {
             targetFat: undefined
           });
 
-          if (responseData && responseData.targetCalories) {
+          if (responseData && responseData.data && responseData.data.targetCalories) {
              updateUserProfile({
-                targetCalories: Math.round(responseData.targetCalories),
-                targetProtein: Math.round(responseData.targetProtein || 0),
-                targetCarb: Math.round(responseData.targetCarb || 0),
-                targetFat: Math.round(responseData.targetFat || 0)
+                targetCalories: Math.round(responseData.data.targetCalories),
+                targetProtein: Math.round(responseData.data.targetProtein || 0),
+                targetCarb: Math.round(responseData.data.targetCarb || 0),
+                targetFat: Math.round(responseData.data.targetFat || 0)
              });
           } else {
             // Fallback: Nếu backend chưa kịp trả về hoặc lỗi, tính toán local để user không thấy số 0

@@ -349,6 +349,7 @@ export const useAppStore = create<AppState>()(
             const userRes = await userApi.getUserProfile(userId);
             if (userRes && userRes.data) {
               const d = userRes.data;
+              // Cập nhật state với dữ liệu từ server
               set((state) => ({
                 userProfile: {
                   ...state.userProfile,
@@ -362,12 +363,14 @@ export const useAppStore = create<AppState>()(
                   goal: d.goal || state.userProfile.goal,
                 }
               }));
-              
-              // QUAN TRỌNG: Tính toán lại mục tiêu ngay sau khi có profile để Home có data ngay lập tức
-              get().recalculateGoals();
             }
           } catch (e: any) {
             console.log('[Store] User profile fetch error (might be new user):', e.message);
+          }
+
+          // QUAN TRỌNG: Đảm bảo luôn có targetCalories (tính local nếu backend chưa có)
+          if (!get().userProfile.targetCalories) {
+            get().recalculateGoals();
           }
         } catch (error: any) {
           set({ error: error.message || 'Lỗi đăng nhập' });
@@ -681,19 +684,23 @@ export const useAppStore = create<AppState>()(
       },
 
       logWater: async (amountMl: number) => {
-        const { userId } = get();
+        const { userId, waterIntake: prevIntake } = get();
         if (!userId) return;
         const today = getLocalToday();
+
+        // Optimistic update: cập nhật UI ngay lập tức
+        set({ waterIntake: prevIntake + amountMl });
 
         try {
           set({ isWaterLoading: true });
           // 1. Gọi API
           await progressApi.logWater(userId, amountMl, today);
           
-          // 2. Fetch lại daily nutrition & water intake để cập nhật UI
-          await get().fetchDailyNutrition(today);
+          // 2. Fetch lại water intake thực tế từ server để đồng bộ chính xác
           await get().fetchWaterIntake(today);
         } catch (error: any) {
+          // Rollback nếu API thất bại
+          set({ waterIntake: prevIntake });
           console.warn('[Store] logWater failed:', error.message);
         } finally {
           set({ isWaterLoading: false });

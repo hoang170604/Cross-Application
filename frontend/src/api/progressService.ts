@@ -30,7 +30,9 @@ export const getLatestWeight = async (userId: number): Promise<ApiResponse<any>>
 // ─── Water ───────────────────────────────────────────────────────────
 
 export const logWater = async (userId: number, amountMl: number, logDate: string): Promise<ApiResponse<any>> => {
-  const response = await apiClient.post<ApiResponse<any>>('/api/water/log', { userId, amountMl, timestamp: logDate });
+  // Backend expects LocalDateTime format for 'timestamp' field
+  const timestamp = logDate.includes('T') ? logDate : `${logDate}T${new Date().toTimeString().slice(0, 8)}`;
+  const response = await apiClient.post<ApiResponse<any>>('/api/water/log', { userId, amountMl, timestamp });
   return response.data;
 };
 

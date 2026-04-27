@@ -37,8 +37,18 @@ apiClient.interceptors.response.use(
     } else {
       // Backend returned standardized error format with status and message
       const serverMessage = error.response.data?.message;
-      if (serverMessage) {
-        Alert.alert('Thông báo từ Server', serverMessage);
+      const isLoginRequest = error.config?.url?.includes('/api/users/login');
+
+      if (error.response.status === 401 && !isLoginRequest) {
+        console.warn('[Auth] Phiên đăng nhập hết hạn hoặc không hợp lệ (401)');
+        
+        // Dynamically import store to avoid circular dependency
+        const { useAppStore } = require('../store/useAppStore');
+        useAppStore.getState().logout();
+
+        Alert.alert('Phiên đăng nhập hết hạn', 'Vui lòng đăng nhập lại để tiếp tục.');
+      } else if (serverMessage) {
+        Alert.alert('Thông báo', serverMessage);
       } else if (error.response.status >= 500) {
         console.error('[Server Error] Lỗi nghiêm trọng từ Backend:', error.response.status);
         Alert.alert('Lỗi Server', 'Đã có lỗi nghiêm trọng xảy ra ở máy chủ.');

@@ -1,24 +1,23 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TextInput, 
-  Alert, 
-  KeyboardAvoidingView, 
-  Platform, 
-  TouchableWithoutFeedback, 
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
   Keyboard,
-  TouchableOpacity 
+  TouchableOpacity
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useNutrition } from '@/src/hooks';
+import { useNutrition, useTracking } from '@/src/hooks';
 import { DailyMeals } from '@/src/types';
-import { useAppStore } from '@/src/store/useAppStore';
 import { useTheme } from '@/src/hooks/useTheme';
 
 // ─── Import Atomic Components ────────────────────────────────────────────────
@@ -38,31 +37,20 @@ const DATE_FMT: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric',
 
 export default function DiaryDashboardScreen() {
   const router = useRouter();
-  
+
   // Sử dụng các Hook chuyên biệt theo chuẩn Atomic
   const {
-    userProfile, 
+    userProfile,
     totalEatenCalories,
     totalEatenMacros,
     updateCurrentWeight,
     tdee
   } = useNutrition();
 
-  // ── Activity state ────────────────────────────────────────────────
-  const { activityCalories, fetchWaterIntake, fetchLatestWeight } = useAppStore();
+  // ── Activity & Tracking state ───────────────────────────────────────
+  const { activityCalories } = useTracking();
 
   const colors = useTheme();
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchWaterIntake();
-      fetchLatestWeight();
-    }, [fetchWaterIntake, fetchLatestWeight])
-  );
-
-
-
-
 
   // ── Memoized Calculations ─────────────────────────────────────────────────
   const calStats = useMemo(() => {
@@ -77,10 +65,6 @@ export default function DiaryDashboardScreen() {
   }, [totalEatenCalories, userProfile.targetCalories, activityCalories]);
 
   const todayString = useMemo(() => new Intl.DateTimeFormat('vi-VN', DATE_FMT).format(new Date()), []);
-
-
-
-
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -108,7 +92,7 @@ export default function DiaryDashboardScreen() {
               {/* Organism: Biểu đồ Calo tập trung */}
               <View style={{ backgroundColor: colors.card, borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' }}>
                 <View style={{ padding: 24 }}>
-                  <CalorieCircle 
+                  <CalorieCircle
                     consumed={calStats.consumed}
                     burned={calStats.burned}
                     remaining={calStats.remainingDisplay}
@@ -132,7 +116,7 @@ export default function DiaryDashboardScreen() {
             </View>
 
             {/* Thẻ Nutrition mới */}
-            <MealCard 
+            <MealCard
               dailyMeals={userProfile.dailyMeals}
               targetCalories={userProfile.targetCalories || 2000}
             />

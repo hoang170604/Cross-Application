@@ -42,6 +42,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // Enable CORS
+                .cors(org.springframework.security.config.Customizer.withDefaults())
                 // CSRF disabled (we use JWT instead)
                 .csrf(csrf -> csrf.disable())
 
@@ -57,6 +59,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/error").permitAll()
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

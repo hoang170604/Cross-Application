@@ -5,3 +5,4 @@
  */
 
 export { useNutrition } from './useNutrition';
+export { useTracking } from './useTracking';
