@@ -40,6 +40,22 @@ export default function WelcomeScreen() {
         >
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 18 }}>Bắt đầu ngay</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push('/LoginScreen')}
+          style={{
+            marginTop: 20,
+            alignItems: 'center',
+            paddingVertical: 8,
+          }}
+        >
+          <Text style={{ color: '#6B7280', fontSize: 16, fontWeight: '500' }}>
+            Đã có tài khoản?{' '}
+            <Text style={{ color: '#00C48C', fontWeight: '700', textDecorationLine: 'underline' }}>
+              Đăng nhập
+            </Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
