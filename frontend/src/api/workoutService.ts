@@ -6,6 +6,7 @@
 
 import apiClient from './apiClient';
 import { ApiResponse } from '../types/api.types';
+import type { WorkoutChallenge } from '../types/workout.types';
 
 export interface WorkoutChallengePayload {
   userId: number;
@@ -21,26 +22,26 @@ export interface WorkoutChallengePayload {
 // ─── Workout Challenge ────────────────────────────────────────────────
 
 /** Lấy tất cả thử thách tập luyện (public) */
-export const listAllChallenges = async (): Promise<ApiResponse<any>> => {
-  const response = await apiClient.get<ApiResponse<any>>('/api/workout-challenges');
+export const listAllChallenges = async (): Promise<ApiResponse<WorkoutChallenge[]>> => {
+  const response = await apiClient.get<ApiResponse<WorkoutChallenge[]>>('/api/workout-challenges');
   return response.data;
 };
 
 /** Lấy thử thách của một user */
-export const listUserChallenges = async (userId: number): Promise<ApiResponse<any>> => {
-  const response = await apiClient.get<ApiResponse<any>>(`/api/workout-challenges/user/${userId}`);
+export const listUserChallenges = async (userId: number): Promise<ApiResponse<WorkoutChallenge[]>> => {
+  const response = await apiClient.get<ApiResponse<WorkoutChallenge[]>>(`/api/workout-challenges/user/${userId}`);
   return response.data;
 };
 
 /** Lấy chi tiết một thử thách */
-export const getChallengeById = async (id: number): Promise<ApiResponse<any>> => {
-  const response = await apiClient.get<ApiResponse<any>>(`/api/workout-challenges/${id}`);
+export const getChallengeById = async (id: number): Promise<ApiResponse<WorkoutChallenge>> => {
+  const response = await apiClient.get<ApiResponse<WorkoutChallenge>>(`/api/workout-challenges/${id}`);
   return response.data;
 };
 
 /** Tạo thử thách mới */
-export const createChallenge = async (payload: WorkoutChallengePayload): Promise<ApiResponse<any>> => {
-  const response = await apiClient.post<ApiResponse<any>>('/api/workout-challenges', payload);
+export const createChallenge = async (payload: WorkoutChallengePayload): Promise<ApiResponse<WorkoutChallenge>> => {
+  const response = await apiClient.post<ApiResponse<WorkoutChallenge>>('/api/workout-challenges', payload);
   return response.data;
 };
 
@@ -48,12 +49,13 @@ export const createChallenge = async (payload: WorkoutChallengePayload): Promise
 export const updateChallenge = async (
   id: number,
   payload: Partial<WorkoutChallengePayload>
-): Promise<ApiResponse<any>> => {
-  const response = await apiClient.put<ApiResponse<any>>(`/api/workout-challenges/${id}`, payload);
+): Promise<ApiResponse<WorkoutChallenge>> => {
+  const response = await apiClient.put<ApiResponse<WorkoutChallenge>>(`/api/workout-challenges/${id}`, payload);
   return response.data;
 };
 
 /** Xóa thử thách */
-export const deleteChallenge = async (id: number): Promise<void> => {
-  await apiClient.delete(`/api/workout-challenges/${id}`);
+export const deleteChallenge = async (id: number): Promise<ApiResponse<null>> => {
+  const response = await apiClient.delete<ApiResponse<null>>(`/api/workout-challenges/${id}`);
+  return response.data;
 };

@@ -358,7 +358,7 @@ export const useAppStore = create<AppState>()(
                   gender: d.gender || state.userProfile.gender,
                   height: d.height || state.userProfile.height,
                   weight: d.weight || state.userProfile.weight,
-                  currentWeight: d.currentWeight || d.weight || state.userProfile.currentWeight,
+                  currentWeight: d.weight || state.userProfile.currentWeight,
                   activityLevel: d.activityLevel || state.userProfile.activityLevel,
                   goal: d.goal || state.userProfile.goal,
                 }
@@ -510,7 +510,23 @@ export const useAppStore = create<AppState>()(
           const data = await diaryApi.getDiary(userId, date);
 
           if (data && data.data) {
-            set({ userProfile: { ...userProfile, dailyMeals: data.data } });
+            // Transform Meal[] từ backend sang DailyMeals format cho store
+            const meals: DailyMeals = { breakfast: [], lunch: [], dinner: [], snack: [] };
+            for (const meal of data.data) {
+              const mealType = (meal.mealType || '').toLowerCase() as keyof DailyMeals;
+              if (meals[mealType] && Array.isArray(meal.mealLogs)) {
+                meals[mealType] = meal.mealLogs.map((log) => ({
+                  id: log.food?.id || log.id,
+                  name: log.food?.name || '',
+                  calories: log.calories,
+                  protein: log.protein,
+                  carb: log.carb,
+                  fat: log.fat,
+                  quantity: log.quantity,
+                }));
+              }
+            }
+            set({ userProfile: { ...userProfile, dailyMeals: meals } });
           }
 
           // 2. Fetch daily nutrition từ server cho ngày này
@@ -741,7 +757,7 @@ export const useAppStore = create<AppState>()(
             try {
                const userRes = await userApi.getUserProfile(userId);
                if (userRes && userRes.data) {
-                 set({ latestWeight: userRes.data.currentWeight || userRes.data.weight });
+                 set({ latestWeight: userRes.data.weight });
                }
             } catch (e: any) {
                console.warn('[Store] fetchLatestWeight fallback failed:', e.message);

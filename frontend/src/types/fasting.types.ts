@@ -1,6 +1,23 @@
 /**
  * @file fasting.types.ts
- * @description (Đã gỡ bỏ) Tính năng Nhịn ăn và Thử thách không còn được Backend hỗ trợ.
+ * @description Hợp đồng dữ liệu cho module Nhịn ăn gián đoạn (Fasting).
+ * Khớp với entities FastingSession.java và FastingStateDTO.java ở Backend.
  */
 
-export {};
+/** Phiên nhịn ăn (khớp với entity FastingSession.java) */
+export type FastingSession = {
+  id: number;
+  user?: { id: number };
+  startTime: string;
+  endTime?: string;
+  durationMinutes?: number;
+  isCompleted: boolean;
+};
+
+/** Payload để bắt đầu / dừng nhịn ăn (khớp với FastingStateDTO.java) */
+export type FastingStatePayload = {
+  userId: number;
+  startTime?: string;
+  endTime?: string;
+  fastingGoalHours?: number;
+};
