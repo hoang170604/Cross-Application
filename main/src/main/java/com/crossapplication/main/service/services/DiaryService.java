@@ -13,7 +13,7 @@ import com.crossapplication.main.repository.impl.MealRepository;
 import com.crossapplication.main.repository.interfaces.MealLogRepository;
 import com.crossapplication.main.service.interfaces.DailyNutritionService;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DiaryService implements com.crossapplication.main.service.interfaces.DiaryService{
@@ -148,5 +148,14 @@ public class DiaryService implements com.crossapplication.main.service.interface
             if (daily != null && !daily.isEmpty()) result.addAll(daily);
         }
         return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MealLog> getMealLogsBetween(Long userId, LocalDate start, LocalDate end) {
+        if (userId == null || start == null || end == null) {
+            return List.of();
+        }
+        return mealLogRepo.findByUserIdAndMealDateBetween(userId, start, end);
     }
 }

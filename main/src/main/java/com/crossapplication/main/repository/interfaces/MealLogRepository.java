@@ -28,4 +28,11 @@ public interface MealLogRepository extends JpaRepository<MealLog, Long>{
 
     @Query("SELECT COALESCE(SUM(ml.fat),0) FROM MealLog ml WHERE ml.meal.user.id = :userId AND ml.meal.date = :date")
     double sumFatByUserIdAndDate(@Param("userId") Long userId, @Param("date") LocalDate date);
+
+    @Query("SELECT DISTINCT ml FROM MealLog ml JOIN FETCH ml.meal m JOIN FETCH ml.food f LEFT JOIN FETCH f.category c "
+            + "WHERE m.user.id = :userId AND m.date BETWEEN :start AND :end ORDER BY m.date ASC, m.mealType ASC, ml.id ASC")
+    List<MealLog> findByUserIdAndMealDateBetween(
+            @Param("userId") Long userId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
 }

@@ -19,4 +19,7 @@ public interface DiaryService {
     public MealLog updateMealLog(Long mealLogId, com.crossapplication.main.dto.MealLogDTO update);
 
     public List<Meal> getMealsBetween(Long userId, LocalDate start, LocalDate end);
+
+    /** Meal log lines (food entries) for the given date range, ordered by date and meal type. */
+    public List<MealLog> getMealLogsBetween(Long userId, LocalDate start, LocalDate end);
 }

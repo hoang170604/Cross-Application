@@ -13,7 +13,7 @@ import com.crossapplication.main.repository.interfaces.ActivityRepository;
 import com.crossapplication.main.service.interfaces.ActivityServiceInterface;
 import com.crossapplication.main.service.interfaces.DailyNutritionService;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ActivityService implements ActivityServiceInterface {
@@ -100,6 +100,7 @@ public class ActivityService implements ActivityServiceInterface {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Activity> getActivitiesBetween(Long userId, LocalDate start, LocalDate end) {
         return activityRepository.findByUserIdAndLogDateBetween(userId, start, end);
     }
