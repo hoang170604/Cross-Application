@@ -3,8 +3,13 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { useAppStore } from '@/src/store/useAppStore';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { initDatabase } from '@/src/db/database';
+
+// Đảm bảo Platform luôn sẵn sàng
+if (typeof Platform === 'undefined') {
+  console.warn('Platform is not defined in the global scope, using fallback');
+}
 
 /**
  * Component cốt lõi xử lý quá trình hiển thị ban đầu.
@@ -21,19 +26,27 @@ function InitialLayout() {
   // Zustand persist rehydration check
   const [isHydrated, setIsHydrated] = useState(false);
   useEffect(() => {
-    // Khởi tạo SQLite Database cho ứng dụng
-    initDatabase().catch(err => console.error('[SQLite] Initialization failed:', err));
+    // Hydration check
 
     // onFinishHydration fires when Zustand has loaded state from AsyncStorage
     const unsub = useAppStore.persist.onFinishHydration(() => {
       useAppStore.getState().checkAndResetForNewDay();
       useAppStore.getState().processSyncQueue(); // Tự động đồng bộ hàng đợi
+      
+      // Khởi tạo SQLite chỉ trên điện thoại
+      if (Platform.OS !== 'web') {
+        initDatabase().catch(err => console.warn('[SQLite] Init failed:', err.message));
+      }
+      
       setIsHydrated(true);
     });
     // If already hydrated (e.g. sync storage or hot reload)
     if (useAppStore.persist.hasHydrated()) {
       useAppStore.getState().checkAndResetForNewDay();
-      useAppStore.getState().processSyncQueue(); // Tự động đồng bộ hàng đợi
+      useAppStore.getState().processSyncQueue();
+      if (Platform.OS !== 'web') {
+        initDatabase().catch(err => console.warn('[SQLite] Init failed:', err.message));
+      }
       setIsHydrated(true);
     }
     return unsub;

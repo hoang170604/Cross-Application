@@ -84,7 +84,7 @@ export const getActivitiesBetween = async (
   endDate: string
 ): Promise<ApiResponse<Activity[]>> => {
   const response = await apiClient.get<ApiResponse<Activity[]>>(
-    `/api/activities/users/${userId}?startDate=${startDate}&endDate=${endDate}`
+    `/api/activities/users/${userId}/history?startDate=${startDate}&endDate=${endDate}`
   );
   return response.data;
 };

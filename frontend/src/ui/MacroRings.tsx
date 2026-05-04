@@ -44,7 +44,7 @@ const MacroRingItem: React.FC<MacroRingItemProps> = ({
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = total > 0 ? Math.min(1, value / total) : 0;
+  const progress = total > 0 && !isNaN(value) && !isNaN(total) ? Math.min(1, value / total) : 0;
   const strokeDashoffset = circumference * (1 - progress);
   
   const colors = useTheme();

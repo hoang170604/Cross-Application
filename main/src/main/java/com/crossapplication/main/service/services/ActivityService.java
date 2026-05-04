@@ -43,10 +43,8 @@ public class ActivityService implements ActivityServiceInterface {
         a.setCreatedAt(LocalDateTime.now());
         Activity saved = activityRepository.save(a);
         
-        LocalDate logDate = a.getLogDate();
-        if (caloriesBurned != null && caloriesBurned > 0) {
-            dailyNutritionService.adjustDailyTotals(userId, logDate, -caloriesBurned, 0, 0, 0);
-        }
+        // Activity calories KHÔNG trừ vào DailyNutrition (chỉ chứa food intake).
+        // Frontend quản lý activityCalories riêng qua store.
         return saved;
     }
 
@@ -72,14 +70,7 @@ public class ActivityService implements ActivityServiceInterface {
         Double newCaloriesObj = saved.getCaloriesBurned();
         double newCalories = newCaloriesObj == null ? 0.0 : newCaloriesObj.doubleValue();
         double delta = newCalories - oldCalories;
-        if (delta != 0) {
-            LocalDate logDate = saved.getLogDate();
-            Long userId = saved.getUser() != null ? saved.getUser().getId() : null;
-            if (userId != null && logDate != null) {
-                
-                dailyNutritionService.adjustDailyTotals(userId, logDate, -delta, 0, 0, 0);
-            }
-        }
+        // Activity calories KHÔNG ảnh hưởng đến DailyNutrition.
         return saved;
     }
 
@@ -89,13 +80,7 @@ public class ActivityService implements ActivityServiceInterface {
         var opt = activityRepository.findById(activityId);
         if (opt.isEmpty()) return;
         Activity a = opt.get();
-        Double burned = a.getCaloriesBurned();
-        LocalDate logDate = a.getLogDate();
-        Long userId = a.getUser() != null ? a.getUser().getId() : null;
-        if (burned != null && burned > 0 && userId != null && logDate != null) {
-            
-            dailyNutritionService.adjustDailyTotals(userId, logDate, burned, 0, 0, 0);
-        }
+        // Activity calories KHÔNG ảnh hưởng đến DailyNutrition.
         activityRepository.deleteById(activityId);
     }
 

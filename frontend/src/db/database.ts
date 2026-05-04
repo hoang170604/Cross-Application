@@ -1,15 +1,41 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
 /**
  * Tên cơ sở dữ liệu chính của ứng dụng
  */
 const DATABASE_NAME = 'nutritrack.db';
 
+let dbInstance: SQLite.SQLiteDatabase | null = null;
+
 /**
  * Mở kết nối tới cơ sở dữ liệu SQLite
  */
-export async function getDatabase() {
-  return await SQLite.openDatabaseAsync(DATABASE_NAME);
+export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
+  if (dbInstance) return dbInstance;
+  
+  if (Platform.OS === 'web') {
+    return {
+      execAsync: async () => {},
+      runAsync: async () => ({ lastInsertRowId: 0, changes: 0 }),
+      getFirstAsync: async () => null,
+      getAllAsync: async () => [],
+      prepareAsync: async () => ({
+        executeAsync: async () => ({ lastInsertRowId: 0, changes: 0 }),
+        finalizeAsync: async () => {},
+      }),
+      closeAsync: async () => {},
+    } as unknown as SQLite.SQLiteDatabase;
+  }
+
+  try {
+    dbInstance = await SQLite.openDatabaseAsync(DATABASE_NAME);
+    console.log('[SQLite] Database opened successfully:', DATABASE_NAME);
+    return dbInstance;
+  } catch (error: any) {
+    console.error('[SQLite] Failed to open database:', error.message);
+    throw error;
+  }
 }
 
 /**

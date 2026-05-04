@@ -14,6 +14,11 @@ const config = getDefaultConfig(__dirname);
 // Solution: Remove '.mjs' from the resolver extensions so Metro resolves
 // to the CJS (.js) files instead, which use `process.env.NODE_ENV`.
 // ────────────────────────────────────────────────────────────────────
+// FIX: Cấu hình cho .wasm (Sử dụng cho expo-sqlite web)
+config.resolver.assetExts.push('wasm');
+config.resolver.sourceExts = config.resolver.sourceExts.filter(ext => ext !== 'wasm');
+
+// FIX: Xử lý vấn đề mjs của Zustand
 config.resolver.sourceExts = config.resolver.sourceExts.filter(
   (ext) => ext !== 'mjs'
 );

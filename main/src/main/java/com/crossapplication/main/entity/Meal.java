@@ -20,6 +20,7 @@ public class Meal {
 
     @ManyToOne
     @JoinColumn(name="user_id", nullable=false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
 
     @Column(name="meal_type", length=20, nullable=false)
@@ -58,5 +59,16 @@ public class Meal {
 
     public void setDate(LocalDate date) {
         this.date = date;
+    }
+
+    @jakarta.persistence.OneToMany(mappedBy = "meal", fetch = jakarta.persistence.FetchType.EAGER)
+    private java.util.List<MealLog> mealLogs;
+
+    public java.util.List<MealLog> getMealLogs() {
+        return mealLogs;
+    }
+
+    public void setMealLogs(java.util.List<MealLog> mealLogs) {
+        this.mealLogs = mealLogs;
     }
 }

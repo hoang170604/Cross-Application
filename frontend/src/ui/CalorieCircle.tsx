@@ -41,7 +41,9 @@ export const CalorieCircle: React.FC<CalorieCircleProps> = ({
   const strokeWidth = 14;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - progress);
+  
+  const safeProgress = isNaN(progress) ? 0 : progress;
+  const strokeDashoffset = circumference * (1 - safeProgress);
 
   return (
     <View style={styles.container}>

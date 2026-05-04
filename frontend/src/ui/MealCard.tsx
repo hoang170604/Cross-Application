@@ -60,7 +60,7 @@ const MealCardComponent: React.FC = () => {
                         strokeWidth={4} fill="none"
                         strokeLinecap="round"
                         strokeDasharray={2 * Math.PI * 22}
-                        strokeDashoffset={2 * Math.PI * 22 * (1 - meal.progress)}
+                        strokeDashoffset={2 * Math.PI * 22 * (1 - (isNaN(meal.progress) ? 0 : meal.progress))}
                         transform="rotate(-90 24 24)"
                       />
                     </Svg>

@@ -27,6 +27,9 @@ public class DiaryService implements com.crossapplication.main.service.interface
     @Autowired
     private DailyNutritionService dailyNutritionService;
 
+    @Autowired
+    private com.crossapplication.main.repository.interfaces.FoodRepositoryInterface foodRepo;
+
     @Override
     @Transactional
     public MealLog addFoodToMeal(Long id, LocalDate date, String mealType, MealLog mealLog) {
@@ -47,6 +50,18 @@ public class DiaryService implements com.crossapplication.main.service.interface
 
             targetMeal = mealRepo.save(targetMeal);
         }
+
+        // Validate Food reference: nếu foodId không tồn tại trong DB thì set null
+        // để tránh FK constraint violation. MealLog vẫn lưu đủ calories/protein/carb/fat inline.
+        if (mealLog.getFood() != null && mealLog.getFood().getId() != null) {
+            var foodOpt = foodRepo.findById(mealLog.getFood().getId());
+            if (foodOpt.isEmpty()) {
+                mealLog.setFood(null);
+            } else {
+                mealLog.setFood(foodOpt.get());
+            }
+        }
+
         mealLog.setMeal(targetMeal);
         MealLog saved = mealLogRepo.save(mealLog);
         // update daily totals

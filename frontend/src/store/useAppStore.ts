@@ -504,20 +504,20 @@ export const useAppStore = create<AppState>()(
             fat: food.fat
           });
 
-          // 2. Cập nhật State
+          // 3. Cập nhật State tạm thời (Optimistic UI)
           const currentMeals = userProfile.dailyMeals || { breakfast: [], lunch: [], dinner: [], snack: [] };
           set({
             userProfile: {
               ...userProfile,
               dailyMeals: {
                 ...currentMeals,
-                [mealType]: [...currentMeals[mealType], savedLog || food]
+                [mealType]: [...currentMeals[mealType], food]
               }
             }
           });
 
-          // 3. Fetch lại daily nutrition để lấy tổng hợp calo/macro từ backend
-          await get().fetchDailyNutrition(today);
+          // 4. Đồng bộ lại dữ liệu đầy đủ (bao gồm cả total nutrition và chi tiết bữa ăn) từ backend
+          await get().fetchDiaryFromServer(today);
         } catch (error: any) {
           console.warn('[Store] addFood sync failed, adding to queue:', error.message);
           // LƯU VÀO HÀNG ĐỢI ĐỂ ĐỒNG BỘ SAU

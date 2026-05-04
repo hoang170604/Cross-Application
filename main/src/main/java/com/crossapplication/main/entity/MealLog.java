@@ -17,11 +17,12 @@ public class MealLog {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name="food_id", nullable=false)
+    @JoinColumn(name="food_id", nullable=true)
     private Food food;
 
     @ManyToOne
     @JoinColumn(name="meal_id", nullable=false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Meal meal;
 
     @Column(name = "quantity")

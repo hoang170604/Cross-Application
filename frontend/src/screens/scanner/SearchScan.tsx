@@ -9,16 +9,31 @@ import { useAppStore } from '@/src/store/useAppStore';
 import apiClient from '@/src/api/apiClient';
 import { useNutrition } from '@/src/hooks';
 import { DailyMeals } from '@/src/types';
-import { VIETNAMESE_FOOD_DB, FoodItemDB } from '@/constants/foodDatabase';
+import { FoodItemDB } from '@/constants/foodDatabase';
 import { useTheme } from '@/src/hooks/useTheme';
+import { getAllFoods } from '@/src/api/foodService';
+import { useEffect } from 'react';
+
+// Hàm lấy icon theo category (tương đương với các icon đã setup)
+const getIconForCategory = (categoryName: string) => {
+  if (!categoryName) return '🍲';
+  const name = categoryName.toLowerCase();
+  if (name.includes('nước')) return '🍲';
+  if (name.includes('chiên') || name.includes('nướng')) return '🍗';
+  if (name.includes('cơm') || name.includes('xôi')) return '🍛';
+  if (name.includes('nhanh') || name.includes('bánh mì')) return '🥖';
+  if (name.includes('tráng miệng')) return '🍧';
+  if (name.includes('uống')) return '🧋';
+  if (name.includes('rau') || name.includes('củ')) return '🥦';
+  if (name.includes('trái cây')) return '🍎';
+  if (name.includes('hải sản')) return '🦐';
+  if (name.includes('thịt')) return '🥩';
+  if (name.includes('trứng') || name.includes('sữa')) return '🥚';
+  return '🍱';
+};
 
 /**
  * Màn hình tìm kiếm và thêm lượng ăn.
- *
- * Chức năng:
- * - Cung cấp giao diện lọc và tìm kiếm món ăn từ cơ sở dữ liệu có sẵn.
- * - Hỗ trợ người dùng nhập chỉ số món ăn thủ công để thêm vào nhật ký dinh dưỡng.
- * - Gửi bản ghi món ăn mới tương ứng với bữa ăn về backend để lưu lại.
  */
 export default function SearchScanScreen() {
   const router = useRouter();
@@ -34,6 +49,10 @@ export default function SearchScanScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('Tất cả');
   
+  // State lưu danh sách food từ BE
+  const [foods, setFoods] = useState<FoodItemDB[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [customName, setCustomName] = useState('');
   const [customCals, setCustomCals] = useState('');
   const [customProtein, setCustomProtein] = useState('');
@@ -42,8 +61,38 @@ export default function SearchScanScreen() {
 
   const FILTERS = ['Tất cả', 'Giàu Đạm', 'Ít Tinh bột', 'Ít Béo', 'Món nước', 'Cơm/Xôi', 'Tráng miệng', 'Đồ uống', 'Đồ ăn nhanh'];
 
+  useEffect(() => {
+    const fetchFoods = async () => {
+      setIsLoading(true);
+      try {
+        const res = await getAllFoods();
+        if (res && res.data) {
+          // Chuyển đổi dữ liệu BE -> UI
+          const mappedFoods: FoodItemDB[] = res.data.map(f => ({
+            id: f.id,
+            name: f.name,
+            calories: f.caloriesPer100g,
+            protein: f.proteinPer100g,
+            carb: f.carbPer100g,
+            fat: f.fatPer100g,
+            portion: '100g',
+            icon: getIconForCategory(f.category?.name || ''),
+            category: f.category?.name || 'Khác',
+            tags: []
+          }));
+          setFoods(mappedFoods);
+        }
+      } catch (error) {
+        console.error("Failed to fetch foods:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFoods();
+  }, []);
+
   const filteredFoods = useMemo(() => {
-    return VIETNAMESE_FOOD_DB.filter(food => {
+    return foods.filter(food => {
       const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase());
       
       let matchesFilter = true;
@@ -61,41 +110,26 @@ export default function SearchScanScreen() {
 
       return matchesSearch && matchesFilter;
     });
-  }, [searchQuery, selectedFilter]);
+  }, [foods, searchQuery, selectedFilter]);
 
   const handleAddDataFood = async (food: FoodItemDB) => {
-     let mealLogId = food.id; // Fallback
      try {
-       const today = new Date().toISOString().split('T')[0];
-       // Đồng bộ với Backend để lưu món ăn mới
-       const res = await apiClient.post(`/api/diary/users/${userId}/meals/${mealType}?date=${today}`, {
-         foodId: food.id,
-         quantity: 100,
+       // Sử dụng action addFood từ hook useNutrition
+       // Action này đã bao gồm: Lưu SQLite local + Gọi API sync lên Backend
+       await addFood(mealType, {
+         id: food.id,
+         name: food.name,
          calories: food.calories,
          protein: food.protein,
          carb: food.carb,
-         fat: food.fat
+         fat: food.fat,
+         quantity: 100, // Mặc định 100g
        });
-
-       if (res.data && res.data.id) {
-           mealLogId = res.data.id;
-       }
+       router.back();
      } catch (error) {
-       console.warn('[Offline Mode] Backend chưa mở API Thêm món ăn, Fallback sang Local Storage.');
+       console.error('[SearchScan] Error adding food:', error);
+       Alert.alert("Lỗi", "Không thể thêm món ăn. Vui lòng thử lại.");
      }
-
-     // Cập nhật trạng thái cục bộ giúp hỗ trợ Offline Mode
-     addFood(mealType, {
-       id: mealLogId,
-       name: food.name,
-       calories: food.calories,
-       protein: food.protein,
-       carb: food.carb,
-       fat: food.fat,
-       quantity: 100,
-     });
-
-     router.back();
   };
 
   const handleAddCustom = async () => {
@@ -113,38 +147,22 @@ export default function SearchScanScreen() {
      const carb = Number(customCarb) || 0;
      const fat = Number(customFat) || 0;
 
-     let mealLogId = Date.now();
      try {
-       const today = new Date().toISOString().split('T')[0];
-       // Gửi dữ liệu về Backend
-       const res = await apiClient.post(`/api/diary/users/${userId}/meals/${mealType}?date=${today}`, {
-         foodId: 0, // Placeholder ID cho món tự nhập
-         quantity: 100,
+       // Đối với món tự nhập, id = 0 để Backend biết đây là custom food
+       await addFood(mealType, {
+         id: 0, 
+         name: customName.trim(),
          calories: numCals,
          protein,
          carb,
-         fat
+         fat,
+         quantity: 100,
        });
-
-       if (res.data && res.data.id) {
-           mealLogId = res.data.id;
-       }
+       router.back();
      } catch (error) {
-       console.warn('[Offline Mode] Bỏ qua lỗi đồng bộ Backend đồ ăn thủ công.');
+       console.error('[SearchScan] Error adding custom food:', error);
+       Alert.alert("Lỗi", "Không thể thêm món ăn. Vui lòng thử lại.");
      }
-
-     // Cập nhật trạng thái cục bộ giúp hỗ trợ Offline Mode
-     addFood(mealType, {
-       id: mealLogId, 
-       name: customName.trim(),
-       calories: numCals,
-       protein,
-       carb,
-       fat,
-       quantity: 100,
-     });
-
-     router.back();
   };
 
   return (

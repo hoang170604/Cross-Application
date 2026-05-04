@@ -30,6 +30,21 @@ public class ActivityController {
     @Autowired
     private ActivityServiceInterface activityService;
 
+    @GetMapping("/types")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    public ResponseEntity<ApiResponse<?>> getActivityTypes() {
+        // Trả về danh sách các loại bài tập hỗ trợ
+        List<java.util.Map<String, Object>> types = List.of(
+            java.util.Map.of("id", "WALKING", "name", "Đi bộ", "met", 3.5),
+            java.util.Map.of("id", "RUNNING", "name", "Chạy bộ", "met", 8.0),
+            java.util.Map.of("id", "CYCLING", "name", "Đạp xe", "met", 6.0),
+            java.util.Map.of("id", "SWIMMING", "name", "Bơi lội", "met", 7.0),
+            java.util.Map.of("id", "YOGA", "name", "Yoga", "met", 2.5),
+            java.util.Map.of("id", "GYM", "name", "Tập Gym", "met", 5.0)
+        );
+        return ResponseEntity.ok(ApiResponse.success(types));
+    }
+
     // GET /api/activities/users/{userId}/history?startDate=2024-01-01&endDate=2024-01-31
     @GetMapping("/users/{userId}/history")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")

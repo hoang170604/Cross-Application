@@ -32,6 +32,24 @@ public class DiaryController {
     @Autowired
     private DiaryService diaryService;
 
+    @GetMapping("/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
+    public ResponseEntity<ApiResponse<?>> getDiary(
+            @PathVariable Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        try {
+            if (userId == null || date == null) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("userId and date are required", "INVALID_PARAMS"));
+            }
+            List<Meal> meals = diaryService.getMealsBetween(userId, date, date);
+            return ResponseEntity.ok(ApiResponse.success(meals));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage(), "DIARY_FETCH_FAILED"));
+        }
+    }
+
     // GET /api/diaries/users/{userId}/meal-logs?startDate=2024-01-01&endDate=2024-01-31
     @GetMapping("/users/{userId}/meal-logs")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
@@ -87,7 +105,8 @@ public class DiaryController {
         try {
             LocalDate d = date != null ? date : LocalDate.now();
             MealLog mealLog = new MealLog();
-            if (mealLogDto.getFoodId() != null) {
+            // Food reference will be validated in DiaryService.addFoodToMeal()
+            if (mealLogDto.getFoodId() != null && mealLogDto.getFoodId() > 0) {
                 Food f = new Food();
                 f.setId(mealLogDto.getFoodId());
                 mealLog.setFood(f);
@@ -104,6 +123,9 @@ public class DiaryController {
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(saved, "Food added successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "FOOD_ADD_FAILED"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Lỗi server khi thêm món ăn: " + e.getMessage(), "FOOD_ADD_ERROR"));
         }
     }
 

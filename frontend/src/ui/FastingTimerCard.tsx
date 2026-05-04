@@ -109,7 +109,7 @@ export const FastingTimerCard: React.FC<FastingTimerCardProps> = ({
             stroke={isFasting ? stageColor : "#10B981"} 
             strokeWidth={strokeWidth} fill="none"
             strokeDasharray={`${circumference}`}
-            strokeDashoffset={`${circumference * (1 - (isFasting ? progressPercent / 100 : 0))}`}
+            strokeDashoffset={`${circumference * (1 - (isFasting && !isNaN(progressPercent) ? progressPercent / 100 : 0))}`}
             strokeLinecap="round"
           />
         </Svg>
