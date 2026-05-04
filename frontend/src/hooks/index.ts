@@ -6,3 +6,4 @@
 
 export { useNutrition } from './useNutrition';
 export { useTracking } from './useTracking';
+export { useActivity } from './useActivity';

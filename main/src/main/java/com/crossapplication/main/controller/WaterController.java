@@ -34,9 +34,9 @@ public class WaterController {
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> logWater(@Valid @RequestBody LogWaterRequest request) {
         try {
-            if (request.getUserId() == null || request.getAmountMl() == null || request.getAmountMl() <= 0) {
+            if (request.getUserId() == null || request.getAmountMl() == null || request.getAmountMl() == 0) {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("userId and amountMl (>0) are required", "INVALID_PARAMS"));
+                        .body(ApiResponse.error("userId and non-zero amountMl are required", "INVALID_PARAMS"));
             }
             LocalDateTime timestamp = request.getTimestamp() != null ? request.getTimestamp() : LocalDateTime.now();
             WaterLog logged = waterService.logWater(

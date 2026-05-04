@@ -13,7 +13,7 @@ import { View, ActivityIndicator } from 'react-native';
  * - Tự động điều hướng người dùng tới Onboarding hoặc Dashboard dựa vào trạng thái thiết lập hồ sơ.
  */
 function InitialLayout() {
-  const { token, pendingOnboardingSync } = useAppStore();
+  const { token, pendingOnboardingSync, userProfile } = useAppStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -22,10 +22,12 @@ function InitialLayout() {
   useEffect(() => {
     // onFinishHydration fires when Zustand has loaded state from AsyncStorage
     const unsub = useAppStore.persist.onFinishHydration(() => {
+      useAppStore.getState().checkAndResetForNewDay();
       setIsHydrated(true);
     });
     // If already hydrated (e.g. sync storage or hot reload)
     if (useAppStore.persist.hasHydrated()) {
+      useAppStore.getState().checkAndResetForNewDay();
       setIsHydrated(true);
     }
     return unsub;
@@ -42,6 +44,13 @@ function InitialLayout() {
     // Kiểm tra đã đăng nhập chưa
     const hasFinishedOnboarding = !!token;
 
+    // Kiểm tra profile đã hoàn thành chưa (Route Guard)
+    const isProfileComplete = 
+      userProfile && 
+      userProfile.height > 0 && 
+      userProfile.weight > 0 && 
+      userProfile.age > 0;
+
     // Xử lý điều kiện điều hướng
     if (hasFinishedOnboarding) {
       if (pendingOnboardingSync) {
@@ -49,15 +58,20 @@ function InitialLayout() {
         if (!['SyncLoadingScreen'].includes(segments[0] as string)) {
           router.replace('/SyncLoadingScreen');
         }
+      } else if (!isProfileComplete) {
+        // Tài khoản mới chưa có thông tin profile -> ép hoàn thành Onboarding
+        if (!inAuthGroup) {
+          router.replace('/PrimaryGoal');
+        }
       } else if (inAuthGroup || segments[0] === 'SyncLoadingScreen') {
-        // Đã đồng bộ xong -> vào Home
+        // Đã đăng nhập, profile đầy đủ -> vào Home
         router.replace('/(tabs)/diary');
       }
     } else if (!hasFinishedOnboarding && !inAuthGroup) {
       // Điều hướng về luồng đăng ký/onboarding ban đầu
       router.replace('/');
     }
-  }, [isHydrated, token, pendingOnboardingSync, segments]);
+  }, [isHydrated, token, pendingOnboardingSync, userProfile, segments]);
 
   if (!isHydrated) {
     return (

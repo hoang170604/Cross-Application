@@ -37,34 +37,23 @@ const DATE_FMT: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric',
 
 export default function DiaryDashboardScreen() {
   const router = useRouter();
-
-  // Sử dụng các Hook chuyên biệt theo chuẩn Atomic
-  const {
-    userProfile,
-    totalEatenCalories,
-    totalEatenMacros,
-    updateCurrentWeight,
-    tdee
-  } = useNutrition();
-
-  // ── Activity & Tracking state ───────────────────────────────────────
-  const { activityCalories } = useTracking();
-
   const colors = useTheme();
 
-  // ── Memoized Calculations ─────────────────────────────────────────────────
-  const calStats = useMemo(() => {
-    const targetCals = userProfile.targetCalories || 1800;
-    const consumed = totalEatenCalories;
-    const burned = activityCalories; // Calo đốt cháy từ hoạt động thể chất
-    const trueRemaining = targetCals + burned - consumed;
-    const isOverCalorie = trueRemaining < 0;
-    const remainingDisplay = Math.abs(trueRemaining);
-    const progressPercent = Math.min(1, consumed / Math.max(1, targetCals + burned));
-    return { targetCals, consumed, burned, isOverCalorie, remainingDisplay, progressPercent };
-  }, [totalEatenCalories, userProfile.targetCalories, activityCalories]);
+  // ─── Custom Hooks (Positioning logic away from UI) ─────────────────────────
+  const {
+    userProfile,
+    totalEatenMacros,
+    calorieStats
+  } = useNutrition();
 
-  const todayString = useMemo(() => new Intl.DateTimeFormat('vi-VN', DATE_FMT).format(new Date()), []);
+  const todayString = useMemo(() => 
+    new Intl.DateTimeFormat('vi-VN', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }).format(new Date()), 
+  []);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -93,11 +82,11 @@ export default function DiaryDashboardScreen() {
               <View style={{ backgroundColor: colors.card, borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' }}>
                 <View style={{ padding: 24 }}>
                   <CalorieCircle
-                    consumed={calStats.consumed}
-                    burned={calStats.burned}
-                    remaining={calStats.remainingDisplay}
-                    isOver={calStats.isOverCalorie}
-                    progress={calStats.progressPercent}
+                    consumed={calorieStats.consumed}
+                    burned={calorieStats.burned}
+                    remaining={calorieStats.remaining}
+                    isOver={calorieStats.isOver}
+                    progress={calorieStats.progress}
                   />
                 </View>
                 {/* Macro rings: Carbs / Fat / Protein */}
@@ -116,10 +105,7 @@ export default function DiaryDashboardScreen() {
             </View>
 
             {/* Thẻ Nutrition mới */}
-            <MealCard
-              dailyMeals={userProfile.dailyMeals}
-              targetCalories={userProfile.targetCalories || 2000}
-            />
+            <MealCard />
 
             {/* Theo dõi Nước & Cân nặng */}
             <TrackingSection />

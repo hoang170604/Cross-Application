@@ -62,18 +62,22 @@ export default function LoginScreen() {
     try {
       const response = await loginUser(email.trim(), password);
       await login(response.data.token, response.data.userId);
-      
+      const { userProfile } = useAppStore.getState();
+      const isProfileComplete = userProfile && userProfile.height > 0 && userProfile.weight > 0 && userProfile.age > 0;
+
       if (pendingOnboardingSync) {
         router.replace('/SyncLoadingScreen');
+      } else if (!isProfileComplete) {
+        router.replace('/PrimaryGoal');
       } else {
         router.replace('/(tabs)/diary');
       }
     } catch (error: any) {
       console.log('Backend Error Response:', error.response?.data);
-      
+
       const data = error.response?.data;
       const rawError = (typeof data === 'string' ? data : (data?.message || data?.error)) || '';
-      
+
       // Map dịch lỗi sang tiếng Việt
       const errorMap: { [key: string]: string } = {
         'Invalid credentials': 'Email hoặc mật khẩu không chính xác.',
@@ -187,10 +191,10 @@ const styles = StyleSheet.create({
   linkButton: { marginTop: 24, alignItems: 'center' },
   linkText: { color: '#6B7280', fontSize: 14 },
   linkTextBold: { color: '#00C48C', fontWeight: '700' },
-  errorText: { 
-    color: '#EF4444', 
-    fontSize: 14, 
-    marginBottom: 12, 
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    marginBottom: 12,
     textAlign: 'center',
     fontWeight: '500'
   },

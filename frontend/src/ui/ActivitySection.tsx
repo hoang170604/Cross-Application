@@ -18,8 +18,8 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AddActivityModal, Activity, ACTIVITIES } from './AddActivityModal';
-import { useAppStore } from '@/src/store/useAppStore';
 import { useTheme } from '@/src/hooks/useTheme';
+import { useActivity } from '@/src/hooks';
 import { ThemeColors } from '@/src/core/theme';
 
 // ─── Local Activity format ──────────────────────────────────────────────────
@@ -74,59 +74,15 @@ const ActivitySectionComponent: React.FC = () => {
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
 
-  // ── State: bật/tắt Modal & Chỉnh sửa ─────────────────────────────────────────
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-
-  // ── Store ────────────────────────────────────────────────────────────
-  const { 
-    loggedActivities: activities, 
-    addLoggedActivity, 
-    updateLoggedActivity,
-    removeLoggedActivity, 
-    fetchActivities,
-    fetchActivityTypes
-  } = useAppStore();
-
-  useEffect(() => {
-    fetchActivities();
-    fetchActivityTypes();
-  }, [fetchActivities, fetchActivityTypes]);
-
-  // ── Handler: nhận bài tập từ Modal ───────────────────────────────────
-  const handleSelectActivity = useCallback((activity: Activity, minutes: number) => {
-    const cals = Math.round(activity.caloriesPerMin * minutes);
-    
-    if (editingItem) {
-      // Gọi API update thay vì xóa/thêm mới
-      updateLoggedActivity(editingItem.uid, {
-        id: activity.id,
-        minutes,
-        caloriesBurned: cals
-      });
-    } else {
-      addLoggedActivity({ id: activity.id, minutes, caloriesBurned: cals });
-    }
-    
-    setEditingItem(null);
-  }, [addLoggedActivity, updateLoggedActivity, editingItem]);
-
-
-  // ── Handler: bắt đầu chỉnh sửa ────────────────────────────────────────
-  const handleEditActivity = useCallback((item: any) => {
-    console.log('[ActivitySection] Chỉnh sửa hoạt động:', item.id);
-    setEditingItem(item);
-    setModalVisible(true);
-  }, []);
-
-  // ── Handler: đóng modal ─────────────────────────────────────────────
-  const handleCloseModal = useCallback(() => {
-    setModalVisible(false);
-    setEditingItem(null);
-  }, []);
-
-  // ── Tổng calo đốt cháy ────────────────────────────────────────────────────
-  const totalBurned = activities.reduce((sum: any, a: any) => sum + (a.caloriesBurned || 0), 0);
+  const {
+    activities,
+    modalVisible,
+    editingItem,
+    handleSelectActivity,
+    handleEditActivity,
+    openAddModal,
+    closeModal
+  } = useActivity();
 
   return (
     <View style={styles.container}>
@@ -141,10 +97,7 @@ const ActivitySectionComponent: React.FC = () => {
         <TouchableOpacity
           style={styles.headerAddButton}
           activeOpacity={0.75}
-          onPress={() => {
-            setEditingItem(null);
-            setModalVisible(true);
-          }}
+          onPress={openAddModal}
         >
           <MaterialCommunityIcons name="plus" size={24} color="#FFFFFF" />
         </TouchableOpacity>
@@ -155,10 +108,7 @@ const ActivitySectionComponent: React.FC = () => {
           <TouchableOpacity 
             style={styles.emptyState} 
             activeOpacity={0.6}
-            onPress={() => {
-              setEditingItem(null);
-              setModalVisible(true);
-            }}
+            onPress={openAddModal}
           >
             <View style={styles.emptyIconCircle}>
               <MaterialCommunityIcons name="run" size={24} color={colors.textSecondary} />
@@ -187,7 +137,7 @@ const ActivitySectionComponent: React.FC = () => {
       {/* ─── Modal chọn bài tập ──────────────────────────────────────── */}
       <AddActivityModal
         visible={modalVisible}
-        onClose={handleCloseModal}
+        onClose={closeModal}
         onSelectActivity={handleSelectActivity}
         initialActivity={editingItem ? ACTIVITIES.find(a => a.id === editingItem.id) : null}
         initialMinutes={editingItem?.minutes || 30}

@@ -22,9 +22,9 @@ import { ThemeColors } from '@/src/core/theme';
  */
 export default function ProfileScreen() {
   const router = useRouter();
-  
+
   // Truy cập dữ liệu toàn cục qua Context — bao gồm logout
-  const { 
+  const {
     userProfile,
     logout,
     theme,
@@ -47,18 +47,17 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     const doLogout = async () => {
       await logout();
-      // _layout.tsx sẽ tự phát hiện !hasFinishedOnboarding 
-      // và redirect về màn hình Welcome (index)
+      router.replace('/LoginScreen');
     };
 
     if (Platform.OS === 'web') {
-      if (window.confirm('Bạn có chắc muốn đăng xuất?\nToàn bộ dữ liệu sẽ bị xóa.')) {
+      if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
         doLogout();
       }
     } else {
       Alert.alert(
         'Đăng xuất',
-        'Bạn có chắc muốn đăng xuất?\nToàn bộ dữ liệu cục bộ sẽ bị xóa.',
+        'Bạn có chắc chắn muốn đăng xuất?',
         [
           { text: 'Hủy', style: 'cancel' },
           {
@@ -91,30 +90,30 @@ export default function ProfileScreen() {
 
   // Danh sách các tùy chọn cài đặt
   const settingsItems = [
-    { 
+    {
       id: 'goal',
-      icon: '🎯', 
-      title: 'Mục tiêu của tôi', 
-      subtitle: userProfile.goal === 'lose_weight' ? 'Giảm cân' : userProfile.goal === 'gain_muscle' ? 'Tăng cơ' : 'Giữ dáng' 
+      icon: '🎯',
+      title: 'Mục tiêu của tôi',
+      subtitle: userProfile.goal === 'lose_weight' ? 'Giảm cân' : userProfile.goal === 'gain_muscle' ? 'Tăng cơ' : 'Giữ dáng'
     },
 
-    { 
+    {
       id: 'stats',
-      icon: '👤', 
-      title: 'Chỉ số sinh lý', 
-      subtitle: `${gender}, ${age} tuổi, ${height}cm, ${currentWeight}kg` 
+      icon: '👤',
+      title: 'Chỉ số sinh lý',
+      subtitle: `${gender}, ${age} tuổi, ${height}cm, ${currentWeight}kg`
     },
-    { 
+    {
       id: 'noti',
-      icon: '🔔', 
-      title: 'Thông báo', 
-      subtitle: 'Đã bật' 
+      icon: '🔔',
+      title: 'Thông báo',
+      subtitle: 'Đã bật'
     },
-    { 
+    {
       id: 'theme',
-      icon: theme === 'system' ? '⚙️' : theme === 'dark' ? '🌙' : '☀️', 
-      title: 'Giao diện', 
-      subtitle: theme === 'system' ? 'Theo hệ thống' : theme === 'dark' ? 'Chế độ tối' : 'Chế độ sáng' 
+      icon: theme === 'system' ? '⚙️' : theme === 'dark' ? '🌙' : '☀️',
+      title: 'Giao diện',
+      subtitle: theme === 'system' ? 'Theo hệ thống' : theme === 'dark' ? 'Chế độ tối' : 'Chế độ sáng'
     },
   ];
 
@@ -138,16 +137,16 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Danh sách cài đặt mở rộng */}
         <View style={styles.settingsList}>
           {settingsItems.map((item, idx) => (
-            <TouchableOpacity 
-              key={idx} 
+            <TouchableOpacity
+              key={idx}
               style={styles.settingItem}
               onPress={() => {
                 if (item.id === 'goal') {
@@ -169,14 +168,6 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* Nút Reset Data (Dev) */}
-        <TouchableOpacity
-          onPress={handleResetData}
-          style={[styles.logoutButton, { backgroundColor: theme === 'dark' ? '#451A1A' : '#FFF7ED', marginBottom: 12 }]}
-        >
-          <Text style={[styles.logoutText, { color: theme === 'dark' ? '#FCA5A5' : '#F59E0B' }]}>🗑️ Reset toàn bộ dữ liệu</Text>
-        </TouchableOpacity>
-
         {/* Nút đăng xuất */}
         <TouchableOpacity
           onPress={handleLogout}
@@ -186,13 +177,13 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <Text style={styles.versionText}>
-          NUTRITRACK v1.2.0 • KIẾN TRÚC MODULAR
+          NUTRITRACK v1.2.0
         </Text>
       </ScrollView>
 
-      <GoalSelectionModal 
-        visible={isGoalModalVisible} 
-        onClose={() => setGoalModalVisible(false)} 
+      <GoalSelectionModal
+        visible={isGoalModalVisible}
+        onClose={() => setGoalModalVisible(false)}
       />
       <ThemeSelectionModal
         visible={isThemeModalVisible}

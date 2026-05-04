@@ -47,7 +47,7 @@ export const CalorieCircle: React.FC<CalorieCircleProps> = ({
     <View style={styles.container}>
       {/* Cột trái: Đã nạp */}
       <View style={styles.statsColumn}>
-        <Text style={styles.statsValue}>{consumed.toLocaleString()}</Text>
+        <Text style={styles.statsValue}>{(consumed || 0).toLocaleString()}</Text>
         <Text style={styles.statsLabel}>Đã nạp</Text>
       </View>
 
@@ -92,7 +92,7 @@ export const CalorieCircle: React.FC<CalorieCircleProps> = ({
         {/* Chữ trung tâm */}
         <View style={styles.centerTextOverlay}>
           <Text style={[styles.remainingValue, { color: isOver ? colors.danger : colors.text }]}>
-            {isOver ? `-${remaining}` : remaining.toLocaleString()}
+            {isOver ? `-${remaining}` : (remaining || 0).toLocaleString()}
           </Text>
           <Text style={styles.remainingLabel}>
             {isOver ? 'Vượt mức' : 'Còn lại'}
@@ -102,7 +102,7 @@ export const CalorieCircle: React.FC<CalorieCircleProps> = ({
 
       {/* Cột phải: Đốt cháy */}
       <View style={styles.statsColumn}>
-        <Text style={styles.statsValue}>{burned.toLocaleString()}</Text>
+        <Text style={styles.statsValue}>{(burned || 0).toLocaleString()}</Text>
         <Text style={styles.statsLabel}>Đốt cháy</Text>
       </View>
       

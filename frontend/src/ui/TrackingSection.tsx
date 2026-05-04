@@ -130,29 +130,15 @@ export const TrackingSection: React.FC = () => {
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const {
-    waterIntake,
-    waterTarget,
-    latestWeight,
-    isWaterLoading,
+    waterStats,
+    weightStats,
     isWeightLoading,
-    logWater,
+    handleWaterPress,
+    handleAddWater,
     logWeight,
   } = useTracking();
 
   const [weightModalVisible, setWeightModalVisible] = useState(false);
-
-  // ── Water calculations ──
-  const totalGlasses = Math.max(Math.ceil(waterTarget / GLASS_SIZE_ML), 8);
-  const filledGlasses = Math.floor(waterIntake / GLASS_SIZE_ML);
-  const waterLiters = (waterIntake / 1000).toFixed(2).replace('.', ',');
-  const goalLiters = (waterTarget / 1000).toFixed(2).replace('.', ',');
-
-  // ── Weight ──
-  const weightDisplay = latestWeight ? latestWeight.toFixed(1).replace('.', ',') : '--';
-
-  const handleAddGlass = async () => {
-    await logWater(GLASS_SIZE_ML);
-  };
 
   const handleWeightSubmit = async (value: number) => {
     await logWeight(value);
@@ -162,27 +148,40 @@ export const TrackingSection: React.FC = () => {
   return (
     <View style={styles.container}>
       {/* ━━━━━ WATER TRACKER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <Text style={styles.sectionTitle}>Theo dõi Nước uống</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Theo dõi Nước uống</Text>
+        {waterStats.isGoalReached && (
+          <View style={styles.overGoalBadge}>
+            <Text style={styles.overGoalText}>
+              {waterStats.isOverGoal ? 'Vượt mục tiêu! 🌟' : 'Đã đạt mục tiêu! ✨'}
+            </Text>
+          </View>
+        )}
+      </View>
+
       <View style={styles.card}>
         {/* Title & Goal */}
         <Text style={styles.cardTitle}>Nước</Text>
-        <Text style={styles.cardSubtitle}>Mục tiêu: {goalLiters} L</Text>
+        <Text style={styles.cardSubtitle}>Mục tiêu: {waterStats.goalLiters} L</Text>
 
         {/* Current intake - large display */}
-        <Text style={styles.waterAmount}>{waterLiters} l</Text>
+        <Text style={styles.waterAmount}>{waterStats.waterLiters} l</Text>
 
         {/* Glass grid */}
         <View style={styles.glassGrid}>
-          {Array.from({ length: totalGlasses }).map((_, i) => {
-            if (i === filledGlasses) {
-              // Next glass to fill = Add button
-              return <AddGlassButton key={`add-${i}`} onPress={handleAddGlass} />;
+          {Array.from({ length: waterStats.totalGlassesToShow }).map((_, i) => {
+            const isFilled = i < waterStats.filledGlasses;
+            const isNextToFill = i === waterStats.filledGlasses;
+
+            if (isNextToFill) {
+              return <AddGlassButton key={`add-${i}`} onPress={handleAddWater} />;
             }
+
             return (
               <WaterGlass
                 key={`glass-${i}`}
-                filled={i < filledGlasses}
-                onPress={i < filledGlasses ? undefined : handleAddGlass}
+                filled={isFilled}
+                onPress={() => handleWaterPress(i)}
               />
             );
           })}
@@ -204,8 +203,8 @@ export const TrackingSection: React.FC = () => {
           <TouchableOpacity
             style={styles.weightBtn}
             onPress={() => {
-              if (latestWeight && latestWeight > 0.5) {
-                logWeight(Math.round((latestWeight - 0.1) * 10) / 10);
+              if (weightStats.displayValue > 0.5) {
+                logWeight(Math.round((weightStats.displayValue - 0.1) * 10) / 10);
               }
             }}
             activeOpacity={0.7}
@@ -213,11 +212,15 @@ export const TrackingSection: React.FC = () => {
             <Ionicons name="remove-circle-outline" size={36} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <Text style={styles.weightValue}>{weightDisplay} kg</Text>
+          <TouchableOpacity onPress={() => setWeightModalVisible(true)} activeOpacity={0.7}>
+            <Text style={styles.weightValue}>{weightStats.displayString} kg</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.weightBtn}
-            onPress={() => setWeightModalVisible(true)}
+            onPress={() => {
+              logWeight(Math.round((weightStats.displayValue + 0.1) * 10) / 10);
+            }}
             activeOpacity={0.7}
           >
             <Ionicons name="add-circle-outline" size={36} color={colors.textSecondary} />
@@ -233,7 +236,7 @@ export const TrackingSection: React.FC = () => {
         title="Cập nhật cân nặng"
         subtitle={new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date())}
         unit="kg"
-        defaultValue={latestWeight ? String(latestWeight) : ''}
+        defaultValue={weightStats.displayValue > 0 ? String(weightStats.displayValue) : ''}
         accentColor="#8B5CF6"
         isSubmitting={isWeightLoading}
         keyboardType="decimal-pad"
@@ -261,8 +264,19 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: colors.text,
-    marginBottom: 12,
-    paddingHorizontal: 4,
+  },
+  overGoalBadge: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: '#00C48C',
+  },
+  overGoalText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
   },
   moreLink: {
     fontSize: 15,

@@ -9,16 +9,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { FoodItem, DailyMeals } from '@/src/types';
 import { useTheme } from '@/src/hooks/useTheme';
+import { useNutrition } from '@/src/hooks';
 import { ThemeColors } from '@/src/core/theme';
 
-interface MealCardProps {
-  /** Danh sách các bữa ăn trong ngày */
-  dailyMeals?: DailyMeals;
-  /** Mục tiêu calo trong ngày để tính tỷ lệ cho các bữa chính */
-  targetCalories?: number;
-}
+/**
+ * Hiển thị thẻ Nutrition tổng hợp.
+ */
 
 const MEALS_CONFIG = [
   { id: 'breakfast', name: 'Bữa sáng', emoji: '🍳', targetRatio: 0 },
@@ -30,39 +27,28 @@ const MEALS_CONFIG = [
 /**
  * Hiển thị thẻ Nutrition tổng hợp.
  */
-const MealCardComponent: React.FC<MealCardProps> = ({
-  dailyMeals,
-  targetCalories = 2000,
-}) => {
+const MealCardComponent: React.FC = () => {
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
   const router = useRouter();
+  const { mealStats } = useNutrition();
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dinh Dưỡng</Text>
-        {/* <TouchableOpacity activeOpacity={0.7}>
-          <Text style={styles.headerMore}>More</Text>
-        </TouchableOpacity> */}
       </View>
 
       <View style={styles.card}>
-        {MEALS_CONFIG.map((meal, index) => {
-          const items = dailyMeals?.[meal.id as keyof DailyMeals] || [];
-          const consumed = items.reduce((sum, item) => sum + item.calories, 0);
-          const target = meal.targetRatio ? Math.round(targetCalories * meal.targetRatio) : 0;
-          const isLast = index === MEALS_CONFIG.length - 1;
+        {mealStats.map((meal, index) => {
+          const isLast = index === mealStats.length - 1;
           
-          const foodNames = items.map(i => i.name).join(', ');
-          const progress = target > 0 ? Math.min(consumed / target, 1) : 0;
-
           return (
             <React.Fragment key={meal.id}>
               <View style={styles.row}>
                 {/* Icon & Ring */}
                 <View style={styles.iconContainer}>
-                  {target > 0 && (
+                  {meal.target > 0 && (
                     <Svg width={48} height={48} style={{ position: 'absolute' }}>
                       <Circle
                         cx={24} cy={24} r={22}
@@ -74,7 +60,7 @@ const MealCardComponent: React.FC<MealCardProps> = ({
                         strokeWidth={4} fill="none"
                         strokeLinecap="round"
                         strokeDasharray={2 * Math.PI * 22}
-                        strokeDashoffset={2 * Math.PI * 22 * (1 - progress)}
+                        strokeDashoffset={2 * Math.PI * 22 * (1 - meal.progress)}
                         transform="rotate(-90 24 24)"
                       />
                     </Svg>
@@ -95,18 +81,17 @@ const MealCardComponent: React.FC<MealCardProps> = ({
                     <Ionicons name="arrow-forward" size={16} color={colors.text} style={{ marginLeft: 4 }} />
                   </View>
                   
-                  {(target > 0 || consumed > 0) ? (
+                  {(meal.target > 0 || meal.consumed > 0) ? (
                     <Text style={styles.caloriesText}>
-                      {consumed} {target > 0 ? `/ ${target} ` : ''}kcal
+                      {meal.consumed} {meal.target > 0 ? `/ ${meal.target} ` : ''}kcal
                     </Text>
                   ) : (
-                    // Display something or nothing for empty no-target meals
                     <View />
                   )}
                   
-                  {foodNames.length > 0 && (
+                  {meal.foodNames.length > 0 && (
                     <Text style={styles.foodNames} numberOfLines={1}>
-                      {foodNames}
+                      {meal.foodNames}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -115,7 +100,7 @@ const MealCardComponent: React.FC<MealCardProps> = ({
                 <TouchableOpacity 
                   style={[
                     styles.addButton, 
-                    target > 0 ? styles.addButtonMain : styles.addButtonSecondary
+                    meal.target > 0 ? styles.addButtonMain : styles.addButtonSecondary
                   ]} 
                   onPress={() => router.push({ pathname: '/SearchScan', params: { mealType: meal.id } })}
                   activeOpacity={0.7}
@@ -123,7 +108,7 @@ const MealCardComponent: React.FC<MealCardProps> = ({
                   <Ionicons 
                     name="add" 
                     size={22} 
-                    color={target > 0 ? colors.background : colors.text} 
+                    color={meal.target > 0 ? colors.background : colors.text} 
                   />
                 </TouchableOpacity>
               </View>

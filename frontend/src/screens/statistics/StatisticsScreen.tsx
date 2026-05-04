@@ -25,8 +25,7 @@ export default function StatisticsScreen() {
   // Kết nối Hook Dinh dưỡng
   const { 
     userProfile, 
-    totalEatenCalories, 
-    tdee, 
+    calorieStats,
     bmr, 
     bmi 
   } = useNutrition();
@@ -90,10 +89,10 @@ export default function StatisticsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Organism: Chỉ số sinh lý */}
-        <PhysiologyStatsCard tdee={tdee} bmr={bmr} bmi={bmi} />
+        <PhysiologyStatsCard tdee={calorieStats.target} bmr={bmr} bmi={bmi} />
 
         {/* Organism: Tóm tắt dinh dưỡng ngày */}
-        <NutritionSummaryCard consumed={totalEatenCalories} target={tdee} />
+        <NutritionSummaryCard consumed={calorieStats.consumed} target={calorieStats.target} />
 
 
 

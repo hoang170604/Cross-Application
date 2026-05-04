@@ -88,63 +88,85 @@ interface AppState {
   logWater: (amountMl: number) => Promise<void>;
   fetchWaterIntake: (date?: string) => Promise<void>;
   fetchLatestWeight: () => Promise<void>;
+  checkAndResetForNewDay: () => boolean;
   recalculateGoals: () => void;
 }
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      // --- Initial State ---
+      // ──────────────────────────────────────────────────────────────────────
+      // ─── PHẦN 1: TRẠNG THÁI CƠ BẢN (STATE) ───
+      // ──────────────────────────────────────────────────────────────────────
+      
+      /** Trạng thái tải dữ liệu toàn cục */
       isLoading: false,
+      /** Thông báo lỗi (nếu có) */
       error: null,
-
+      /** ID người dùng đang đăng nhập */
       userId: null,
+      /** Token xác thực JWT */
       token: null,
+      /** Đánh dấu cần đồng bộ dữ liệu Onboarding */
       pendingOnboardingSync: false,
-
+      /** Hồ sơ chi tiết của người dùng (chiều cao, cân nặng, mục tiêu...) */
       userProfile: DEFAULT_PROFILE,
 
-      // ─── Activity State ─────────────────────────────────────────────────
+      // ─── Hoạt động & Luyện tập ───
+      /** Tổng lượng calo tiêu thụ từ vận động hôm nay */
       activityCalories: 0,
+      /** Ngày cuối cùng cập nhật hoạt động (dùng để reset theo ngày) */
       lastActivityDate: '',
+      /** Danh sách chi tiết các bài tập đã thực hiện trong ngày */
       loggedActivities: [],
+      /** Danh mục các loại bài tập hỗ trợ từ server */
       activityTypes: [],
 
-      // ─── Workout Challenges State ─────────────────────────────────────
+      // ─── Dinh dưỡng & Tracking ───
+      /** Danh sách các thử thách tập luyện đang tham gia */
       workoutChallenges: [],
-
-      // ─── Daily Nutrition State ───────────────────────────────────────
+      /** Tóm tắt dinh dưỡng ngày hôm nay (từ server) */
       dailyNutrition: null,
-
-      // ─── App Preferences ───────────────────────────────────────────────
-      theme: 'system' as 'light' | 'dark' | 'system',
-
-      // ─── Tracking (Water & Weight) ───────────────────────────────────────
+      /** Lượng nước đã uống (ml) */
       waterIntake: 0,
+      /** Mục tiêu uống nước (ml) */
       waterTarget: 2000,
+      /** Cân nặng mới nhất ghi nhận được */
       latestWeight: null,
+      /** Chế độ hiển thị (Sáng/Tối) */
+      theme: 'system' as 'light' | 'dark' | 'system',
+      /** Trạng thái đang tải dữ liệu nước */
       isWaterLoading: false,
+      /** Trạng thái đang tải dữ liệu cân nặng */
       isWeightLoading: false,
 
-      // --- Sync Actions ---
+      // ──────────────────────────────────────────────────────────────────────
+      // ─── PHẦN 2: CÁC HÀNH ĐỘNG CƠ BẢN (SYNC ACTIONS) ───
+      // ──────────────────────────────────────────────────────────────────────
+
       setLoading: (status) => set({ isLoading: status }),
       setError: (error) => set({ error: error }),
       setPendingSync: (val) => set({ pendingOnboardingSync: val }),
+
+      /** Cập nhật hồ sơ và tự động tính toán lại mục tiêu nếu cần */
       updateUserProfile: (data) => {
         set((state) => ({ userProfile: { ...state.userProfile, ...data } }));
-        // Tự động tính toán lại mục tiêu nếu thay đổi các chỉ số cơ bản
         const keys = Object.keys(data);
-        if (keys.some(k => ['weight', 'height', 'age', 'gender', 'goal', 'activityLevel', 'currentWeight'].includes(k))) {
+        const criticalKeys = ['weight', 'height', 'age', 'gender', 'goal', 'activityLevel', 'currentWeight'];
+        if (keys.some(k => criticalKeys.includes(k))) {
           get().recalculateGoals();
         }
       },
 
+      /** Chuyển đổi qua lại giữa Light/Dark mode */
       toggleTheme: () => set((state) => ({
         theme: state.theme === 'dark' ? 'light' : state.theme === 'light' ? 'dark' : 'system'
       } as { theme: 'light' | 'dark' | 'system' })),
       setTheme: (theme) => set({ theme }),
 
-      // ─── Activity Actions ─────────────────────────────────────────────────
+      // ──────────────────────────────────────────────────────────────────────
+      // ─── PHẦN 3: HOẠT ĐỘNG THỂ CHẤT (ACTIVITY ACTIONS) ───
+      // ──────────────────────────────────────────────────────────────────────
       fetchActivityTypes: async () => {
         try {
           const res = await progressApi.getActivityTypes();
@@ -156,6 +178,7 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      /** Lấy danh sách bài tập đã tập trong một ngày cụ thể */
       fetchActivities: async (date) => {
         const { userId } = get();
         if (!userId) return;
@@ -193,26 +216,32 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      addActivityCalories: (kcal: number) => {
+      /** Kiểm tra và reset dữ liệu nếu bước sang ngày mới (hỗ trợ cả offline) */
+      checkAndResetForNewDay: () => {
         const today = getLocalToday();
-        set((state) => ({
-          activityCalories: (state.lastActivityDate === today ? state.activityCalories : 0) + kcal,
-          lastActivityDate: today,
-        }));
+        const { lastActivityDate, userProfile } = get();
+        
+        if (lastActivityDate && lastActivityDate !== today) {
+          console.log('[Store] Detecting new day. Resetting daily stats...');
+          set({ 
+            waterIntake: 0,
+            activityCalories: 0, 
+            loggedActivities: [],
+            lastActivityDate: today,
+            dailyNutrition: null,
+            userProfile: {
+              ...userProfile,
+              dailyMeals: { breakfast: [], lunch: [], dinner: [], snack: [] }
+            }
+          });
+          return true;
+        }
+        return false;
       },
 
-      resetActivityCalories: () => {
-        set({ activityCalories: 0 });
-      },
-
+      /** Reset bài tập nếu là ngày mới */
       resetActivityIfNewDay: () => {
-        const today = getLocalToday();
-        set((state) => {
-          if (state.lastActivityDate !== today) {
-            return { activityCalories: 0, lastActivityDate: today, loggedActivities: [] };
-          }
-          return {};
-        });
+        get().checkAndResetForNewDay();
       },
 
       addLoggedActivity: async (activity) => {
@@ -301,7 +330,9 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      // --- Async API Actions ---
+      // ──────────────────────────────────────────────────────────────────────
+      // ─── PHẦN 4: XÁC THỰC & TÀI KHOẢN (AUTH ACTIONS) ───
+      // ──────────────────────────────────────────────────────────────────────
       login: async (token, userId) => {
         try {
           set({ isLoading: true, error: null });
@@ -397,7 +428,6 @@ export const useAppStore = create<AppState>()(
             latestWeight: null,
           });
           await clearTokens();
-          await AsyncStorage.clear();
         } catch (error: any) {
           set({ error: error.message || 'Lỗi đăng xuất' });
         } finally {
@@ -591,7 +621,9 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      // ─── Workout Challenge Async Actions ──────────────────────────────────
+      // ──────────────────────────────────────────────────────────────────────
+      // ─── PHẦN 6: THỬ THÁCH TẬP LUYỆN (WORKOUT CHALLENGES) ───
+      // ──────────────────────────────────────────────────────────────────────
 
       fetchWorkoutChallenges: async () => {
         const { userId } = get();
@@ -675,11 +707,16 @@ export const useAppStore = create<AppState>()(
         } catch (error: any) {
           set({ error: error.message || 'Không thể cập nhật tiến độ' });
           console.error('[Store] updateChallengeProgress:', error);
-} finally {
+        } finally {
           set({ isLoading: false });
         }
       },
 
+      // ──────────────────────────────────────────────────────────────────────
+      // ─── PHẦN 7: THEO DÕI CHỈ SỐ & TIỆN ÍCH (TRACKING & UTILS) ───
+      // ──────────────────────────────────────────────────────────────────────
+
+      /** Tải dữ liệu dinh dưỡng tổng hợp cho một ngày cụ thể */
       fetchDailyNutrition: async (date) => {
         const { userId } = get();
         if (!userId) return;

@@ -33,15 +33,15 @@ export type UserProfile = {
 
 /** Giá trị mặc định khi khởi tạo */
 export const DEFAULT_PROFILE: UserProfile = {
-  age: 25,
+  age: 0,
   gender: 'male',
-  height: 170,
-  weight: 70,
+  height: 0,
+  weight: 0,
   activityLevel: 1.375,
   goal: 'maintain',
   name: '',
   targetCalories: 0,
-  currentWeight: 70,
+  currentWeight: 0,
   dailyMeals: { breakfast: [], lunch: [], dinner: [], snack: [] },
   weightHistory: [],
 };
