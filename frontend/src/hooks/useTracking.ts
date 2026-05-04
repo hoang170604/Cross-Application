@@ -2,10 +2,11 @@ import { useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/useAppStore';
 import { getLocalToday } from '@/src/core/dateFormatter';
+import { logWater as logToSqlite, logWeight as logWeightToSqlite } from '@/src/db/trackingDb';
 
 /**
  * Hook đóng gói logic liên quan đến Tracking (Nước, Cân nặng, Hoạt động...)
- * Tuân thủ chuẩn "Custom Hook Pattern": Tách biệt hoàn toàn Logic và UI.
+ * Tuân thủ chuẩn "Custom Hook Pattern" tích hợp SQLite.
  */
 export function useTracking() {
   const { 
@@ -47,19 +48,28 @@ export function useTracking() {
     };
   }, [waterIntake, waterTarget]);
 
-  const handleWaterPress = useCallback((index: number) => {
+  const handleWaterPress = useCallback(async (index: number) => {
     const targetGlasses = index + 1;
-    // Nếu bấm vào đúng cốc cuối cùng đang đầy -> Trừ đi 1 cốc (Undo)
+    const today = getLocalToday();
+    let amountToAdd = 0;
+
     if (targetGlasses === waterStats.filledGlasses) {
-      logWater(-250);
+      amountToAdd = -250;
     } else {
-      // Ngược lại, nhảy thẳng đến mốc nước của cốc vừa bấm
-      const diff = (targetGlasses - waterStats.filledGlasses) * 250;
-      logWater(diff);
+      amountToAdd = (targetGlasses - waterStats.filledGlasses) * 250;
     }
+
+    // 1. Lưu SQLite (Offline)
+    await logToSqlite(amountToAdd, today);
+    // 2. Sync Store & Backend
+    logWater(amountToAdd);
   }, [waterStats.filledGlasses, logWater]);
 
-  const handleAddWater = useCallback(() => logWater(250), [logWater]);
+  const handleAddWater = useCallback(async () => {
+    const today = getLocalToday();
+    await logToSqlite(250, today);
+    logWater(250);
+  }, [logWater]);
 
   // ─── Weight Business Logic ──────────────────────────────────────────
   const weightStats = useMemo(() => {

@@ -11,6 +11,10 @@ import * as diaryApi from '../api/diaryService';
 import * as progressApi from '../api/progressService';
 import * as userApi from '../api/userService';
 import * as workoutApi from '../api/workoutService';
+import * as activityDb from '../db/activityDb';
+import * as mealDb from '../db/mealDb';
+import * as trackingDb from '../db/trackingDb';
+import * as syncDb from '../db/syncDb';
 
 // Cấu trúc hợp đồng dữ liệu cho Store
 interface AppState {
@@ -90,6 +94,7 @@ interface AppState {
   fetchLatestWeight: () => Promise<void>;
   checkAndResetForNewDay: () => boolean;
   recalculateGoals: () => void;
+  processSyncQueue: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -184,9 +189,25 @@ export const useAppStore = create<AppState>()(
         if (!userId) return;
         
         const targetDate = date || getLocalToday();
+        
         try {
+          // 1. Luôn ưu tiên lấy dữ liệu từ SQLite trước để hiển thị tức thì
+          const localData = await activityDb.getActivitiesByDate(targetDate);
+          if (localData.length > 0) {
+            const mapped = localData.map((a: any) => ({
+              ...a,
+              id: a.activity_type,
+              uid: a.uid,
+            }));
+            set({ 
+              loggedActivities: mapped,
+              activityCalories: mapped.reduce((sum: number, a: any) => sum + (a.calories_burned || 0), 0),
+              lastActivityDate: targetDate
+            });
+          }
+
           set({ isLoading: true });
-          // Lấy hoạt động cho một ngày cụ thể (start=end)
+          // 2. Sau đó mới gọi API để cập nhật bản mới nhất từ server
           const res = await progressApi.getActivitiesBetween(userId, targetDate, targetDate);
           
           if (res && res.data) {
@@ -248,7 +269,16 @@ export const useAppStore = create<AppState>()(
         const { userId } = get();
         const today = getLocalToday();
 
-        // 1. Cập nhật local state ngay lập tức (optimistic)
+        // 1. Lưu vào SQLite (Offline-first)
+        await activityDb.insertActivity({
+          activity_type: activity.id,
+          minutes: activity.minutes,
+          calories_burned: activity.caloriesBurned,
+          date: today,
+          synced: 0
+        });
+
+        // 2. Cập nhật local state ngay lập tức (optimistic)
         const tempUid = `temp_${Date.now()}`;
         const newEntry = { ...activity, uid: tempUid };
         set((state) => ({
@@ -275,7 +305,14 @@ export const useAppStore = create<AppState>()(
               }));
             }
           } catch (error: any) {
-            console.warn('[Store] addLoggedActivity sync failed:', error.message);
+            console.warn('[Store] addLoggedActivity sync failed, adding to queue:', error.message);
+            // LƯU VÀO HÀNG ĐỢI ĐỂ ĐỒNG BỘ SAU
+            await syncDb.addToSyncQueue('ADD_ACTIVITY', {
+              activityType: activity.id,
+              durationMinutes: activity.minutes,
+              caloriesBurned: activity.caloriesBurned,
+              date: today
+            });
           }
         }
       },
@@ -443,7 +480,21 @@ export const useAppStore = create<AppState>()(
           set({ isLoading: true, error: null });
           const today = getLocalToday();
 
-          // 1. Gọi API qua Service Layer
+          // 1. Lưu vào SQLite (Offline-first)
+          await mealDb.insertMeal({
+            meal_type: mealType,
+            food_id: food.id,
+            food_name: food.name,
+            calories: food.calories,
+            protein: food.protein,
+            carb: food.carb,
+            fat: food.fat,
+            quantity: food.quantity || 1,
+            date: today,
+            synced: 0
+          });
+
+          // 2. Gọi API qua Service Layer
           const savedLog = await diaryApi.addFoodToMeal(userId, mealType, today, {
             foodId: food.id,
             quantity: food.quantity || 1,
@@ -468,8 +519,20 @@ export const useAppStore = create<AppState>()(
           // 3. Fetch lại daily nutrition để lấy tổng hợp calo/macro từ backend
           await get().fetchDailyNutrition(today);
         } catch (error: any) {
-          set({ error: error.message || 'Lỗi khi thêm thức ăn' });
-          console.error('[Store] addFood error:', error);
+          console.warn('[Store] addFood sync failed, adding to queue:', error.message);
+          // LƯU VÀO HÀNG ĐỢI ĐỂ ĐỒNG BỘ SAU
+          await syncDb.addToSyncQueue('ADD_MEAL', {
+            mealType,
+            foodId: food.id,
+            quantity: food.quantity || 1,
+            calories: food.calories,
+            protein: food.protein,
+            carb: food.carb,
+            fat: food.fat,
+            date: getLocalToday()
+          });
+          
+          set({ error: 'Mất kết nối. Dữ liệu đã được lưu tạm tại máy.' });
         } finally {
           set({ isLoading: false });
         }
@@ -519,11 +582,16 @@ export const useAppStore = create<AppState>()(
 
         try {
           set({ isWeightLoading: true });
+          // 1. Lưu SQLite
+          await trackingDb.logWeight(weight, logDate);
+          
+          // 2. Gọi API
           await progressApi.logWeight(userId, logDate, weight);
           // Auto-refresh after POST
           await get().fetchLatestWeight();
         } catch (error: any) {
-          console.warn('[Store] logWeight failed:', error.message);
+          console.warn('[Store] logWeight sync failed, adding to queue:', error.message);
+          await syncDb.addToSyncQueue('LOG_WEIGHT', { weight, date: logDate });
         } finally {
           set({ isWeightLoading: false });
         }
@@ -741,20 +809,23 @@ export const useAppStore = create<AppState>()(
         if (!userId) return;
         const today = getLocalToday();
 
-        // Optimistic update: cập nhật UI ngay lập tức
+        // 1. Lưu SQLite (Offline)
+        await trackingDb.logWater(amountMl, today);
+
+        // 2. Cập nhật UI ngay lập tức (Optimistic)
         set({ waterIntake: prevIntake + amountMl });
 
         try {
           set({ isWaterLoading: true });
-          // 1. Gọi API
+          // 3. Gọi API
           await progressApi.logWater(userId, amountMl, today);
           
           // 2. Fetch lại water intake thực tế từ server để đồng bộ chính xác
           await get().fetchWaterIntake(today);
         } catch (error: any) {
-          // Rollback nếu API thất bại
-          set({ waterIntake: prevIntake });
-          console.warn('[Store] logWater failed:', error.message);
+          console.warn('[Store] logWater sync failed, adding to queue:', error.message);
+          // LƯU VÀO HÀNG ĐỢI ĐỂ ĐỒNG BỘ SAU
+          await syncDb.addToSyncQueue('LOG_WATER', { amount: amountMl, date: today });
         } finally {
           set({ isWaterLoading: false });
         }
@@ -766,7 +837,14 @@ export const useAppStore = create<AppState>()(
         const targetDate = date || getLocalToday();
 
         try {
+          // 1. Đọc từ SQLite trước
+          const localWater = await trackingDb.getWaterByDate(targetDate);
+          if (localWater > 0) {
+            set({ waterIntake: localWater });
+          }
+
           set({ isWaterLoading: true });
+          // 2. Sau đó đồng bộ từ server
           const res = await progressApi.getDailyWaterTotal(userId, targetDate);
           if (res && res.data !== undefined) {
             set({ waterIntake: res.data });
@@ -826,6 +904,41 @@ export const useAppStore = create<AppState>()(
             ...goals
           }
         }));
+      },
+
+      /** Xử lý toàn bộ hàng đợi đồng bộ đang treo */
+      processSyncQueue: async () => {
+        const queue = await syncDb.getSyncQueue();
+        if (queue.length === 0) return;
+
+        console.log(`[Sync] Processing ${queue.length} items in queue...`);
+        const { userId } = get();
+        if (!userId) return;
+
+        for (const item of queue) {
+          try {
+            const payload = JSON.parse(item.payload);
+            switch (item.action_type) {
+              case 'ADD_MEAL':
+                await diaryApi.addFoodToMeal(userId, payload.mealType, payload.date, payload);
+                break;
+              case 'ADD_ACTIVITY':
+                await progressApi.addActivity(userId, payload);
+                break;
+              case 'LOG_WATER':
+                await progressApi.logWater(userId, payload.amount, payload.date);
+                break;
+              case 'LOG_WEIGHT':
+                await progressApi.logWeight(userId, payload.date, payload.weight);
+                break;
+            }
+            // Nếu thành công -> Xóa khỏi hàng đợi
+            await syncDb.removeFromSyncQueue(item.id!);
+          } catch (err: any) {
+            console.warn(`[Sync] Failed to process item ${item.id}:`, err.message);
+            await syncDb.incrementRetryCount(item.id!);
+          }
+        }
       },
     }),
     {

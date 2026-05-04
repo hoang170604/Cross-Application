@@ -1,48 +1,59 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAppStore } from '@/src/store/useAppStore';
+import { getActivitiesByDate, insertActivity, deleteActivity as deleteFromSqlite } from '@/src/db/activityDb';
+import { getLocalToday } from '../core/dateFormatter';
 
 /**
  * Hook đóng gói logic liên quan đến Hoạt động thể chất (Activity Business Logic).
- * Tuân thủ chuẩn "Custom Hook Pattern".
+ * Tuân thủ chuẩn "Custom Hook Pattern" tích hợp SQLite.
  */
 export function useActivity() {
   const { 
     loggedActivities, 
     addLoggedActivity, 
-    updateLoggedActivity,
     removeLoggedActivity, 
-    fetchActivities,
-    fetchActivityTypes
+    fetchActivityTypes 
   } = useAppStore();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
+  // Đồng bộ từ SQLite vào Store khi khởi tạo hoặc khi ngày thay đổi
   useEffect(() => {
-    fetchActivities();
+    const loadLocalData = async () => {
+      const today = getLocalToday();
+      const localData = await getActivitiesByDate(today);
+      // Cập nhật Store từ SQLite (để giao diện đồng bộ)
+      useAppStore.setState({ loggedActivities: localData });
+    };
+
+    loadLocalData();
     fetchActivityTypes();
-  }, [fetchActivities, fetchActivityTypes]);
+  }, [fetchActivityTypes]);
 
   const totalBurned = useMemo(() => 
     loggedActivities.reduce((sum: number, a: any) => sum + (a.caloriesBurned || 0), 0),
   [loggedActivities]);
 
-  const handleSelectActivity = useCallback((activity: any, minutes: number) => {
+  const handleSelectActivity = useCallback(async (activity: any, minutes: number) => {
     const cals = Math.round(activity.caloriesPerMin * minutes);
+    const today = getLocalToday();
     
-    if (editingItem) {
-      updateLoggedActivity(editingItem.uid, {
-        id: activity.id,
-        minutes,
-        caloriesBurned: cals
-      });
-    } else {
-      addLoggedActivity({ id: activity.id, minutes, caloriesBurned: cals });
-    }
+    // 1. Lưu vào SQLite trước (Offline-first)
+    await insertActivity({
+      activity_type: activity.id,
+      minutes,
+      calories_burned: cals,
+      date: today,
+      synced: 0
+    });
+
+    // 2. Cập nhật Store & Sync Server (qua action cũ)
+    addLoggedActivity({ id: activity.id, minutes, caloriesBurned: cals });
     
     setEditingItem(null);
     setModalVisible(false);
-  }, [addLoggedActivity, updateLoggedActivity, editingItem]);
+  }, [addLoggedActivity]);
 
   const handleEditActivity = useCallback((item: any) => {
     setEditingItem(item);

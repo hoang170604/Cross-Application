@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { useAppStore } from '@/src/store/useAppStore';
 import { View, ActivityIndicator } from 'react-native';
+import { initDatabase } from '@/src/db/database';
 
 /**
  * Component cốt lõi xử lý quá trình hiển thị ban đầu.
@@ -20,14 +21,19 @@ function InitialLayout() {
   // Zustand persist rehydration check
   const [isHydrated, setIsHydrated] = useState(false);
   useEffect(() => {
+    // Khởi tạo SQLite Database cho ứng dụng
+    initDatabase().catch(err => console.error('[SQLite] Initialization failed:', err));
+
     // onFinishHydration fires when Zustand has loaded state from AsyncStorage
     const unsub = useAppStore.persist.onFinishHydration(() => {
       useAppStore.getState().checkAndResetForNewDay();
+      useAppStore.getState().processSyncQueue(); // Tự động đồng bộ hàng đợi
       setIsHydrated(true);
     });
     // If already hydrated (e.g. sync storage or hot reload)
     if (useAppStore.persist.hasHydrated()) {
       useAppStore.getState().checkAndResetForNewDay();
+      useAppStore.getState().processSyncQueue(); // Tự động đồng bộ hàng đợi
       setIsHydrated(true);
     }
     return unsub;
