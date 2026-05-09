@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -58,10 +58,8 @@ export default function StatisticsScreen() {
     };
     
     // Trì hoãn việc gọi API và update state cho đến khi animation chuyển tab hoàn tất
-    import('react-native').then(({ InteractionManager }) => {
-      InteractionManager.runAfterInteractions(() => {
-        fetchStats();
-      });
+    InteractionManager.runAfterInteractions(() => {
+      fetchStats();
     });
   }, []);
 
