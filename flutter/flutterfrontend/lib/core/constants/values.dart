@@ -8,8 +8,8 @@ class AppValues {
   static const String dbServer = '127.0.0.1';
   static const int dbPort = 1433;
   static const String dbName = 'QLAppTheDuc';
-  static const String dbUsername = 'devuser';
-  static const String dbPassword = 'Password123';
+  static const String dbUsername = 'sa';
+  static const String dbPassword = 'hoang1706';
   static const String dbDriver = 'com.microsoft.sqlserver.jdbc.SQLServerDriver';
 
   /// Database Connection String (for reference)
