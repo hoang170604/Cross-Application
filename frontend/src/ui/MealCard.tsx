@@ -111,20 +111,13 @@ const MealCardComponent: React.FC<MealCardProps> = ({
                   )}
                 </TouchableOpacity>
 
-                {/* Add Button */}
-                <TouchableOpacity 
-                  style={[
-                    styles.addButton, 
-                    target > 0 ? styles.addButtonMain : styles.addButtonSecondary
-                  ]} 
+                {/* Add Button — unified style for all meal types */}
+                <TouchableOpacity
+                  style={styles.addButton}
                   onPress={() => router.push({ pathname: '/SearchScan', params: { mealType: meal.id } })}
                   activeOpacity={0.7}
                 >
-                  <Ionicons 
-                    name="add" 
-                    size={22} 
-                    color={target > 0 ? colors.background : colors.text} 
-                  />
+                  <Ionicons name="add" size={22} color={colors.background} />
                 </TouchableOpacity>
               </View>
               {!isLast && <View style={styles.divider} />}
@@ -225,14 +218,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
-  },
-  addButtonMain: {
-    backgroundColor: colors.text,
-  },
-  addButtonSecondary: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+    backgroundColor: colors.text,  // unified: dark background on all themes
   },
   divider: {
     height: 1,

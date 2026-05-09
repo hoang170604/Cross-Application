@@ -1,10 +1,2 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-
-export default function FastingScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Tính năng Nhịn ăn đã được gỡ bỏ.</Text>
-    </View>
-  );
-}
+// This tab route delegates to the fully-featured FastingScreen component.
+export { default } from '@/src/screens/fasting/FastingScreen';

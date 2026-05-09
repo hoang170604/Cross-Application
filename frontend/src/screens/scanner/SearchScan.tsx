@@ -259,10 +259,19 @@ export default function SearchScanScreen() {
                  </View>
               </View>
 
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
-                <Text style={{ fontSize: 12, color: colors.text, fontWeight: '500' }}>Đạm <Text style={{ color: '#00C48C', fontWeight: '700' }}>{food.protein}g</Text></Text>
-                <Text style={{ fontSize: 12, color: colors.text, fontWeight: '500' }}>T.Bột <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{food.carb}g</Text></Text>
-                <Text style={{ fontSize: 12, color: colors.text, fontWeight: '500' }}>Béo <Text style={{ color: '#EF4444', fontWeight: '700' }}>{food.fat}g</Text></Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, padding: 12, borderRadius: 8, gap: 8 }}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}>
+                  <Text style={{ fontSize: 12, color: colors.text, fontWeight: '500', marginRight: 4 }} numberOfLines={1} adjustsFontSizeToFit>Đạm</Text>
+                  <Text style={{ color: '#00C48C', fontWeight: '700', fontSize: 12, flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit>{food.protein}g</Text>
+                </View>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexShrink: 1 }}>
+                  <Text style={{ fontSize: 12, color: colors.text, fontWeight: '500', marginRight: 4 }} numberOfLines={1} adjustsFontSizeToFit>T.Bột</Text>
+                  <Text style={{ color: '#F59E0B', fontWeight: '700', fontSize: 12, flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit>{food.carb}g</Text>
+                </View>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 1 }}>
+                  <Text style={{ fontSize: 12, color: colors.text, fontWeight: '500', marginRight: 4 }} numberOfLines={1} adjustsFontSizeToFit>Béo</Text>
+                  <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 12, flexShrink: 1 }} numberOfLines={1} adjustsFontSizeToFit>{food.fat}g</Text>
+                </View>
               </View>
 
               <TouchableOpacity 

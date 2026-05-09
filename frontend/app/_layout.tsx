@@ -82,6 +82,7 @@ function InitialLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="SearchScan" />
       <Stack.Screen name="FoodDetail" />
+      <Stack.Screen name="AddActivity" />
     </Stack>
   );
 }

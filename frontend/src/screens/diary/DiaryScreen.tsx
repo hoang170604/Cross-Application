@@ -88,32 +88,29 @@ export default function DiaryDashboardScreen() {
             contentContainerStyle={{ paddingBottom: 24 }}
             showsVerticalScrollIndicator={false}
           >
-            <View style={{ marginBottom: 8 }}>
               {/* Organism: Biểu đồ Calo tập trung */}
-              <View style={{ backgroundColor: colors.card, borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' }}>
-                <View style={{ padding: 24 }}>
-                  <CalorieCircle
-                    consumed={calStats.consumed}
-                    burned={calStats.burned}
-                    remaining={calStats.remainingDisplay}
-                    isOver={calStats.isOverCalorie}
-                    progress={calStats.progressPercent}
-                  />
-                </View>
-                {/* Macro rings: Carbs / Fat / Protein */}
-                <MacroRings
-                  carbEaten={totalEatenMacros.carb}
-                  carbTarget={userProfile.targetCarb ?? 0}
-                  fatEaten={totalEatenMacros.fat}
-                  fatTarget={userProfile.targetFat ?? 0}
-                  proteinEaten={totalEatenMacros.protein}
-                  proteinTarget={userProfile.targetProtein ?? 0}
+              <View style={{ backgroundColor: colors.card, borderRadius: 24, marginBottom: 16, borderWidth: 1, borderColor: colors.cardBorder, padding: 24, shadowColor: colors.shadow, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+                <CalorieCircle
+                  consumed={calStats.consumed}
+                  burned={calStats.burned}
+                  remaining={calStats.remainingDisplay}
+                  isOver={calStats.isOverCalorie}
+                  progress={calStats.progressPercent}
                 />
               </View>
+              
+              {/* Macro rings: Carbs / Fat / Protein */}
+              <MacroRings
+                carbEaten={totalEatenMacros.carb}
+                carbTarget={userProfile.targetCarb ?? 0}
+                fatEaten={totalEatenMacros.fat}
+                fatTarget={userProfile.targetFat ?? 0}
+                proteinEaten={totalEatenMacros.protein}
+                proteinTarget={userProfile.targetProtein ?? 0}
+              />
 
               {/* Hoạt động thể chất */}
               <ActivitySection />
-            </View>
 
             {/* Thẻ Nutrition mới */}
             <MealCard

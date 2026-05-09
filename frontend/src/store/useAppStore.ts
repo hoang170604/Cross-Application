@@ -416,6 +416,7 @@ export const useAppStore = create<AppState>()(
           // 1. Gọi API qua Service Layer
           const savedLog = await diaryApi.addFoodToMeal(userId, mealType, today, {
             foodId: food.id,
+            foodName: food.name,
             quantity: food.quantity || 1,
             calories: food.calories,
             protein: food.protein,
