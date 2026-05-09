@@ -1,0 +1,2 @@
+dùng record chuẩn hóa lại api.
+ghép chwqc năng len flutter.

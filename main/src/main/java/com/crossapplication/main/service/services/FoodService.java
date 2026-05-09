@@ -16,6 +16,7 @@ import com.crossapplication.main.entity.Food;
 import com.crossapplication.main.entity.FoodCategory;
 import com.crossapplication.main.entity.Meal;
 import com.crossapplication.main.entity.MealLog;
+import com.crossapplication.main.mapper.FoodMapper;
 import com.crossapplication.main.repository.interfaces.FoodCategoryRepository;
 import com.crossapplication.main.repository.interfaces.FoodRepositoryInterface;
 import com.crossapplication.main.repository.interfaces.MealLogRepository;
@@ -36,6 +37,9 @@ public class FoodService implements FoodServiceInterface {
 
     @Autowired
     private MealLogRepository mealLogRepo;
+
+    @Autowired
+    private FoodMapper foodMapper;
 
     @Override
     public List<Food> getAllFood() {
@@ -117,9 +121,7 @@ public class FoodService implements FoodServiceInterface {
         existing.setCarbPer100g(dto.getCarbPer100g());
         existing.setFatPer100g(dto.getFatPer100g());
         Food saved = foodRepo.saveFood(existing);
-        FoodDTO out = new FoodDTO(saved.getCaloriesPer100g(), saved.getProteinPer100g(), saved.getCarbPer100g(), saved.getFatPer100g());
-        out.setName(saved.getName());
-        return out;
+        return foodMapper.toDTO(saved);
     }
 
     @Override
@@ -149,12 +151,7 @@ public class FoodService implements FoodServiceInterface {
         if (dto == null || dto.getName() == null || dto.getName().isBlank()) {
             throw new IllegalArgumentException("Food name is required");
         }
-        Food food = new Food();
-        food.setName(dto.getName());
-        food.setCaloriesPer100g(dto.getCaloriesPer100g());
-        food.setProteinPer100g(dto.getProteinPer100g());
-        food.setCarbPer100g(dto.getCarbPer100g());
-        food.setFatPer100g(dto.getFatPer100g());
+        Food food = foodMapper.toEntity(dto);
         return foodRepo.saveFood(food);
     }
 }
