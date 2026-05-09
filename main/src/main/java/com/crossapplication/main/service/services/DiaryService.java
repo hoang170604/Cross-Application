@@ -6,9 +6,13 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.crossapplication.main.dto.MealDTO;
+import com.crossapplication.main.dto.MealLogDTO;
 import com.crossapplication.main.entity.Meal;
 import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.entity.User;
+import com.crossapplication.main.mapper.MealLogMapper;
+import com.crossapplication.main.mapper.MealMapper;
 import com.crossapplication.main.repository.impl.MealRepository;
 import com.crossapplication.main.repository.interfaces.MealLogRepository;
 import com.crossapplication.main.service.interfaces.DailyNutritionService;
@@ -27,9 +31,15 @@ public class DiaryService implements com.crossapplication.main.service.interface
     @Autowired
     private DailyNutritionService dailyNutritionService;
 
+    @Autowired
+    private MealMapper mealMapper;
+
+    @Autowired
+    private MealLogMapper mealLogMapper;
+
     @Override
     @Transactional
-    public MealLog addFoodToMeal(Long id, LocalDate date, String mealType, MealLog mealLog) {
+    public MealLogDTO addFoodToMeal(Long id, LocalDate date, String mealType, MealLogDTO mealLogDTO) {
         List<Meal> existingMeal = mealRepo.findByUserIdAndMealType(id, mealType);
         Meal targetMeal = existingMeal.stream()
                 .filter(m -> m.getDate() != null && m.getDate().equals(date))
@@ -47,17 +57,20 @@ public class DiaryService implements com.crossapplication.main.service.interface
 
             targetMeal = mealRepo.save(targetMeal);
         }
+        MealLog mealLog = mealLogMapper.toEntity(mealLogDTO);
         mealLog.setMeal(targetMeal);
         MealLog saved = mealLogRepo.save(mealLog);
         // update daily totals
         dailyNutritionService.adjustDailyTotals(id, date, saved.getCalories(), saved.getProtein(), saved.getCarb(), saved.getFat());
-        return saved;
+        return mealLogMapper.toDto(saved);
     }
 
     @Override
-    public List<Meal> getDailyDiary(Long id, LocalDate date) {
-        List<Meal> meals = mealRepo.findByUserIdAndDate(id, date);
-        return meals;
+    public List<MealDTO> getDailyDiary(Long id, LocalDate date) {
+        return mealRepo.findByUserIdAndDate(id, date)
+            .stream()
+            .map(mealMapper::toDto)
+            .toList();
     }
 
     @Override
@@ -76,7 +89,7 @@ public class DiaryService implements com.crossapplication.main.service.interface
     }
 
     @Override
-    public Meal createMeal(Long userId, LocalDate date, String mealType) {
+    public MealDTO createMeal(Long userId, LocalDate date, String mealType) {
         List<Meal> existingMeal = mealRepo.findByUserIdAndMealType(userId, mealType);
         Meal targetMeal = existingMeal.stream()
                 .filter(m -> m.getDate() != null && m.getDate().equals(date))
@@ -95,12 +108,12 @@ public class DiaryService implements com.crossapplication.main.service.interface
             targetMeal = mealRepo.save(targetMeal);
         }
 
-        return targetMeal;
+        return mealMapper.toDto(targetMeal);
     }
 
     @Override
     @Transactional
-    public MealLog updateMealLog(Long mealLogId, com.crossapplication.main.dto.MealLogDTO update) {
+    public MealLogDTO updateMealLog(Long mealLogId, com.crossapplication.main.dto.MealLogDTO update) {
         var opt = mealLogRepo.findById(mealLogId);
         if (opt.isEmpty()) throw new IllegalArgumentException("MealLog not found: " + mealLogId);
         MealLog existing = opt.get();
@@ -136,18 +149,20 @@ public class DiaryService implements com.crossapplication.main.service.interface
             LocalDate date = saved.getMeal().getDate();
             dailyNutritionService.adjustDailyTotals(userId, date, dCal, dP, dC, dF);
         }
-        return saved;
+        return mealLogMapper.toDto(saved);
     }
 
     @Override
-    public List<Meal> getMealsBetween(Long userId, LocalDate start, LocalDate end) {
+    public List<MealDTO> getMealsBetween(Long userId, LocalDate start, LocalDate end) {
         if (start == null || end == null) return List.of();
         List<Meal> result = new java.util.ArrayList<>();
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
             List<Meal> daily = mealRepo.findByUserIdAndDate(userId, d);
             if (daily != null && !daily.isEmpty()) result.addAll(daily);
         }
-        return result;
+        return result.stream()
+            .map(mealMapper::toDto)
+            .toList();
     }
 
     @Override

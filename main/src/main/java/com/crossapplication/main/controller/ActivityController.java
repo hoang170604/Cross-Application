@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.crossapplication.main.dto.ActivityDTO;
 import com.crossapplication.main.dto.ApiResponse;
-import com.crossapplication.main.entity.Activity;
 import com.crossapplication.main.service.interfaces.ActivityServiceInterface;
 
 @RestController
@@ -77,7 +76,7 @@ public class ActivityController {
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> addActivity(@PathVariable Long userId, @RequestBody ActivityDTO activityDTO) {
         try {
-            Activity saved = activityService.addActivity(
+            ActivityDTO saved = activityService.addActivity(
                 userId,
                 activityDTO.getActivityType(),
                 activityDTO.getDurationMinutes(),
@@ -98,7 +97,7 @@ public class ActivityController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<ApiResponse<?>> updateActivity(@PathVariable Long id, @RequestBody ActivityDTO update) {
         try {
-            Activity saved = activityService.updateActivity(id, update);
+            ActivityDTO saved = activityService.updateActivity(id, update);
             return ResponseEntity.ok(ApiResponse.success(saved, "Activity updated successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "ACTIVITY_UPDATE_FAILED"));
