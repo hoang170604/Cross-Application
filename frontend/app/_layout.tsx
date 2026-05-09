@@ -30,24 +30,35 @@ function InitialLayout() {
 
     // onFinishHydration fires when Zustand has loaded state from AsyncStorage
     const unsub = useAppStore.persist.onFinishHydration(() => {
-      useAppStore.getState().checkAndResetForNewDay();
-      useAppStore.getState().processSyncQueue(); // Tự động đồng bộ hàng đợi
-      
-      // Khởi tạo SQLite chỉ trên điện thoại
-      if (Platform.OS !== 'web') {
-        initDatabase().catch(err => console.warn('[SQLite] Init failed:', err.message));
-      }
-      
-      setIsHydrated(true);
+      const initApp = async () => {
+        if (Platform.OS !== 'web') {
+          try {
+            await initDatabase();
+          } catch (err: any) {
+            console.warn('[SQLite] Init failed:', err.message);
+          }
+        }
+        useAppStore.getState().checkAndResetForNewDay();
+        useAppStore.getState().processSyncQueue();
+        setIsHydrated(true);
+      };
+      initApp();
     });
     // If already hydrated (e.g. sync storage or hot reload)
     if (useAppStore.persist.hasHydrated()) {
-      useAppStore.getState().checkAndResetForNewDay();
-      useAppStore.getState().processSyncQueue();
-      if (Platform.OS !== 'web') {
-        initDatabase().catch(err => console.warn('[SQLite] Init failed:', err.message));
-      }
-      setIsHydrated(true);
+      const initApp = async () => {
+        if (Platform.OS !== 'web') {
+          try {
+            await initDatabase();
+          } catch (err: any) {
+            console.warn('[SQLite] Init failed:', err.message);
+          }
+        }
+        useAppStore.getState().checkAndResetForNewDay();
+        useAppStore.getState().processSyncQueue();
+        setIsHydrated(true);
+      };
+      initApp();
     }
     return unsub;
   }, []);

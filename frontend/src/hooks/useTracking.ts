@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { InteractionManager } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/useAppStore';
 import { getLocalToday } from '@/src/core/dateFormatter';
@@ -25,7 +26,11 @@ export function useTracking() {
   // Tự động fetch toàn bộ dữ liệu nhật ký của ngày hôm nay mỗi khi màn hình hiển thị
   useFocusEffect(
     useCallback(() => {
-      fetchDiaryFromServer(getLocalToday());
+      // Trì hoãn việc gọi API (nặng) cho đến khi animation chuyển tab hoàn thành
+      const task = InteractionManager.runAfterInteractions(() => {
+        fetchDiaryFromServer(getLocalToday());
+      });
+      return () => task.cancel();
     }, [fetchDiaryFromServer])
   );
 
@@ -48,9 +53,8 @@ export function useTracking() {
     };
   }, [waterIntake, waterTarget]);
 
-  const handleWaterPress = useCallback(async (index: number) => {
+  const handleWaterPress = useCallback((index: number) => {
     const targetGlasses = index + 1;
-    const today = getLocalToday();
     let amountToAdd = 0;
 
     if (targetGlasses === waterStats.filledGlasses) {
@@ -59,15 +63,11 @@ export function useTracking() {
       amountToAdd = (targetGlasses - waterStats.filledGlasses) * 250;
     }
 
-    // 1. Lưu SQLite (Offline)
-    await logToSqlite(amountToAdd, today);
-    // 2. Sync Store & Backend
+    // Chỉ gọi action của Store, Store sẽ lo việc update UI (optimistic) và lưu DB/Sync
     logWater(amountToAdd);
   }, [waterStats.filledGlasses, logWater]);
 
-  const handleAddWater = useCallback(async () => {
-    const today = getLocalToday();
-    await logToSqlite(250, today);
+  const handleAddWater = useCallback(() => {
     logWater(250);
   }, [logWater]);
 

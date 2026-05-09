@@ -139,6 +139,7 @@ export default function RegisterScreen() {
             <TextInput
               style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="Nhập email của bạn"
+              placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={handleEmailChange}
               keyboardType="email-address"
@@ -153,6 +154,7 @@ export default function RegisterScreen() {
             <TextInput
               style={[styles.input, passwordError ? styles.inputError : null]}
               placeholder="Ít nhất 6 ký tự"
+              placeholderTextColor="#9CA3AF"
               value={password}
               onChangeText={handlePasswordChange}
               secureTextEntry
@@ -166,6 +168,7 @@ export default function RegisterScreen() {
             <TextInput
               style={[styles.input, confirmPasswordError ? styles.inputError : null]}
               placeholder="Nhập lại mật khẩu"
+              placeholderTextColor="#9CA3AF"
               value={confirmPassword}
               onChangeText={handleConfirmPasswordChange}
               secureTextEntry
@@ -213,6 +216,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    color: '#1F2937',
   },
   inputError: {
     borderColor: '#EF4444',

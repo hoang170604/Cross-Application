@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { getToken } from '../utils/tokenStorage';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8081',
+  baseURL: 'http://192.168.1.52:8081',
   timeout: 10000,
 });
 
@@ -48,7 +48,22 @@ apiClient.interceptors.response.use(
 
         Alert.alert('Phiên đăng nhập hết hạn', 'Vui lòng đăng nhập lại để tiếp tục.');
       } else if (serverMessage) {
-        Alert.alert('Thông báo', serverMessage);
+        let translatedMessage = String(serverMessage);
+        const msg = translatedMessage.toLowerCase().trim();
+        
+        if (msg.includes('invalid credentials')) {
+          translatedMessage = 'Email hoặc mật khẩu không chính xác.';
+        } else if (msg.includes('not found')) {
+          translatedMessage = 'Không tìm thấy tài khoản này.';
+        } else if (msg.includes('missing required')) {
+          translatedMessage = 'Vui lòng nhập đầy đủ thông tin.';
+        } else if (msg.includes('already exists') || msg.includes('already taken') || msg.includes('already registered')) {
+          translatedMessage = 'Email này đã được sử dụng.';
+        } else if (msg.includes('weak password')) {
+          translatedMessage = 'Mật khẩu quá yếu.';
+        }
+
+        Alert.alert('Thông báo', translatedMessage);
       } else if (error.response.status >= 500) {
         console.error('[Server Error] Lỗi nghiêm trọng từ Backend:', error.response.status);
         Alert.alert('Lỗi Server', 'Đã có lỗi nghiêm trọng xảy ra ở máy chủ.');

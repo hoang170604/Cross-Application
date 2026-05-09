@@ -4,8 +4,8 @@
  * Measurements (Weight), matching the reference dark-card fitness app design.
  */
 
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { InputModal } from './InputModal';
 import { useTracking } from '@/src/hooks';
@@ -14,6 +14,37 @@ import { ThemeColors } from '@/src/core/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GLASS_SIZE_ML = 250; // Each glass = 250ml
+
+// ─── Animated Water Amount ─────────────────────────────────────────────────────
+/**
+ * Hiển thị lượng nước (lít) với hiệu ứng chuyển số mượt mà.
+ * Sử dụng Animated.timing để nội suy giữa giá trị cũ → mới trong 400ms.
+ */
+const AnimatedWaterAmount: React.FC<{ waterMl: number; style: any }> = ({ waterMl, style }) => {
+  const animValue = useRef(new Animated.Value(waterMl)).current;
+  const [displayText, setDisplayText] = useState(
+    (waterMl / 1000).toFixed(2).replace('.', ',')
+  );
+
+  useEffect(() => {
+    // Listener cập nhật text hiển thị mỗi frame animation
+    const listenerId = animValue.addListener(({ value }) => {
+      setDisplayText((value / 1000).toFixed(2).replace('.', ','));
+    });
+
+    Animated.timing(animValue, {
+      toValue: waterMl,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+
+    return () => {
+      animValue.removeListener(listenerId);
+    };
+  }, [waterMl]);
+
+  return <Text style={style}>{displayText} l</Text>;
+};
 
 // ─── Water Glass Icon ──────────────────────────────────────────────────────────
 const WaterGlass: React.FC<{
@@ -130,6 +161,7 @@ export const TrackingSection: React.FC = () => {
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const {
+    waterIntake,
     waterStats,
     weightStats,
     isWeightLoading,
@@ -164,8 +196,8 @@ export const TrackingSection: React.FC = () => {
         <Text style={styles.cardTitle}>Nước</Text>
         <Text style={styles.cardSubtitle}>Mục tiêu: {waterStats.goalLiters} L</Text>
 
-        {/* Current intake - large display */}
-        <Text style={styles.waterAmount}>{waterStats.waterLiters} l</Text>
+        {/* Current intake - large display (animated) */}
+        <AnimatedWaterAmount waterMl={waterIntake} style={styles.waterAmount} />
 
         {/* Glass grid */}
         <View style={styles.glassGrid}>

@@ -56,7 +56,13 @@ export default function StatisticsScreen() {
           }
       }
     };
-    fetchStats();
+    
+    // Trì hoãn việc gọi API và update state cho đến khi animation chuyển tab hoàn tất
+    import('react-native').then(({ InteractionManager }) => {
+      InteractionManager.runAfterInteractions(() => {
+        fetchStats();
+      });
+    });
   }, []);
 
 

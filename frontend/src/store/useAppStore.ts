@@ -51,6 +51,8 @@ interface AppState {
   latestWeight: number | null;
   isWaterLoading: boolean;
   isWeightLoading: boolean;
+  /** @internal Timestamp khóa lạc quan – ngăn fetchWaterIntake ghi đè optimistic update */
+  _waterOptimisticTs: number;
 
   // Các hàm thiết lập nội bộ
   setLoading: (status: boolean) => void;
@@ -144,6 +146,13 @@ export const useAppStore = create<AppState>()(
       isWaterLoading: false,
       /** Trạng thái đang tải dữ liệu cân nặng */
       isWeightLoading: false,
+      /**
+       * Timestamp khóa lạc quan (optimistic lock) cho waterIntake.
+       * Khi logWater() cập nhật UI tức thì, timestamp này được ghi lại.
+       * fetchWaterIntake() sẽ bỏ qua nếu timestamp này còn "tươi" (< 3 giây)
+       * để tránh ghi đè giá trị lạc quan bằng dữ liệu cũ từ SQLite/API.
+       */
+      _waterOptimisticTs: 0,
 
       // ──────────────────────────────────────────────────────────────────────
       // ─── PHẦN 2: CÁC HÀNH ĐỘNG CƠ BẢN (SYNC ACTIONS) ───
@@ -809,25 +818,23 @@ export const useAppStore = create<AppState>()(
         if (!userId) return;
         const today = getLocalToday();
 
-        // 1. Lưu SQLite (Offline)
-        await trackingDb.logWater(amountMl, today);
+        // 1. Cập nhật UI ngay lập tức (Optimistic) + Đặt khóa lạc quan
+        //    _waterOptimisticTs ngăn fetchWaterIntake ghi đè giá trị này
+        //    bằng dữ liệu cũ từ SQLite/API trong vòng 3 giây tới.
+        const newIntake = Math.max(0, prevIntake + amountMl);
+        set({ waterIntake: newIntake, _waterOptimisticTs: Date.now() });
 
-        // 2. Cập nhật UI ngay lập tức (Optimistic)
-        set({ waterIntake: prevIntake + amountMl });
+        // 2. Lưu SQLite (Background)
+        trackingDb.logWater(amountMl, today).catch(err => 
+          console.error('[DB] Failed to log water:', err.message)
+        );
 
         try {
-          set({ isWaterLoading: true });
-          // 3. Gọi API
+          // 3. Gửi API (không set isWaterLoading ở đây để tránh nháy UI)
           await progressApi.logWater(userId, amountMl, today);
-          
-          // 2. Fetch lại water intake thực tế từ server để đồng bộ chính xác
-          await get().fetchWaterIntake(today);
         } catch (error: any) {
           console.warn('[Store] logWater sync failed, adding to queue:', error.message);
-          // LƯU VÀO HÀNG ĐỢI ĐỂ ĐỒNG BỘ SAU
           await syncDb.addToSyncQueue('LOG_WATER', { amount: amountMl, date: today });
-        } finally {
-          set({ isWaterLoading: false });
         }
       },
 
@@ -836,16 +843,34 @@ export const useAppStore = create<AppState>()(
         if (!userId) return;
         const targetDate = date || getLocalToday();
 
+        // ── Kiểm tra khóa lạc quan ──────────────────────────────────
+        // Nếu logWater() vừa cập nhật UI trong vòng 3 giây gần đây,
+        // KHÔNG ghi đè waterIntake để tránh hiện tượng nháy (flicker).
+        const OPTIMISTIC_LOCK_MS = 3000;
+        if (Date.now() - get()._waterOptimisticTs < OPTIMISTIC_LOCK_MS) {
+          console.log('[Store] fetchWaterIntake skipped — optimistic lock active');
+          return;
+        }
+
         try {
-          // 1. Đọc từ SQLite trước
+          // 1. Đọc từ SQLite trước để có dữ liệu ngay
           const localWater = await trackingDb.getWaterByDate(targetDate);
+
+          // Kiểm tra lại khóa sau bước async (phòng race condition)
+          if (Date.now() - get()._waterOptimisticTs < OPTIMISTIC_LOCK_MS) return;
+
           if (localWater > 0) {
             set({ waterIntake: localWater });
           }
 
-          set({ isWaterLoading: true });
-          // 2. Sau đó đồng bộ từ server
+          // 2. Sau đó mới gọi API (không set isWaterLoading nếu đã có local)
+          if (localWater === 0) set({ isWaterLoading: true });
+          
           const res = await progressApi.getDailyWaterTotal(userId, targetDate);
+
+          // Kiểm tra lại khóa sau bước async (phòng race condition)
+          if (Date.now() - get()._waterOptimisticTs < OPTIMISTIC_LOCK_MS) return;
+
           if (res && res.data !== undefined) {
             set({ waterIntake: res.data });
           }

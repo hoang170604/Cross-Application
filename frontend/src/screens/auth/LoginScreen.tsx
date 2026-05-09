@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SharedHeader } from '@/src/ui/SharedHeader';
@@ -68,6 +68,10 @@ export default function LoginScreen() {
       if (pendingOnboardingSync) {
         router.replace('/SyncLoadingScreen');
       } else if (!isProfileComplete) {
+        Alert.alert(
+          'Chưa hoàn tất hồ sơ',
+          'Tài khoản của bạn chưa hoàn tất thiết lập. Vui lòng cập nhật thông tin cá nhân để tiếp tục.'
+        );
         router.replace('/PrimaryGoal');
       } else {
         router.replace('/(tabs)/diary');
@@ -106,6 +110,7 @@ export default function LoginScreen() {
             <TextInput
               style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="Nhập email của bạn"
+              placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={handleEmailChange}
               keyboardType="email-address"
@@ -120,6 +125,7 @@ export default function LoginScreen() {
             <TextInput
               style={[styles.input, passwordError ? styles.inputError : null]}
               placeholder="Nhập mật khẩu"
+              placeholderTextColor="#9CA3AF"
               value={password}
               onChangeText={handlePasswordChange}
               secureTextEntry
@@ -167,6 +173,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    color: '#1F2937',
   },
   inputError: {
     borderColor: '#EF4444',
