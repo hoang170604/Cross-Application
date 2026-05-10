@@ -70,9 +70,14 @@ export default function LoginScreen() {
       } else if (!isProfileComplete) {
         Alert.alert(
           'Chưa hoàn tất hồ sơ',
-          'Tài khoản của bạn chưa hoàn tất thiết lập. Vui lòng cập nhật thông tin cá nhân để tiếp tục.'
+          'Tài khoản của bạn chưa hoàn tất thiết lập. Vui lòng cập nhật thông tin cá nhân để tiếp tục.',
+          [
+            {
+              text: 'Bắt đầu',
+              onPress: () => router.replace('/PrimaryGoal')
+            }
+          ]
         );
-        router.replace('/PrimaryGoal');
       } else {
         router.replace('/(tabs)/diary');
       }
