@@ -52,6 +52,9 @@ export default function LoginScreen() {
     if (!password.trim()) {
       setPasswordError('Vui lòng nhập mật khẩu');
       hasError = true;
+    } else if (password.length < 8) {
+      setPasswordError('Mật khẩu phải có ít nhất 8 ký tự');
+      hasError = true;
     }
 
     if (hasError) return;
@@ -62,39 +65,52 @@ export default function LoginScreen() {
     try {
       const response = await loginUser(email.trim(), password);
       await login(response.data.token, response.data.userId);
-      const { userProfile } = useAppStore.getState();
+      const { userProfile, pendingOnboardingSync } = useAppStore.getState();
       const isProfileComplete = userProfile && userProfile.height > 0 && userProfile.weight > 0 && userProfile.age > 0;
 
       if (pendingOnboardingSync) {
         router.replace('/SyncLoadingScreen');
       } else if (!isProfileComplete) {
-        Alert.alert(
-          'Chưa hoàn tất hồ sơ',
-          'Tài khoản của bạn chưa hoàn tất thiết lập. Vui lòng cập nhật thông tin cá nhân để tiếp tục.',
-          [
-            {
-              text: 'Bắt đầu',
-              onPress: () => router.replace('/PrimaryGoal')
-            }
-          ]
-        );
+        if (Platform.OS === 'web') {
+          alert('Chưa hoàn tất hồ sơ: Tài khoản của bạn chưa hoàn tất thiết lập. Vui lòng cập nhật thông tin cá nhân để tiếp tục.');
+          router.replace('/PrimaryGoal');
+        } else {
+          Alert.alert(
+            'Chưa hoàn tất hồ sơ',
+            'Tài khoản của bạn chưa hoàn tất thiết lập. Vui lòng cập nhật thông tin cá nhân để tiếp tục.',
+            [
+              {
+                text: 'Bắt đầu',
+                onPress: () => router.replace('/PrimaryGoal')
+              }
+            ]
+          );
+        }
       } else {
         router.replace('/(tabs)/diary');
       }
+
     } catch (error: any) {
-      console.log('Backend Error Response:', error.response?.data);
+      console.log('Login Error Detail:', error.response?.data);
 
-      const data = error.response?.data;
-      const rawError = (typeof data === 'string' ? data : (data?.message || data?.error)) || '';
+      const serverData = error.response?.data;
+      const rawError = typeof serverData === 'string' 
+        ? serverData 
+        : (serverData?.message || serverData?.error || error.message || '');
+      
+      const msg = String(rawError).toLowerCase();
+      let detailedError = 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
+      
+      if (msg.includes('credentials') || msg.includes('invalid email') || msg.includes('401')) {
+        detailedError = 'Email hoặc mật khẩu không chính xác.';
+      } else if (msg.includes('not found') || msg.includes('404')) {
+        detailedError = 'Không tìm thấy tài khoản này trên hệ thống.';
+      } else if (msg.includes('required') || msg.includes('400')) {
+        detailedError = 'Vui lòng nhập đầy đủ thông tin đăng nhập.';
+      } else if (rawError && typeof rawError === 'string') {
+        detailedError = rawError;
+      }
 
-      // Map dịch lỗi sang tiếng Việt
-      const errorMap: { [key: string]: string } = {
-        'Invalid credentials': 'Email hoặc mật khẩu không chính xác.',
-        'User not found': 'Không tìm thấy tài khoản này.',
-        'Missing required fields': 'Vui lòng nhập đầy đủ thông tin.',
-      };
-
-      const detailedError = errorMap[rawError] || rawError || 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
       setErrorMessage(detailedError);
     } finally {
       setIsLoading(false);
@@ -129,7 +145,7 @@ export default function LoginScreen() {
             <Text style={styles.label}>Mật khẩu</Text>
             <TextInput
               style={[styles.input, passwordError ? styles.inputError : null]}
-              placeholder="Nhập mật khẩu"
+              placeholder="Ít nhất 8 ký tự"
               placeholderTextColor="#9CA3AF"
               value={password}
               onChangeText={handlePasswordChange}
@@ -137,11 +153,14 @@ export default function LoginScreen() {
             />
             {passwordError ? <Text style={styles.inlineError}>{passwordError}</Text> : null}
           </View>
-
-          {/* Lỗi từ Server */}
+ 
+          {/* Boxed Error Message for high visibility */}
           {errorMessage ? (
-            <Text style={styles.errorText}>{errorMessage}</Text>
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{errorMessage}</Text>
+            </View>
           ) : null}
+
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -203,11 +222,18 @@ const styles = StyleSheet.create({
   linkButton: { marginTop: 24, alignItems: 'center' },
   linkText: { color: '#6B7280', fontSize: 14 },
   linkTextBold: { color: '#00C48C', fontWeight: '700' },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 14,
-    marginBottom: 12,
+  errorBanner: {
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  errorBannerText: {
+    color: '#B91C1C',
     textAlign: 'center',
-    fontWeight: '500'
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

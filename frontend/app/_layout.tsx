@@ -63,6 +63,18 @@ function InitialLayout() {
     return unsub;
   }, []);
 
+  // Tự động đồng bộ lại sau mỗi 30 giây nếu có dữ liệu đang chờ (Background Sync)
+  useEffect(() => {
+    if (!isHydrated || !token) return;
+
+    const syncInterval = setInterval(() => {
+      console.log('[Sync] Periodic background sync check...');
+      useAppStore.getState().processSyncQueue();
+    }, 30000); // 30 giây một lần
+
+    return () => clearInterval(syncInterval);
+  }, [isHydrated, token]);
+
   useEffect(() => {
     if (!isHydrated) return;
     

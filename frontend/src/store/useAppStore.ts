@@ -385,8 +385,6 @@ export const useAppStore = create<AppState>()(
           set({ isLoading: true, error: null });
 
           // Reset toàn bộ state thuộc về user cũ trước khi gán user mới.
-          // Nếu không reset, dữ liệu profile/nutrition của user trước sẽ bị "rò rỉ"
-          // sang session mới do Zustand persist giữ lại trong AsyncStorage.
           set({
             token,
             userId,
@@ -396,12 +394,25 @@ export const useAppStore = create<AppState>()(
             activityCalories: 0,
             lastActivityDate: '',
             loggedActivities: [],
+            waterIntake: 0,
+            latestWeight: null,
+            pendingOnboardingSync: false,
           });
 
-          // Lưu token vào SecureStore (hoặc AsyncStorage nếu trên Web)
+          // 1. Lưu token mới
           await saveToken(token);
 
-          // Sau khi gán userId mới, thử fetch mục tiêu dinh dưỡng (nếu đã có profile)
+          // 2. Xóa dữ liệu cũ trong Storage để đảm bảo không bị trùng lặp dữ liệu từ user trước
+          if (Platform.OS === 'web') {
+            await AsyncStorage.clear();
+            // Sau khi clear hết, phải lưu lại token vừa save vì clear() xóa sạch LocalStorage
+            await saveToken(token); 
+          } else {
+            const { clearAllData } = require('../db/database');
+            await clearAllData();
+          }
+
+          // Sau khi gán userId mới, thử fetch mục tiêu dinh dưỡng
           try {
             const goalRes = await userApi.getUserGoal(userId);
             if (goalRes && goalRes.data) {
@@ -422,12 +433,11 @@ export const useAppStore = create<AppState>()(
           get().fetchWaterIntake();
           get().fetchLatestWeight();
 
-          // Fetch thông tin profile đầy đủ từ server (nếu user đã có profile trước đó)
+          // Fetch thông tin profile đầy đủ từ server
           try {
             const userRes = await userApi.getUserProfile(userId);
             if (userRes && userRes.data) {
               const d = userRes.data;
-              // Cập nhật state với dữ liệu từ server
               set((state) => ({
                 userProfile: {
                   ...state.userProfile,
@@ -443,10 +453,9 @@ export const useAppStore = create<AppState>()(
               }));
             }
           } catch (e: any) {
-            console.log('[Store] User profile fetch error (might be new user):', e.message);
+            console.log('[Store] User profile fetch error:', e.message);
           }
 
-          // QUAN TRỌNG: Đảm bảo luôn có targetCalories (tính local nếu backend chưa có)
           if (!get().userProfile.targetCalories) {
             get().recalculateGoals();
           }
@@ -460,7 +469,8 @@ export const useAppStore = create<AppState>()(
       logout: async () => {
         try {
           set({ isLoading: true, error: null });
-          // Reset toàn bộ state thuộc về user
+          
+          // 1. Reset state local trong memory
           set({
             token: null,
             userId: null,
@@ -474,7 +484,20 @@ export const useAppStore = create<AppState>()(
             waterIntake: 0,
             latestWeight: null,
           });
+
+          // 2. Xóa token khỏi Storage (SecureStore/AsyncStorage)
           await clearTokens();
+
+          // 3. Xóa dữ liệu SQLite (Mobile) hoặc dọn dẹp LocalStorage (Web)
+          if (Platform.OS === 'web') {
+            // Trên Web, xóa sạch AsyncStorage để đảm bảo không còn dữ liệu user cũ
+            await AsyncStorage.clear();
+            console.log('[Web] LocalStorage cleared on logout.');
+          } else {
+            const { clearAllData } = require('../db/database');
+            await clearAllData();
+          }
+
         } catch (error: any) {
           set({ error: error.message || 'Lỗi đăng xuất' });
         } finally {

@@ -74,8 +74,8 @@ export default function RegisterScreen() {
     if (!password.trim()) {
       setPasswordError('Vui lòng nhập mật khẩu');
       hasError = true;
-    } else if (password.length < 6) {
-      setPasswordError('Mật khẩu phải có ít nhất 6 ký tự');
+    } else if (password.length < 8) {
+      setPasswordError('Mật khẩu phải có ít nhất 8 ký tự');
       hasError = true;
     }
 
@@ -101,24 +101,40 @@ export default function RegisterScreen() {
       if (pendingOnboardingSync) {
         router.replace('/SyncLoadingScreen');
       } else if (!isProfileComplete) {
-        router.replace('/PrimaryGoal');
+        if (Platform.OS === 'web') {
+          alert('Đăng ký thành công! 🎉\nTài khoản của bạn đã được tạo. Hãy thiết lập hồ sơ để chúng tôi tính toán calo cho bạn nhé.');
+          router.replace('/PrimaryGoal');
+        } else {
+          Alert.alert(
+            'Đăng ký thành công! 🎉',
+            'Tài khoản của bạn đã được tạo. Hãy thiết lập hồ sơ để chúng tôi tính toán calo cho bạn nhé.',
+            [{ text: 'Bắt đầu', onPress: () => router.replace('/PrimaryGoal') }]
+          );
+        }
       } else {
         router.replace('/(tabs)/diary');
       }
     } catch (error: any) {
-      console.log('Backend Error Response:', error.response?.data);
-      const data = error.response?.data;
-      const rawError = (typeof data === 'string' ? data : (data?.message || data?.error)) || '';
+      console.log('Register Error Detail:', error.response?.data);
+      
+      const serverData = error.response?.data;
+      const rawError = typeof serverData === 'string' 
+        ? serverData 
+        : (serverData?.message || serverData?.error || error.message || '');
+      
+      const msg = String(rawError).toLowerCase();
+      let detailedError = 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
 
-      const errorMap: { [key: string]: string } = {
-        'Invalid credentials': 'Thông tin không hợp lệ.',
-        'User already exists': 'Email này đã được sử dụng bởi tài khoản khác.',
-        'Email already taken': 'Email này đã được sử dụng bởi tài khoản khác.',
-        'Email already registered': 'Email này đã được đăng ký bởi người khác.',
-        'Weak password': 'Mật khẩu quá yếu.',
-      };
+      if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('taken') || msg.includes('400')) {
+        detailedError = 'Email này đã được sử dụng bởi tài khoản khác.';
+      } else if (msg.includes('weak password')) {
+        detailedError = 'Mật khẩu quá yếu (cần tối thiểu 6 ký tự).';
+      } else if (msg.includes('credentials') || msg.includes('invalid email') || msg.includes('401')) {
+        detailedError = 'Thông tin đăng ký không hợp lệ.';
+      } else if (rawError && typeof rawError === 'string') {
+        detailedError = rawError;
+      }
 
-      const detailedError = errorMap[rawError] || rawError || 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
       setErrorMessage(detailedError);
     } finally {
       setIsLoading(false);
@@ -153,7 +169,7 @@ export default function RegisterScreen() {
             <Text style={styles.label}>Mật khẩu</Text>
             <TextInput
               style={[styles.input, passwordError ? styles.inputError : null]}
-              placeholder="Ít nhất 6 ký tự"
+              placeholder="Ít nhất 8 ký tự"
               placeholderTextColor="#9CA3AF"
               value={password}
               onChangeText={handlePasswordChange}
@@ -176,10 +192,13 @@ export default function RegisterScreen() {
             {confirmPasswordError ? <Text style={styles.inlineError}>{confirmPasswordError}</Text> : null}
           </View>
 
-          {/* Lỗi từ Server */}
+          {/* Boxed Error Message for high visibility */}
           {errorMessage ? (
-            <Text style={styles.errorText}>{errorMessage}</Text>
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{errorMessage}</Text>
+            </View>
           ) : null}
+
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -241,11 +260,18 @@ const styles = StyleSheet.create({
   linkButton: { marginTop: 24, alignItems: 'center' },
   linkText: { color: '#6B7280', fontSize: 14 },
   linkTextBold: { color: '#00C48C', fontWeight: '700' },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 14,
-    marginBottom: 12,
+  errorBanner: {
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  errorBannerText: {
+    color: '#B91C1C',
     textAlign: 'center',
-    fontWeight: '500'
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

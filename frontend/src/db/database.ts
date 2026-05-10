@@ -118,3 +118,21 @@ export async function initDatabase() {
 
   console.log('[SQLite] Database updated with Sync Queue and Indexes.');
 }
+
+/**
+ * Xóa sạch toàn bộ dữ liệu trong các bảng (Dùng khi đăng xuất)
+ */
+export async function clearAllData() {
+  if (Platform.OS === 'web') return;
+  const db = await getDatabase();
+  try {
+    await db.execAsync('DELETE FROM activities;');
+    await db.execAsync('DELETE FROM meal_logs;');
+    await db.execAsync('DELETE FROM water_logs;');
+    await db.execAsync('DELETE FROM weight_logs;');
+    await db.execAsync('DELETE FROM sync_queue;');
+    console.log('[SQLite] All tables cleared successfully.');
+  } catch (error: any) {
+    console.error('[SQLite] Failed to clear tables:', error.message);
+  }
+}
