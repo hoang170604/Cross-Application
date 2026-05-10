@@ -19,7 +19,8 @@ export function useNutrition() {
     dailyNutrition, 
     activityCalories, // Lấy từ store để tính toán calo còn lại
     logWeight,
-    addFood
+    addFood,
+    removeFoods
   } = useAppStore();
 
   // ─── Macro & Calorie Calculations ───────────────────────────────────
@@ -118,7 +119,8 @@ export function useNutrition() {
 
     // Actions
     logWeight,
-    addFood
+    addFood,
+    removeFoods
   };
 }
 

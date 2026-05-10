@@ -2,13 +2,17 @@
  * @file FastingTimerCard.tsx
  * @description Sinh vật (Organism) thẻ thông tin nhịn ăn gián đoạn.
  * Bao gồm đồng hồ đếm tiến SVG, trạng thái sinh học, và nút hành động chính.
- * Mọi logic countdown hình ảnh được cô lập để tối ưu hiệu năng.
+ * (Đã gộp PhaseMarkers và Tooltip từ phiên bản mới của repo)
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { AppButton } from './core/AppButton';
+
+// Nhập các thành phần mới từ repo
+import { PhaseMarkers } from '../screens/fasting/components/PhaseMarkers';
+import { FASTING_PHASES } from '../screens/fasting/constants/fastingData';
 
 interface FastingTimerCardProps {
   /** Trạng thái nhịn ăn */
@@ -69,6 +73,7 @@ export const FastingTimerCard: React.FC<FastingTimerCardProps> = ({
   const now = Date.now();
   const clockStart = startTime || now;
   const elapsedMs = isFasting ? Math.max(0, now - clockStart) : 0;
+  const elapsedHours = elapsedMs / (1000 * 60 * 60);
   
   const targetMs = (fastingState === 'EATING' ? (24 - activeGoal) : activeGoal) * 60 * 60 * 1000;
   const progressPercent = Math.min(100, Math.max(0, (elapsedMs / targetMs) * 100));
@@ -77,6 +82,24 @@ export const FastingTimerCard: React.FC<FastingTimerCardProps> = ({
   const strokeWidth = 22;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
+
+  // ── Tooltip state cho Phase Markers ────────────────────────────────────
+  const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMarkerPress = useCallback((phaseId: string) => {
+    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    if (activeTooltipId === phaseId) {
+      setActiveTooltipId(null);
+      return;
+    }
+    setActiveTooltipId(phaseId);
+    tooltipTimerRef.current = setTimeout(() => setActiveTooltipId(null), 3000);
+  }, [activeTooltipId]);
+
+  useEffect(() => {
+    return () => { if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); };
+  }, []);
 
   const formatTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -113,8 +136,37 @@ export const FastingTimerCard: React.FC<FastingTimerCardProps> = ({
             strokeLinecap="round"
           />
         </Svg>
-        <View style={styles.centerOverlay}>
-          <Text style={styles.mascot}>{getMascot()}</Text>
+
+        {/* Thêm Phase Markers từ phiên bản mới */}
+        {isFasting && fastingState === 'FASTING' && (
+          <PhaseMarkers
+            goalHours={activeGoal}
+            elapsedHours={elapsedHours}
+            activeTooltipId={activeTooltipId}
+            handleMarkerPress={handleMarkerPress}
+            ringSize={size}
+            strokeWidth={strokeWidth}
+          />
+        )}
+
+        <View style={styles.centerOverlay} pointerEvents="box-none">
+          {/* Tooltip khi bấm vào Phase Marker */}
+          {activeTooltipId ? (() => {
+            const phase = FASTING_PHASES.find(p => p.id === activeTooltipId);
+            if (!phase) return null;
+            return (
+              <View style={[styles.tooltipBadge, { borderColor: phase.color, backgroundColor: phase.color + '22' }]} pointerEvents="none">
+                <Text style={styles.tooltipEmoji}>{phase.emoji}</Text>
+                <View>
+                  <Text style={[styles.tooltipTitle, { color: phase.color }]}>{phase.title}</Text>
+                  <Text style={styles.tooltipHour}>sau {phase.startHour}h nhịn ăn</Text>
+                </View>
+              </View>
+            );
+          })() : (
+            <Text style={styles.mascot}>{getMascot()}</Text>
+          )}
+
           <Text style={styles.timerText}>{formatTime(elapsedMs)}</Text>
           <View style={[styles.badge, { backgroundColor: !isFasting ? '#F1F5F9' : stageColor }]}>
             <Text style={[styles.badgeText, { color: !isFasting ? '#6B7280' : '#fff' }]}>
@@ -168,6 +220,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '80%'
   },
   mascot: {
     fontSize: 36,
@@ -216,4 +269,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '500',
   },
+  tooltipBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  tooltipEmoji: { fontSize: 16 },
+  tooltipTitle: { fontSize: 12, fontWeight: '800', lineHeight: 16 },
+  tooltipHour: { fontSize: 10, color: '#9CA3AF', fontWeight: '500' },
 });

@@ -42,7 +42,7 @@ const MealCardComponent: React.FC = () => {
       <View style={styles.card}>
         {mealStats.map((meal, index) => {
           const isLast = index === mealStats.length - 1;
-          
+
           return (
             <React.Fragment key={meal.id}>
               <View style={styles.row}>
@@ -71,16 +71,16 @@ const MealCardComponent: React.FC = () => {
                 </View>
 
                 {/* Details */}
-                <TouchableOpacity 
-                  style={styles.detailsContainer} 
+                <TouchableOpacity
+                  style={styles.detailsContainer}
                   activeOpacity={0.7}
-                  onPress={() => router.push({ pathname: '/SearchScan', params: { mealType: meal.id } })}
+                  onPress={() => router.push({ pathname: '/MealDetail' as any, params: { mealType: meal.id } })}
                 >
                   <View style={styles.titleRow}>
                     <Text style={styles.mealName}>{meal.name}</Text>
                     <Ionicons name="arrow-forward" size={16} color={colors.text} style={{ marginLeft: 4 }} />
                   </View>
-                  
+
                   {(meal.target > 0 || meal.consumed > 0) ? (
                     <Text style={styles.caloriesText}>
                       {meal.consumed} {meal.target > 0 ? `/ ${meal.target} ` : ''}kcal
@@ -88,7 +88,7 @@ const MealCardComponent: React.FC = () => {
                   ) : (
                     <View />
                   )}
-                  
+
                   {meal.foodNames.length > 0 && (
                     <Text style={styles.foodNames} numberOfLines={1}>
                       {meal.foodNames}
@@ -96,20 +96,13 @@ const MealCardComponent: React.FC = () => {
                   )}
                 </TouchableOpacity>
 
-                {/* Add Button */}
-                <TouchableOpacity 
-                  style={[
-                    styles.addButton, 
-                    meal.target > 0 ? styles.addButtonMain : styles.addButtonSecondary
-                  ]} 
+                {/* Add Button — unified style for all meal types */}
+                <TouchableOpacity
+                  style={styles.addButton}
                   onPress={() => router.push({ pathname: '/SearchScan', params: { mealType: meal.id } })}
                   activeOpacity={0.7}
                 >
-                  <Ionicons 
-                    name="add" 
-                    size={22} 
-                    color={meal.target > 0 ? colors.background : colors.text} 
-                  />
+                  <Ionicons name="add" size={22} color={colors.background} />
                 </TouchableOpacity>
               </View>
               {!isLast && <View style={styles.divider} />}
@@ -210,14 +203,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
-  },
-  addButtonMain: {
-    backgroundColor: colors.text,
-  },
-  addButtonSecondary: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+    backgroundColor: colors.text,  // unified: dark background on all themes
   },
   divider: {
     height: 1,

@@ -90,6 +90,8 @@ const DurationStep: React.FC<DurationStepProps> = ({
 }) => {
   const [minutes, setMinutes] = useState(initialMinutes);
   const [inputText, setInputText] = useState(String(initialMinutes));
+  const [isFocused, setIsFocused] = useState(false);
+
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
 
@@ -111,6 +113,7 @@ const DurationStep: React.FC<DurationStepProps> = ({
   };
 
   const handleBlur = () => {
+    setIsFocused(false);
     let parsed = parseInt(inputText, 10);
     if (isNaN(parsed) || parsed < MIN_MINUTES) {
       parsed = MIN_MINUTES;
@@ -123,6 +126,7 @@ const DurationStep: React.FC<DurationStepProps> = ({
 
   const currentInputVal = parseInt(inputText, 10) || 0;
   const estimatedCals = Math.round(activity.caloriesPerMin * currentInputVal);
+  const isValid = currentInputVal > 0;
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -155,9 +159,13 @@ const DurationStep: React.FC<DurationStepProps> = ({
 
           <View style={styles.minutesDisplay}>
             <TextInput
-              style={styles.minutesInput}
+              style={[
+                styles.minutesInput,
+                isFocused && { borderColor: '#00E5FF', borderWidth: 2, backgroundColor: colors.isDark ? '#00E5FF10' : '#E0FFFF' }
+              ]}
               value={inputText}
               onChangeText={handleInputChange}
+              onFocus={() => setIsFocused(true)}
               onBlur={handleBlur}
               keyboardType="number-pad"
               maxLength={3}
@@ -187,7 +195,12 @@ const DurationStep: React.FC<DurationStepProps> = ({
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.confirmBtn} activeOpacity={0.8} onPress={() => { handleBlur(); onConfirm(minutes); }}>
+        <TouchableOpacity 
+          style={[styles.confirmBtn, !isValid && styles.confirmBtnDisabled]} 
+          activeOpacity={0.8} 
+          disabled={!isValid}
+          onPress={() => { handleBlur(); onConfirm(currentInputVal); }}
+        >
           <Text style={styles.confirmText}>Xác nhận</Text>
         </TouchableOpacity>
 
@@ -411,8 +424,10 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 20,
     marginBottom: 20,
+    width: '100%',
   },
   stepBtn: {
     width: 48,
@@ -441,6 +456,8 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: colors.surface,
     borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent', // Dành sẵn khoảng trống cho viền khi focus
   },
   minutesUnit: {
     fontSize: 14,
@@ -468,7 +485,6 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Nút xác nhận
   confirmBtn: {
     alignSelf: 'stretch',
     backgroundColor: colors.primary,
@@ -480,6 +496,9 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 3,
+  },
+  confirmBtnDisabled: {
+    opacity: 0.4,
   },
   confirmText: {
     fontSize: 16,

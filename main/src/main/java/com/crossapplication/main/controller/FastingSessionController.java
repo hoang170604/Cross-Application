@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.crossapplication.main.dto.ApiResponse;
 import com.crossapplication.main.dto.FastingSessionDTO;
-import com.crossapplication.main.entity.FastingSession;
 import com.crossapplication.main.service.interfaces.FastingSessionService;
 
 @RestController
@@ -32,7 +31,7 @@ public class FastingSessionController {
 	@PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
 	public ResponseEntity<ApiResponse<?>> listForUser(@PathVariable Long userId) {
 		try {
-			List<FastingSession> sessions = fastingSessionService.listByUser(userId);
+			List<FastingSessionDTO> sessions = fastingSessionService.listByUser(userId);
 			return ResponseEntity.ok(ApiResponse.success(sessions));
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "LIST_FAILED"));
@@ -43,7 +42,7 @@ public class FastingSessionController {
 	@PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
 	public ResponseEntity<ApiResponse<?>> get(@PathVariable Long id) {
 		try {
-			Optional<FastingSession> opt = fastingSessionService.getById(id);
+			Optional<FastingSessionDTO> opt = fastingSessionService.getById(id);
 			if (opt.isPresent()) {
 				return ResponseEntity.ok(ApiResponse.success(opt.get()));
 			}
@@ -57,7 +56,7 @@ public class FastingSessionController {
 	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse<?>> create(@jakarta.validation.Valid @RequestBody FastingSessionDTO dto) {
 		try {
-			FastingSession created = fastingSessionService.create(dto);
+			FastingSessionDTO created = fastingSessionService.create(dto);
 			return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "Fasting session created successfully"));
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "CREATE_FAILED"));
@@ -68,7 +67,7 @@ public class FastingSessionController {
 	@PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
 	public ResponseEntity<ApiResponse<?>> update(@PathVariable Long id, @RequestBody FastingSessionDTO dto) {
 		try {
-			FastingSession updated = fastingSessionService.update(id, dto);
+			FastingSessionDTO updated = fastingSessionService.update(id, dto);
 			return ResponseEntity.ok(ApiResponse.success(updated, "Fasting session updated successfully"));
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "UPDATE_FAILED"));

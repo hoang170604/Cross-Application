@@ -4,15 +4,19 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 interface SharedHeaderProps {
+  title?: string;
   showProgress?: boolean;
   showBack?: boolean;
   progress?: number;
+  rightAction?: React.ReactNode;
 }
 
 const SharedHeaderComponent: React.FC<SharedHeaderProps> = ({ 
+  title,
   showProgress = false, 
   showBack = true, 
-  progress = 0 
+  progress = 0,
+  rightAction
 }) => {
   const router = useRouter();
 
@@ -29,8 +33,10 @@ const SharedHeaderComponent: React.FC<SharedHeaderProps> = ({
         ) : (
           <View style={{ width: 40 }} />
         )}
-        <Text style={styles.logo}>NUTRITRACK</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.logo}>{title || 'NUTRITRACK'}</Text>
+        <View style={{ width: 40, alignItems: 'flex-end' }}>
+          {rightAction}
+        </View>
       </View>
       {showProgress && (
         <View style={styles.progressTrack}>

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.crossapplication.main.dto.ApiResponse;
-import com.crossapplication.main.entity.WaterLog;
+import com.crossapplication.main.dto.WaterLogDTO;
 import com.crossapplication.main.service.interfaces.WaterServiceInterface;
 
 import jakarta.validation.Valid;
@@ -39,7 +39,7 @@ public class WaterController {
                         .body(ApiResponse.error("userId and non-zero amountMl are required", "INVALID_PARAMS"));
             }
             LocalDateTime timestamp = request.getTimestamp() != null ? request.getTimestamp() : LocalDateTime.now();
-            WaterLog logged = waterService.logWater(
+            WaterLogDTO logged = waterService.logWater(
                     request.getUserId(),
                     timestamp,
                     request.getAmountMl(),
@@ -83,7 +83,7 @@ public class WaterController {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("userId, startDate, and endDate are required", "INVALID_PARAMS"));
             }
-            List<WaterLog> logs = waterService.getLogsBetween(userId, startDate, endDate);
+            List<WaterLogDTO> logs = waterService.getLogsBetween(userId, startDate, endDate);
             return ResponseEntity.ok(ApiResponse.success(logs));
         } catch (Exception e) {
             return ResponseEntity.badRequest()

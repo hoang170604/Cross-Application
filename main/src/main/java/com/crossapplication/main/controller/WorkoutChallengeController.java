@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.crossapplication.main.dto.ApiResponse;
 import com.crossapplication.main.dto.WorkoutChallengeDTO;
-import com.crossapplication.main.entity.WorkoutChallenge;
 import com.crossapplication.main.service.interfaces.WorkoutChallengeService;
 
 @RestController
@@ -32,7 +31,7 @@ public class WorkoutChallengeController {
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> listAll() {
         try {
-            List<WorkoutChallenge> challenges = workoutChallengeService.listAll();
+            List<WorkoutChallengeDTO> challenges = workoutChallengeService.listAll();
             return ResponseEntity.ok(ApiResponse.success(challenges));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "LIST_FAILED"));
@@ -43,7 +42,7 @@ public class WorkoutChallengeController {
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> listForUser(@PathVariable Long userId) {
         try {
-            List<WorkoutChallenge> challenges = workoutChallengeService.listByUser(userId);
+            List<WorkoutChallengeDTO> challenges = workoutChallengeService.listByUser(userId);
             return ResponseEntity.ok(ApiResponse.success(challenges));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "LIST_FAILED"));
@@ -54,7 +53,7 @@ public class WorkoutChallengeController {
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> get(@PathVariable Long id) {
         try {
-            Optional<WorkoutChallenge> opt = workoutChallengeService.getById(id);
+            Optional<WorkoutChallengeDTO> opt = workoutChallengeService.getById(id);
             if (opt.isPresent()) {
                 return ResponseEntity.ok(ApiResponse.success(opt.get()));
             }
@@ -68,7 +67,7 @@ public class WorkoutChallengeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> create(@jakarta.validation.Valid @RequestBody WorkoutChallengeDTO dto) {
         try {
-            WorkoutChallenge created = workoutChallengeService.create(dto);
+            WorkoutChallengeDTO created = workoutChallengeService.create(dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "Workout challenge created successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "CREATE_FAILED"));
@@ -79,7 +78,7 @@ public class WorkoutChallengeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> update(@PathVariable Long id, @RequestBody WorkoutChallengeDTO dto) {
         try {
-            WorkoutChallenge updated = workoutChallengeService.update(id, dto);
+            WorkoutChallengeDTO updated = workoutChallengeService.update(id, dto);
             return ResponseEntity.ok(ApiResponse.success(updated, "Workout challenge updated successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "UPDATE_FAILED"));

@@ -70,6 +70,7 @@ interface AppState {
   login: (token: string, userId: number) => Promise<void>;
   logout: () => Promise<void>;
   addFood: (mealType: keyof DailyMeals, food: FoodItem) => Promise<void>;
+  removeFoods: (mealType: keyof DailyMeals, foodIds: number[]) => Promise<void>;
   updateCurrentWeight: (newWeight: number) => Promise<void>;
   logWeight: (weight: number, date?: string) => Promise<void>;
   fetchDiaryFromServer: (date: string) => Promise<void>;
@@ -542,6 +543,44 @@ export const useAppStore = create<AppState>()(
           });
           
           set({ error: 'Mất kết nối. Dữ liệu đã được lưu tạm tại máy.' });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      removeFoods: async (mealType, foodIds) => {
+        const { userId, userProfile } = get();
+        if (!userId) return;
+
+        try {
+          set({ isLoading: true, error: null });
+          const today = getLocalToday();
+
+          // Lọc bỏ những món có id nằm trong danh sách cần xóa
+          const currentMeals = userProfile.dailyMeals || { breakfast: [], lunch: [], dinner: [], snack: [] };
+          const updatedMealList = currentMeals[mealType].filter((food) => !foodIds.includes(food.id));
+
+          // Cập nhật State local (Optimistic)
+          set({
+            userProfile: {
+              ...userProfile,
+              dailyMeals: {
+                ...currentMeals,
+                [mealType]: updatedMealList
+              }
+            }
+          });
+
+          // Gọi API để xóa các log trên server (Thực hiện song song)
+          await Promise.allSettled(
+            foodIds.map((id) => diaryApi.deleteMealLog(id))
+          ).catch((e) => console.warn('[Store] Bulk delete partial fail:', e));
+
+          // Fetch lại daily nutrition
+          await get().fetchDailyNutrition(today);
+        } catch (error: any) {
+          set({ error: error.message || 'Lỗi khi xóa món ăn' });
+          console.error('[Store] removeFoods error:', error);
         } finally {
           set({ isLoading: false });
         }

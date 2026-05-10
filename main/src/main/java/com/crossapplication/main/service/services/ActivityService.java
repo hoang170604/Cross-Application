@@ -7,8 +7,10 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.crossapplication.main.dto.ActivityDTO;
 import com.crossapplication.main.entity.Activity;
 import com.crossapplication.main.entity.User;
+import com.crossapplication.main.mapper.ActivityMapper;
 import com.crossapplication.main.repository.interfaces.ActivityRepository;
 import com.crossapplication.main.service.interfaces.ActivityServiceInterface;
 import com.crossapplication.main.service.interfaces.DailyNutritionService;
@@ -24,9 +26,12 @@ public class ActivityService implements ActivityServiceInterface {
     @Autowired
     private DailyNutritionService dailyNutritionService;
 
+    @Autowired
+    private ActivityMapper activityMapper;
+
     @Override
     @Transactional
-    public Activity addActivity(Long userId, String type, Integer durationMinutes, Double caloriesBurned, LocalDateTime startTime, Double distanceKm, Integer steps, String source, String externalId) {
+    public ActivityDTO addActivity(Long userId, String type, Integer durationMinutes, Double caloriesBurned, LocalDateTime startTime, Double distanceKm, Integer steps, String source, String externalId) {
         Activity a = new Activity();
         User u = new User();
         u.setId(userId);
@@ -45,12 +50,12 @@ public class ActivityService implements ActivityServiceInterface {
         
         // Activity calories KHÔNG trừ vào DailyNutrition (chỉ chứa food intake).
         // Frontend quản lý activityCalories riêng qua store.
-        return saved;
+        return activityMapper.toDto(saved);
     }
 
     @Override
     @Transactional
-    public Activity updateActivity(Long activityId, com.crossapplication.main.dto.ActivityDTO update) {
+    public ActivityDTO updateActivity(Long activityId, com.crossapplication.main.dto.ActivityDTO update) {
         var opt = activityRepository.findById(activityId);
         if (opt.isEmpty()) throw new IllegalArgumentException("Activity not found: " + activityId);
         Activity existing = opt.get();
@@ -71,23 +76,26 @@ public class ActivityService implements ActivityServiceInterface {
         double newCalories = newCaloriesObj == null ? 0.0 : newCaloriesObj.doubleValue();
         double delta = newCalories - oldCalories;
         // Activity calories KHÔNG ảnh hưởng đến DailyNutrition.
-        return saved;
+        return activityMapper.toDto(saved);
     }
 
     @Override
     @Transactional
     public void deleteActivity(Long activityId) {
         var opt = activityRepository.findById(activityId);
-        if (opt.isEmpty()) return;
+        if (opt.isEmpty())
+            return;
         Activity a = opt.get();
         // Activity calories KHÔNG ảnh hưởng đến DailyNutrition.
         activityRepository.deleteById(activityId);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Activity> getActivitiesBetween(Long userId, LocalDate start, LocalDate end) {
-        return activityRepository.findByUserIdAndLogDateBetween(userId, start, end);
+    public List<ActivityDTO> getActivitiesBetween(Long userId, LocalDate start, LocalDate end) {
+        return activityRepository.findByUserIdAndLogDateBetween(userId, start, end)
+                .stream()
+                .map(activityMapper::toDto)
+                .toList();
     }
 
     @Override

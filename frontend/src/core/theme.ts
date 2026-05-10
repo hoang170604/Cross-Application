@@ -13,6 +13,7 @@ export type ThemeColors = {
   iconColor: string;
   headerBg: string;
   shadow: string;
+  isDark: boolean;
 };
 
 export const lightColors: ThemeColors = {
@@ -30,6 +31,7 @@ export const lightColors: ThemeColors = {
   iconColor: '#94A3B8',
   headerBg: '#FFFFFF',
   shadow: '#000000',
+  isDark: false,
 };
 
 export const darkColors: ThemeColors = {
@@ -46,5 +48,6 @@ export const darkColors: ThemeColors = {
   iconBg: '#475569',
   iconColor: '#CBD5E1',
   headerBg: '#0F172A',
-  shadow: '#000000', // Đổ bóng trong Dark Mode thường giữ màu đen để có chiều sâu
+  shadow: '#000000',
+  isDark: true,
 };

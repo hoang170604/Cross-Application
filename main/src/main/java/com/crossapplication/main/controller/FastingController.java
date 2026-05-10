@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.crossapplication.main.dto.ApiResponse;
+import com.crossapplication.main.dto.FastingSessionDTO;
 import com.crossapplication.main.dto.FastingStateDTO;
-import com.crossapplication.main.entity.FastingSession;
 import com.crossapplication.main.service.interfaces.FastingSessionService;
 import com.crossapplication.main.service.interfaces.FastingStateService;
 
@@ -71,7 +71,7 @@ public class FastingController {
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> openSession(@PathVariable Long userId) {
         try {
-            Optional<FastingSession> opt = fastingSessionService.listByUser(userId).stream()
+            Optional<FastingSessionDTO> opt = fastingSessionService.listByUser(userId).stream()
                     .filter(s -> Boolean.FALSE.equals(s.getIsCompleted()))
                     .findFirst();
             if (opt.isPresent()) {
