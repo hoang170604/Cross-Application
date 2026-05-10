@@ -11,17 +11,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.crossapplication.main.dto.ActivityDTO;
 import com.crossapplication.main.dto.FastingSessionDTO;
+import com.crossapplication.main.dto.MealDTO;
+import com.crossapplication.main.dto.MealLogDTO;
+import com.crossapplication.main.dto.WaterLogDTO;
 import com.crossapplication.main.dto.WorkoutChallengeDTO;
-import com.crossapplication.main.entity.Activity;
 import com.crossapplication.main.entity.DailyNutrition;
-import com.crossapplication.main.entity.FastingSession;
 import com.crossapplication.main.entity.FastingState;
-import com.crossapplication.main.entity.Meal;
-import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.entity.User;
-import com.crossapplication.main.entity.WaterLog;
-import com.crossapplication.main.entity.WorkoutChallenge;
 import com.crossapplication.main.repository.interfaces.ActivityRepository;
 import com.crossapplication.main.repository.interfaces.DailyNutritionRepository;
 import com.crossapplication.main.repository.interfaces.FastingSessionRepository;
@@ -114,7 +112,7 @@ public class AllServicesIntegrationTest {
     @Test
     public void testActivityService_AddAndDelete() {
         LocalDateTime now = LocalDateTime.now();
-        Activity activity = activityService.addActivity(
+        ActivityDTO activity = activityService.addActivity(
                 testUser.getId(), "running", 30, 300.0, now, 5.0, 0, "app", null);
         
         assertThat(activity).isNotNull();
@@ -138,11 +136,11 @@ public class AllServicesIntegrationTest {
     @Test
     public void testWaterService_LogWater() {
         LocalDateTime now = LocalDateTime.now();
-        WaterLog log = waterService.logWater(testUser.getId(), now, 250.0, "app", null);
+        WaterLogDTO log = waterService.logWater(testUser.getId(), now, 250.0, "app", null);
 
         assertThat(log).isNotNull();
         assertThat(log.getAmountMl()).isEqualTo(250.0);
-        assertThat(log.getUser().getId()).isEqualTo(testUser.getId());
+        assertThat(log.getUserId()).isEqualTo(testUser.getId());
     }
 
     @Test
@@ -169,21 +167,20 @@ public class AllServicesIntegrationTest {
         food = foodRepo.saveFood(food);
 
         // Create meal log
-        MealLog log = new MealLog();
-        log.setFood(food);
-        log.setQuantity(100);
-        log.setCalories(130);
+        MealLogDTO log = new MealLogDTO();
+        log.setFoodId(food.getId());
+        log.setQuantity(100.0);
+        log.setCalories(130.0);
         log.setProtein(2.7);
-        log.setCarb(28);
+        log.setCarb(28.0);
         log.setFat(0.3);
 
         // Add to breakfast
-        MealLog saved = diaryService.addFoodToMeal(testUser.getId(), today, "breakfast", log);
+        MealLogDTO saved = diaryService.addFoodToMeal(testUser.getId(), today, "breakfast", log);
 
         assertThat(saved).isNotNull();
-        assertThat(saved.getFood().getName()).isEqualTo("Rice");
-        assertThat(saved.getMeal()).isNotNull();
-        assertThat(saved.getMeal().getMealType()).isEqualTo("breakfast");
+        assertThat(saved.getFoodName()).isEqualTo("Rice");
+        assertThat(saved.getMealType()).isEqualTo("breakfast");
     }
 
     @Test
@@ -198,17 +195,17 @@ public class AllServicesIntegrationTest {
         food.setFatPer100g(3.6f);
         food = foodRepo.saveFood(food);
 
-        MealLog log = new MealLog();
-        log.setFood(food);
-        log.setQuantity(150);
+        MealLogDTO log = new MealLogDTO();
+        log.setFoodId(food.getId());
+        log.setQuantity(150.0);
         log.setCalories(247.5);
         log.setProtein(46.5);
-        log.setCarb(0);
+        log.setCarb(0.0);
         log.setFat(5.4);
 
         diaryService.addFoodToMeal(testUser.getId(), today, "lunch", log);
         
-        List<Meal> meals = diaryService.getDailyDiary(testUser.getId(), today);
+        List<MealDTO> meals = diaryService.getDailyDiary(testUser.getId(), today);
         assertThat(meals).isNotEmpty();
         assertThat(meals).anyMatch(m -> m.getMealType().equals("lunch"));
     }
@@ -221,10 +218,10 @@ public class AllServicesIntegrationTest {
         dto.setDurationMinutes(480);
         dto.setIsCompleted(false);
 
-        FastingSession session = fastingSessionService.create(dto);
+        FastingSessionDTO session = fastingSessionService.create(dto);
 
         assertThat(session).isNotNull();
-        assertThat(session.getUser().getId()).isEqualTo(testUser.getId());
+        assertThat(session.getUserId()).isEqualTo(testUser.getId());
         assertThat(session.getDurationMinutes()).isEqualTo(480);
         assertThat(session.getIsCompleted()).isFalse();
     }
@@ -285,7 +282,7 @@ public class AllServicesIntegrationTest {
         dto.setStartDate(LocalDate.now());
         dto.setEndDate(LocalDate.now().plusDays(30));
 
-        WorkoutChallenge challenge = workoutChallengeService.create(dto);
+        WorkoutChallengeDTO challenge = workoutChallengeService.create(dto);
 
         assertThat(challenge).isNotNull();
         assertThat(challenge.getChallengeName()).isEqualTo("Run 100km");
@@ -304,12 +301,12 @@ public class AllServicesIntegrationTest {
         dto.setIsActive(true);
         dto.setStartDate(LocalDate.now());
 
-        WorkoutChallenge challenge = workoutChallengeService.create(dto);
+        WorkoutChallengeDTO challenge = workoutChallengeService.create(dto);
 
         WorkoutChallengeDTO updateDto = new WorkoutChallengeDTO();
         updateDto.setCurrentValue(100.0);
 
-        WorkoutChallenge updated = workoutChallengeService.update(challenge.getId(), updateDto);
+        WorkoutChallengeDTO updated = workoutChallengeService.update(challenge.getId(), updateDto);
 
         assertThat(updated.getCurrentValue()).isEqualTo(100.0);
         assertThat(updated.getIsActive()).isFalse(); // Should be marked inactive when target reached
@@ -331,12 +328,12 @@ public class AllServicesIntegrationTest {
         food.setFatPer100g(0.2f);
         food = foodRepo.saveFood(food);
 
-        MealLog log = new MealLog();
-        log.setFood(food);
-        log.setQuantity(200);
-        log.setCalories(104);
+        MealLogDTO log = new MealLogDTO();
+        log.setFoodId(food.getId());
+        log.setQuantity(200.0);
+        log.setCalories(104.0);
         log.setProtein(0.6);
-        log.setCarb(28);
+        log.setCarb(28.0);
         log.setFat(0.4);
 
         diaryService.addFoodToMeal(testUser.getId(), today, "breakfast", log);
@@ -376,7 +373,7 @@ public class AllServicesIntegrationTest {
         challengeDto.setCurrentValue(0.0);
         challengeDto.setUnit("km");
         challengeDto.setIsActive(true);
-        WorkoutChallenge challenge = workoutChallengeService.create(challengeDto);
+        WorkoutChallengeDTO challenge = workoutChallengeService.create(challengeDto);
         assertThat(challenge.getIsActive()).isTrue();
 
         // 5. User logs activity
@@ -385,7 +382,7 @@ public class AllServicesIntegrationTest {
         // 6. User updates challenge
         WorkoutChallengeDTO updateDto = new WorkoutChallengeDTO();
         updateDto.setCurrentValue(10.0);
-        WorkoutChallenge completedChallenge = workoutChallengeService.update(challenge.getId(), updateDto);
+        WorkoutChallengeDTO completedChallenge = workoutChallengeService.update(challenge.getId(), updateDto);
         assertThat(completedChallenge.getIsActive()).isFalse(); // Challenge completed
 
         // 7. User stops fasting
