@@ -133,12 +133,26 @@ export const useFasting = (): UseFastingReturn => {
     ? new Date(startTimestamp + goalHours * 3600 * 1000).toISOString()
     : null;
 
-  // ── Step 1: Resume from AsyncStorage on mount ───────────────────────────────
+  // ─── Dynamic Storage Keys (User-specific) ───────────────────────────────────
+  const getKeys = useCallback(() => ({
+    START_TIME: `@fasting/${userId}/startTime`,
+    TARGET_HOURS: `@fasting/${userId}/targetHours`,
+  }), [userId]);
+
+  // ── Step 1: Resume from AsyncStorage on mount or when userId changes ────────
   const resumeFromStorage = useCallback(async () => {
+    if (!userId) {
+      setStartTimestamp(null);
+      setElapsedSeconds(0);
+      setIsInitializing(false);
+      return;
+    }
+
     try {
+      const keys = getKeys();
       const [storedStart, storedHours] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.START_TIME),
-        AsyncStorage.getItem(STORAGE_KEYS.TARGET_HOURS),
+        AsyncStorage.getItem(keys.START_TIME),
+        AsyncStorage.getItem(keys.TARGET_HOURS),
       ]);
       if (storedStart) {
         const ts = parseInt(storedStart, 10);
@@ -147,13 +161,18 @@ export const useFasting = (): UseFastingReturn => {
         setStartTimestamp(ts);
         setGoalHours(hours);
         setElapsedSeconds(Math.max(0, elapsed));
+      } else {
+        // Reset state if no data for this specific user
+        setStartTimestamp(null);
+        setElapsedSeconds(0);
+        setGoalHours(DEFAULT_GOAL_HOURS);
       }
     } catch (e) {
       console.warn('[Fasting] Failed to read AsyncStorage:', e);
     } finally {
       setIsInitializing(false);
     }
-  }, []);
+  }, [userId, getKeys]);
 
   useEffect(() => {
     resumeFromStorage();
@@ -161,7 +180,10 @@ export const useFasting = (): UseFastingReturn => {
 
   // ── Step 2: Fetch fasting history from backend ──────────────────────────────
   const fetchHistory = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setHistory([]);
+      return;
+    }
     setIsHistoryLoading(true);
     setHistoryError(null);
     try {
@@ -172,6 +194,8 @@ export const useFasting = (): UseFastingReturn => {
     } catch (err: any) {
       if (err?.response?.status !== 404) {
         setHistoryError('Không thể tải lịch sử. Vui lòng thử lại.');
+      } else {
+        setHistory([]);
       }
     } finally {
       setIsHistoryLoading(false);
@@ -205,11 +229,13 @@ export const useFasting = (): UseFastingReturn => {
 
   // ── Start Fast — AsyncStorage only, no API call ─────────────────────────────
   const handleStartFast = useCallback(async () => {
+    if (!userId) return;
     const now = Date.now();
     try {
+      const keys = getKeys();
       await Promise.all([
-        AsyncStorage.setItem(STORAGE_KEYS.START_TIME, String(now)),
-        AsyncStorage.setItem(STORAGE_KEYS.TARGET_HOURS, String(goalHours)),
+        AsyncStorage.setItem(keys.START_TIME, String(now)),
+        AsyncStorage.setItem(keys.TARGET_HOURS, String(goalHours)),
       ]);
       setStartTimestamp(now);
       setElapsedSeconds(0);
@@ -217,7 +243,7 @@ export const useFasting = (): UseFastingReturn => {
       console.error('[Fasting] Failed to save to AsyncStorage:', e);
       Alert.alert('Lỗi', 'Không thể lưu dữ liệu nhịn ăn. Vui lòng thử lại.');
     }
-  }, [goalHours]);
+  }, [goalHours, userId, getKeys]);
 
   // ── End Fast — one API call; state ALWAYS resets regardless of result ────────
   const handleEndFast = useCallback(async () => {
@@ -259,9 +285,10 @@ export const useFasting = (): UseFastingReturn => {
     } finally {
       // ALWAYS clear storage and reset UI — user must never be stuck
       try {
+        const keys = getKeys();
         await Promise.all([
-          AsyncStorage.removeItem(STORAGE_KEYS.START_TIME),
-          AsyncStorage.removeItem(STORAGE_KEYS.TARGET_HOURS),
+          AsyncStorage.removeItem(keys.START_TIME),
+          AsyncStorage.removeItem(keys.TARGET_HOURS),
         ]);
       } catch (storageErr) {
         console.warn('[Fasting] Failed to clear AsyncStorage:', storageErr);
@@ -285,7 +312,7 @@ export const useFasting = (): UseFastingReturn => {
         );
       }
     }
-  }, [startTimestamp, userId, goalHours, fetchHistory]);
+  }, [startTimestamp, userId, goalHours, fetchHistory, getKeys]);
 
   return {
     startTimestamp,
