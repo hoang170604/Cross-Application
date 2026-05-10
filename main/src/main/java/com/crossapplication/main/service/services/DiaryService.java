@@ -62,13 +62,10 @@ public class DiaryService implements com.crossapplication.main.service.interface
         }
         MealLog mealLog = mealLogMapper.toEntity(mealLogDTO);
 
-        // Validate Food reference: nếu foodId không tồn tại trong DB thì set null
-        // để tránh FK constraint violation. MealLog vẫn lưu đủ calories/protein/carb/fat inline.
-        if (mealLog.getFood() != null && mealLog.getFood().getId() != null) {
-            var foodOpt = foodRepo.findById(mealLog.getFood().getId());
-            if (foodOpt.isEmpty()) {
-                mealLog.setFood(null);
-            } else {
+        // Validate Food reference: dùng foodId từ DTO
+        if (mealLogDTO.getFoodId() != null) {
+            var foodOpt = foodRepo.findById(mealLogDTO.getFoodId());
+            if (foodOpt.isPresent()) {
                 mealLog.setFood(foodOpt.get());
             }
         }

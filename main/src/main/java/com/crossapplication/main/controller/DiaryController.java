@@ -48,7 +48,6 @@ public class DiaryController {
         }
     }
 
-    // GET /api/diaries/users/{userId}/meal-logs?startDate=2024-01-01&endDate=2024-01-31
     @GetMapping("/users/{userId}/meal-logs")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getMealLogs(
@@ -72,7 +71,6 @@ public class DiaryController {
         }
     }
 
-    // GET /api/diaries/users/{userId}/meals?startDate=&endDate= — meal slots (breakfast/lunch/…) per day without duplicating log lines
     @GetMapping("/users/{userId}/meals")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
     public ResponseEntity<ApiResponse<?>> getMealsInRange(
@@ -107,6 +105,7 @@ public class DiaryController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "FOOD_ADD_FAILED"));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Lỗi server khi thêm món ăn: " + e.getMessage(), "FOOD_ADD_ERROR"));
         }

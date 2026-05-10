@@ -13,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.crossapplication.main.dto.ActivityDTO;
 import com.crossapplication.main.dto.FastingSessionDTO;
+import com.crossapplication.main.dto.FastingStateDTO;
 import com.crossapplication.main.dto.MealDTO;
 import com.crossapplication.main.dto.MealLogDTO;
 import com.crossapplication.main.dto.WaterLogDTO;
 import com.crossapplication.main.dto.WorkoutChallengeDTO;
 import com.crossapplication.main.entity.DailyNutrition;
-import com.crossapplication.main.entity.FastingState;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.repository.interfaces.ActivityRepository;
 import com.crossapplication.main.repository.interfaces.DailyNutritionRepository;
@@ -234,7 +234,7 @@ public class AllServicesIntegrationTest {
 
         var opt = fastingStateService.getByUserId(testUser.getId());
         assertThat(opt).isPresent();
-        FastingState state = opt.get();
+        FastingStateDTO state = opt.get();
         assertThat(state.getIsFasting()).isTrue();
         assertThat(state.getFastingGoalHours()).isEqualTo(16);
 

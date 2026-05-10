@@ -11,10 +11,17 @@ public class MealLogDTO implements Serializable {
     private Double carb;
     private Double fat;
 
+    private String foodName;
+    private String mealType;
+
     public Long getFoodId() { return foodId; }
     public void setFoodId(Long foodId) { this.foodId = foodId; }
     public Long getMealId() { return mealId; }
     public void setMealId(Long mealId) { this.mealId = mealId; }
+    public String getFoodName() { return foodName; }
+    public void setFoodName(String foodName) { this.foodName = foodName; }
+    public String getMealType() { return mealType; }
+    public void setMealType(String mealType) { this.mealType = mealType; }
     public Double getQuantity() { return quantity; }
     public void setQuantity(Double quantity) { this.quantity = quantity; }
     public Double getCalories() { return calories; }
