@@ -88,7 +88,7 @@ const MealCardComponent: React.FC<MealCardProps> = ({
                 <TouchableOpacity 
                   style={styles.detailsContainer} 
                   activeOpacity={0.7}
-                  onPress={() => router.push({ pathname: '/SearchScan', params: { mealType: meal.id } })}
+                  onPress={() => router.push({ pathname: '/MealDetail', params: { mealType: meal.id } })}
                 >
                   <View style={styles.titleRow}>
                     <Text style={styles.mealName}>{meal.name}</Text>

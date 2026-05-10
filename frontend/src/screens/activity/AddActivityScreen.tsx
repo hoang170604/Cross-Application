@@ -33,6 +33,7 @@ const AddActivityScreen = () => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [minutes, setMinutes] = useState(DEFAULT_MINUTES);
   const [inputText, setInputText] = useState(String(DEFAULT_MINUTES));
+  const [isFocused, setIsFocused] = useState(false);
 
   const { addLoggedActivity } = useAppStore();
 
@@ -67,6 +68,7 @@ const AddActivityScreen = () => {
   };
 
   const handleBlur = () => {
+    setIsFocused(false);
     let parsed = parseInt(inputText, 10);
     if (isNaN(parsed) || parsed < MIN_MINUTES) {
       parsed = MIN_MINUTES;
@@ -77,12 +79,15 @@ const AddActivityScreen = () => {
     setInputText(String(parsed));
   };
 
+  const currentInputVal = parseInt(inputText, 10) || 0;
+  const isValid = currentInputVal > 0;
+
   const handleConfirm = () => {
-    if (!selectedActivity) return;
-    const caloriesBurned = Math.round(selectedActivity.caloriesPerMin * minutes);
+    if (!selectedActivity || !isValid) return;
+    const caloriesBurned = Math.round(selectedActivity.caloriesPerMin * currentInputVal);
     addLoggedActivity({
       id: selectedActivity.id,
-      minutes,
+      minutes: currentInputVal,
       caloriesBurned,
     });
     router.back();
@@ -158,12 +163,17 @@ const AddActivityScreen = () => {
 
               <View style={styles.inputWrapper}>
                 <TextInput
-                  style={styles.minutesInput}
+                  style={[
+                    styles.minutesInput,
+                    isFocused && { borderColor: '#00E5FF', borderWidth: 2, backgroundColor: colors.isDark ? '#00E5FF10' : '#E0FFFF' }
+                  ]}
                   value={inputText}
                   onChangeText={handleInputChange}
+                  onFocus={() => setIsFocused(true)}
                   onBlur={handleBlur}
                   keyboardType="number-pad"
                   maxLength={3}
+                  returnKeyType="done"
                 />
                 <Text style={styles.unitText}>phút</Text>
               </View>
@@ -181,13 +191,18 @@ const AddActivityScreen = () => {
               <MaterialCommunityIcons name="fire" size={20} color={colors.danger} />
               <Text style={styles.summaryText}>
                 Ước tính tiêu thụ: <Text style={styles.caloriesText}>
-                  {Math.round((selectedActivity?.caloriesPerMin || 0) * minutes)} kcal
+                  {Math.round((selectedActivity?.caloriesPerMin || 0) * currentInputVal)} kcal
                 </Text>
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} activeOpacity={0.8}>
-              <Text style={styles.confirmBtnText}>Hoàn tất</Text>
+            <TouchableOpacity 
+              style={[styles.confirmBtn, !isValid && styles.confirmBtnDisabled]} 
+              onPress={() => { handleBlur(); handleConfirm(); }} 
+              activeOpacity={0.8}
+              disabled={!isValid}
+            >
+              <Text style={styles.confirmText}>Hoàn tất</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -284,7 +299,9 @@ const getStyles = (colors: ThemeColors) =>
     stepper: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       marginBottom: 40,
+      width: '100%',
     },
     stepBtn: {
       width: 60,
@@ -308,6 +325,12 @@ const getStyles = (colors: ThemeColors) =>
       fontWeight: '800',
       color: colors.text,
       textAlign: 'center',
+      minWidth: 120,
+      minHeight: 80,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: 'transparent',
     },
     unitText: {
       fontSize: 16,
@@ -345,7 +368,10 @@ const getStyles = (colors: ThemeColors) =>
       shadowRadius: 10,
       elevation: 5,
     },
-    confirmBtnText: {
+    confirmBtnDisabled: {
+      opacity: 0.4,
+    },
+    confirmText: {
       color: '#FFFFFF',
       fontSize: 18,
       fontWeight: '700',
