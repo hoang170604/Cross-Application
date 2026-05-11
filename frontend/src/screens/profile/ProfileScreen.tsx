@@ -11,6 +11,7 @@ import { resetAllStorage } from '@/scripts/resetStorage';
 // ─── Import UI Components & Core ────────────────────────────────────────────
 import { GoalSelectionModal } from '@/src/ui/GoalSelectionModal';
 import { ThemeSelectionModal } from '@/src/ui/ThemeSelectionModal';
+import { CachedImage } from '@/src/ui/CachedImage';
 import { useState, useMemo } from 'react';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
@@ -124,9 +125,17 @@ export default function ProfileScreen() {
 
         {/* Thẻ định danh người dùng */}
         <View style={styles.userCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
-          </View>
+          {userProfile.photoUri ? (
+            <CachedImage
+              source={userProfile.photoUri}
+              style={styles.avatar}
+              accessibilityLabel={`Ảnh đại diện của ${name}`}
+            />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={styles.userName}>{name}</Text>
             <Text style={styles.userEmail}>{userProfile.email || 'user@nutritrack.com'}</Text>
