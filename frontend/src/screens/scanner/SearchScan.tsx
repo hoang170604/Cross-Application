@@ -438,6 +438,19 @@ export default function SearchScanScreen() {
                 }}
               />
             </View>
+            {/* Nút quét mã vạch — mở màn BarcodeScannerScreen (expo-camera) */}
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/BarcodeScan' as any, params: { mealType } })}
+              accessibilityLabel="Quét mã vạch"
+              style={{
+                width: 48, height: 48, borderRadius: 24,
+                backgroundColor: GREEN,
+                alignItems: 'center', justifyContent: 'center',
+                shadowColor: colors.shadow, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2,
+              }}
+            >
+              <Ionicons name="barcode-outline" size={22} color="#fff" />
+            </TouchableOpacity>
           </View>
 
           {/* Filter chips */}

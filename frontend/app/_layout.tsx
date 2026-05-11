@@ -5,6 +5,7 @@ import 'react-native-reanimated';
 import { useAppStore } from '@/src/store/useAppStore';
 import { View, ActivityIndicator, Platform } from 'react-native';
 import { initDatabase } from '@/src/db/database';
+import { setupNotificationHandler } from '@/src/utils/notifications';
 
 // Đảm bảo Platform luôn sẵn sàng
 if (typeof Platform === 'undefined') {
@@ -38,6 +39,8 @@ function InitialLayout() {
         } catch (err: any) {
           console.warn('[SQLite] Init failed:', err.message);
         }
+        // Cấu hình notification handler 1 lần khi khởi động (idempotent).
+        setupNotificationHandler();
       }
       // Khôi phục access token từ SecureStore (tách rời Zustand persist).
       try {
@@ -133,6 +136,7 @@ function InitialLayout() {
       <Stack.Screen name="SyncLoadingScreen" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="SearchScan" />
+      <Stack.Screen name="BarcodeScan" />
       <Stack.Screen name="FoodDetail" />
       <Stack.Screen name="AddActivity" />
     </Stack>
