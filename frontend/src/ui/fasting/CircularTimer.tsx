@@ -5,7 +5,7 @@ import { ThemeColors } from '@/src/core/theme';
 import { useTheme } from '@/src/hooks/useTheme';
 import { FASTING_PHASES } from '@/src/core/fastingConstants';
 import { formatDuration } from '@/src/hooks/useFasting';
-import { PhaseMarkers } from '@/src/ui/PhaseMarkers';
+import { PhaseMarkers } from './PhaseMarkers';
 
 const { width } = Dimensions.get('window');
 const RING_SIZE = Math.min(240, width - 96);

@@ -7,8 +7,8 @@ import { ThemeColors } from '@/src/core/theme';
 import { useTheme } from '@/src/hooks/useTheme';
 import { useFasting, formatDateDisplay } from '@/src/hooks/useFasting';
 import { FASTING_PHASES } from '@/src/core/fastingConstants';
-import { CircularTimer } from '@/src/ui/CircularTimer';
-import { PlanSelector } from '@/src/ui/PlanSelector';
+import { CircularTimer } from '@/src/ui/fasting/CircularTimer';
+import { PlanSelector } from '@/src/ui/fasting/PlanSelector';
 
 const FastingScreen = () => {
   const colors = useTheme();

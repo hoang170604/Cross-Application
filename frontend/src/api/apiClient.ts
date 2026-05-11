@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { getToken } from '../utils/tokenStorage';
 
 const apiClient = axios.create({
-  baseURL: 'http://192.168.1.51:8081',
+  baseURL: 'http://192.168.2.107:8081',
   timeout: 10000,
 });
 

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet, Keyboa
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { SharedHeader } from '@/src/ui/SharedHeader';
+import { SharedHeader } from '@/src/ui/shared/SharedHeader';
 import { useAppStore } from '@/src/store/useAppStore';
 
 const FASTING_GOALS = [

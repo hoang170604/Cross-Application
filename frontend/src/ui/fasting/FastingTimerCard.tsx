@@ -8,10 +8,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { AppButton } from './core/AppButton';
+import { AppButton } from '../core/AppButton';
 
 // Nhập các thành phần từ core
-import { FASTING_PHASES } from '../core/fastingConstants';
+import { FASTING_PHASES } from '@/src/core/fastingConstants';
 import { Circle as SvgCircle, G } from 'react-native-svg';
 
 // --- Sub-component: Phase Markers ---

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SharedHeader } from '@/src/ui/SharedHeader';
+import { SharedHeader } from '@/src/ui/shared/SharedHeader';
 import { useAppStore } from '@/src/store/useAppStore';
 import { loginUser } from '@/src/api/authService';
 

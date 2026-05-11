@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useNutrition } from '@/src/hooks';
-import { SharedHeader } from '@/src/ui/SharedHeader';
+import { SharedHeader } from '@/src/ui/shared/SharedHeader';
 import { useTheme } from '@/src/hooks/useTheme';
 import { FoodItem, DailyMeals } from '@/src/types';
 

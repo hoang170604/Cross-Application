@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import apiClient from '@/src/api/apiClient';
 
 // ─── Import Atomic Molecules & Hooks ──────────────────────────────────────────
-import { SharedHeader } from '@/src/ui/SharedHeader';
+import { SharedHeader } from '@/src/ui/shared/SharedHeader';
 import { useAppStore } from '@/src/store/useAppStore';
 import { VIETNAMESE_FOOD_DB } from '@/constants/foodDatabase';
 

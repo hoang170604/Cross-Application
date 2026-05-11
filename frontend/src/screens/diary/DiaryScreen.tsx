@@ -23,11 +23,11 @@ import { useTheme } from '@/src/hooks/useTheme';
 // ─── Import Atomic Components ────────────────────────────────────────────────
 import { ProgressBar } from '@/src/ui/core/ProgressBar';
 import { AppButton } from '@/src/ui/core/AppButton';
-import { CalorieCircle } from '@/src/ui/CalorieCircle';
-import { MealCard } from '@/src/ui/MealCard';
-import { MacroRings } from '@/src/ui/MacroRings';
-import { ActivitySection } from '@/src/ui/ActivitySection';
-import { TrackingSection } from '@/src/ui/TrackingSection';
+import { CalorieCircle } from '@/src/ui/diary/CalorieCircle';
+import { MealCard } from '@/src/ui/diary/MealCard';
+import { MacroRings } from '@/src/ui/diary/MacroRings';
+import { ActivitySection } from '@/src/ui/activity/ActivitySection';
+import { TrackingSection } from '@/src/ui/tracking/TrackingSection';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

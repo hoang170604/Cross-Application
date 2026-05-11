@@ -8,9 +8,9 @@ import { useNutrition } from '@/src/hooks';
 import apiClient from '@/src/api/apiClient';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
-import { PhysiologyStatsCard } from '@/src/ui/PhysiologyStatsCard';
-import { NutritionSummaryCard } from '@/src/ui/NutritionSummaryCard';
-import WeightHistoryChart from '@/src/ui/WeightHistoryChart';
+import { PhysiologyStatsCard } from '@/src/ui/fasting/PhysiologyStatsCard';
+import { NutritionSummaryCard } from '@/src/ui/diary/NutritionSummaryCard';
+import WeightHistoryChart from '@/src/ui/tracking/WeightHistoryChart';
 
 const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 

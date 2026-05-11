@@ -16,7 +16,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
 import { useAppStore } from '@/src/store/useAppStore';
-import { ACTIVITIES, Activity } from '@/src/ui/AddActivityModal';
+import { ACTIVITIES, Activity } from '@/src/ui/activity/AddActivityModal';
 
 // --- Constants ---
 const DEFAULT_MINUTES = 30;

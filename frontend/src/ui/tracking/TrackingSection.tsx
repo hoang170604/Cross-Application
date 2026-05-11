@@ -7,7 +7,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { InputModal } from './InputModal';
+import { InputModal } from '@/src/ui/shared/InputModal';
 import { useTracking } from '@/src/hooks';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';

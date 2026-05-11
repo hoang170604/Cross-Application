@@ -10,9 +10,9 @@ import { resetAllStorage } from '@/scripts/resetStorage';
 import { pickAvatar } from '@/src/utils/imagePicker';
 
 // ─── Import UI Components & Core ────────────────────────────────────────────
-import { GoalSelectionModal } from '@/src/ui/GoalSelectionModal';
-import { ThemeSelectionModal } from '@/src/ui/ThemeSelectionModal';
-import { CachedImage } from '@/src/ui/CachedImage';
+import { GoalSelectionModal } from '@/src/ui/shared/GoalSelectionModal';
+import { ThemeSelectionModal } from '@/src/ui/shared/ThemeSelectionModal';
+import { CachedImage } from '@/src/ui/shared/CachedImage';
 import { useState, useMemo } from 'react';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';

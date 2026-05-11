@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Alert, Switch } from 'react-n
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SharedHeader } from '@/src/ui/SharedHeader';
+import { SharedHeader } from '@/src/ui/shared/SharedHeader';
 
 // ─── Import Atomic Hooks ─────────────────────────────────────────────────────
 import { useAppStore } from '@/src/store/useAppStore';
