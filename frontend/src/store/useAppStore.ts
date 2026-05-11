@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, DEFAULT_PROFILE, FoodItem, DailyMeals, WorkoutChallenge, DailyNutrition, ActivityTypeInfo } from '../types';
 import { getLocalToday } from '../core/dateFormatter';
 import { calculateNutritionalGoals } from '../core/calculateNutrition';
-import { saveToken, clearTokens } from '../utils/tokenStorage';
+import { saveToken, clearTokens, getToken, getRefreshToken } from '../utils/tokenStorage';
 
 // ─── API Service Imports (Layer-based) ────────────────────────────────────
 import * as diaryApi from '../api/diaryService';
@@ -15,6 +15,8 @@ import * as activityDb from '../db/activityDb';
 import * as mealDb from '../db/mealDb';
 import * as trackingDb from '../db/trackingDb';
 import * as syncDb from '../db/syncDb';
+import * as profileDb from '../db/profileDb';
+import { Platform } from 'react-native';
 
 // Cấu trúc hợp đồng dữ liệu cho Store
 interface AppState {
@@ -67,7 +69,13 @@ interface AppState {
 
 
   // Các actions gọi API (Async)
-  login: (token: string, userId: number) => Promise<void>;
+  /** Khôi phục token từ SecureStore lúc khởi động app. Trả về true nếu có token hợp lệ. */
+  bootstrapAuth: () => Promise<boolean>;
+  login: (
+    token: string,
+    userId: number,
+    options?: { refreshToken?: string | null; expiresIn?: number | null },
+  ) => Promise<void>;
   logout: () => Promise<void>;
   addFood: (mealType: keyof DailyMeals, food: FoodItem) => Promise<void>;
   removeFoods: (mealType: keyof DailyMeals, foodIds: number[]) => Promise<void>;
@@ -163,13 +171,25 @@ export const useAppStore = create<AppState>()(
       setError: (error) => set({ error: error }),
       setPendingSync: (val) => set({ pendingOnboardingSync: val }),
 
-      /** Cập nhật hồ sơ và tự động tính toán lại mục tiêu nếu cần */
+      /**
+       * Cập nhật hồ sơ trong memory + persist xuống SQLite (trên native).
+       * Trên web, SQLite là no-op → fallback dựa vào Zustand persist (AsyncStorage).
+       * Trigger tính lại target nutrition nếu các field "core" thay đổi.
+       */
       updateUserProfile: (data) => {
         set((state) => ({ userProfile: { ...state.userProfile, ...data } }));
         const keys = Object.keys(data);
         const criticalKeys = ['weight', 'height', 'age', 'gender', 'goal', 'activityLevel', 'currentWeight'];
         if (keys.some(k => criticalKeys.includes(k))) {
           get().recalculateGoals();
+        }
+        // Đẩy xuống SQLite (best-effort) — schema nhiều cột, hợp cho SQLite hơn
+        // là dump cả object JSON khổng lồ vào AsyncStorage.
+        const { userId, userProfile } = get();
+        if (userId && Platform.OS !== 'web') {
+          profileDb.upsertUserProfile(userId, userProfile).catch((e: any) => {
+            console.warn('[Profile] SQLite upsert failed:', e?.message);
+          });
         }
       },
 
@@ -380,7 +400,33 @@ export const useAppStore = create<AppState>()(
       // ──────────────────────────────────────────────────────────────────────
       // ─── PHẦN 4: XÁC THỰC & TÀI KHOẢN (AUTH ACTIONS) ───
       // ──────────────────────────────────────────────────────────────────────
-      login: async (token, userId) => {
+      bootstrapAuth: async () => {
+        try {
+          const stored = await getToken();
+          if (!stored) return false;
+          set({ token: stored });
+
+          // Sau khi có token, nếu native thì load lại userProfile từ SQLite
+          // (source of truth) để không phụ thuộc giá trị cache trong AsyncStorage.
+          const { userId } = get();
+          if (userId && Platform.OS !== 'web') {
+            try {
+              const dbProfile = await profileDb.getUserProfile(userId);
+              if (dbProfile) {
+                set({ userProfile: dbProfile });
+              }
+            } catch (e: any) {
+              console.warn('[Profile] SQLite load failed:', e?.message);
+            }
+          }
+          return true;
+        } catch (e: any) {
+          console.warn('[Auth] bootstrapAuth failed:', e?.message);
+          return false;
+        }
+      },
+
+      login: async (token, userId, options) => {
         try {
           set({ isLoading: true, error: null });
 
@@ -399,14 +445,23 @@ export const useAppStore = create<AppState>()(
             pendingOnboardingSync: false,
           });
 
-          // 1. Lưu token mới
-          await saveToken(token);
+          // 1. Lưu token (kèm refresh + expiresIn nếu BE trả về) vào SecureStore
+          await saveToken({
+            token,
+            refreshToken: options?.refreshToken ?? null,
+            expiresIn: options?.expiresIn ?? null,
+          });
 
-          // 2. Xóa dữ liệu cũ trong Storage để đảm bảo không bị trùng lặp dữ liệu từ user trước
+          // 2. Xóa dữ liệu cũ trong Storage để đảm bảo không bị trùng lặp dữ liệu từ user trước.
+          //    Chỉ xóa các key của app (prefix '@nutritrack'), tránh đụng key của lib khác.
           if (Platform.OS === 'web') {
-            await AsyncStorage.clear();
-            // Sau khi clear hết, phải lưu lại token vừa save vì clear() xóa sạch LocalStorage
-            await saveToken(token); 
+            try {
+              const allKeys = await AsyncStorage.getAllKeys();
+              const ourKeys = allKeys.filter((k) => k.startsWith('@nutritrack'));
+              if (ourKeys.length) await AsyncStorage.multiRemove(ourKeys);
+            } catch (e: any) {
+              console.warn('[Web] Failed to clear app keys:', e?.message);
+            }
           } else {
             const { clearAllData } = require('../db/database');
             await clearAllData();
@@ -458,6 +513,15 @@ export const useAppStore = create<AppState>()(
 
           if (!get().userProfile.targetCalories) {
             get().recalculateGoals();
+          }
+
+          // 3. Persist profile vừa fetch xuống SQLite (native) — source of truth
+          if (Platform.OS !== 'web') {
+            try {
+              await profileDb.upsertUserProfile(userId, get().userProfile);
+            } catch (e: any) {
+              console.warn('[Profile] SQLite persist after login failed:', e?.message);
+            }
           }
         } catch (error: any) {
           set({ error: error.message || 'Lỗi đăng nhập' });
@@ -1031,11 +1095,15 @@ export const useAppStore = create<AppState>()(
     {
       name: '@nutritrack_state',
       storage: createJSONStorage(() => AsyncStorage),
+      // CHÚ Ý: KHÔNG persist `token` ở đây — token được lưu riêng trong
+      // SecureStore qua `src/utils/tokenStorage.ts` để bảo mật hơn.
+      // Trên native: SQLite (`user_profile`) là source of truth cho userProfile,
+      //   AsyncStorage chỉ giữ "cache" để first render không trễ.
+      // Trên web: SQLite no-op → AsyncStorage là nguồn duy nhất.
       partialize: (state) => ({
         userId: state.userId,
-        token: state.token,
         pendingOnboardingSync: state.pendingOnboardingSync,
-        userProfile: state.userProfile,
+        userProfile: state.userProfile, // cache; SQLite override on bootstrap (native)
         activityCalories: state.activityCalories,
         lastActivityDate: state.lastActivityDate,
         theme: state.theme,

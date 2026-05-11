@@ -64,7 +64,11 @@ export default function LoginScreen() {
 
     try {
       const response = await loginUser(email.trim(), password);
-      await login(response.data.token, response.data.userId);
+      const data: any = response.data;
+      await login(data.token, data.userId, {
+        refreshToken: data.refreshToken ?? null,
+        expiresIn: data.expiresIn ?? null,
+      });
       const { userProfile, pendingOnboardingSync } = useAppStore.getState();
       const isProfileComplete = userProfile && userProfile.height > 0 && userProfile.weight > 0 && userProfile.age > 0;
 

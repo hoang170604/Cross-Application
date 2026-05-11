@@ -21,6 +21,8 @@ export type UserProfile = {
    */
   name?: string;
   email?: string;
+  /** Ảnh đại diện — URL hoặc URI local (file://...). Hiển thị qua CachedImage. */
+  photoUri?: string;
   fastingGoal?: string;
   targetCalories?: number;
   targetProtein?: number;

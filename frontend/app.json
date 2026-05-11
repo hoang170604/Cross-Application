@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "App cần camera để quét mã vạch sản phẩm thực phẩm.",
+        "NSPhotoLibraryUsageDescription": "App cần truy cập thư viện ảnh để bạn chọn ảnh đại diện.",
+        "NSLocationWhenInUseUsageDescription": "App dùng vị trí để gợi ý nhà hàng/cửa hàng healthy gần bạn (tùy chọn)."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,7 +25,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.NutriTrackApp"
+      "package": "com.anonymous.NutriTrackApp",
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -43,7 +54,26 @@
       "expo-secure-store",
       "expo-sqlite",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "App cần camera để quét mã vạch sản phẩm thực phẩm."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "App cần truy cập thư viện ảnh để bạn chọn ảnh đại diện."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "App dùng vị trí để gợi ý cửa hàng healthy gần bạn (tùy chọn)."
+        }
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

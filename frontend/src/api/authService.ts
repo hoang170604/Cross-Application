@@ -9,9 +9,12 @@ import type { NutritionGoal } from '../types/progress.types';
 
 export interface AuthResponse {
   token: string;
+  /** Refresh token (optional — BE có thể chưa hỗ trợ). */
+  refreshToken?: string | null;
   userId: number;
   email: string;
   role: string;
+  /** Thời gian sống của access token (giây). */
   expiresIn: number;
 }
 

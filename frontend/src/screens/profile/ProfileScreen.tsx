@@ -7,10 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // ─── Import Atomic Hooks ─────────────────────────────────────────────────────
 import { useAppStore } from '@/src/store/useAppStore';
 import { resetAllStorage } from '@/scripts/resetStorage';
+import { pickAvatar } from '@/src/utils/imagePicker';
 
 // ─── Import UI Components & Core ────────────────────────────────────────────
 import { GoalSelectionModal } from '@/src/ui/GoalSelectionModal';
 import { ThemeSelectionModal } from '@/src/ui/ThemeSelectionModal';
+import { CachedImage } from '@/src/ui/CachedImage';
 import { useState, useMemo } from 'react';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
@@ -28,8 +30,16 @@ export default function ProfileScreen() {
     userProfile,
     logout,
     theme,
-    setTheme
+    setTheme,
+    updateUserProfile,
   } = useAppStore();
+
+  // ─── Pick & compress avatar (WebP) ──────────────────────────────────────
+  const handlePickAvatar = async () => {
+    const result = await pickAvatar();
+    if (!result?.uri) return;
+    updateUserProfile({ photoUri: result.uri });
+  };
 
   const colors = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
@@ -124,15 +134,29 @@ export default function ProfileScreen() {
 
         {/* Thẻ định danh người dùng */}
         <View style={styles.userCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
-          </View>
+          <TouchableOpacity
+            onPress={handlePickAvatar}
+            accessibilityLabel="Đổi ảnh đại diện"
+            activeOpacity={0.8}
+          >
+            {userProfile.photoUri ? (
+              <CachedImage
+                source={userProfile.photoUri}
+                style={styles.avatar}
+                accessibilityLabel={`Ảnh đại diện của ${name}`}
+              />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.userName}>{name}</Text>
             <Text style={styles.userEmail}>{userProfile.email || 'user@nutritrack.com'}</Text>
           </View>
-          <TouchableOpacity style={styles.editIcon}>
-            <Ionicons name="settings-outline" size={20} color="#64748B" />
+          <TouchableOpacity style={styles.editIcon} onPress={handlePickAvatar} accessibilityLabel="Đổi ảnh đại diện">
+            <Ionicons name="camera-outline" size={20} color="#64748B" />
           </TouchableOpacity>
         </View>
       </View>
