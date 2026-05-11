@@ -28,36 +28,32 @@ function InitialLayout() {
   useEffect(() => {
     // Hydration check
 
-    // onFinishHydration fires when Zustand has loaded state from AsyncStorage
-    const unsub = useAppStore.persist.onFinishHydration(() => {
-      const initApp = async () => {
-        if (Platform.OS !== 'web') {
-          try {
-            await initDatabase();
-          } catch (err: any) {
-            console.warn('[SQLite] Init failed:', err.message);
-          }
+    let started = false;
+    const initApp = async () => {
+      if (started) return; // Tránh chạy 2 lần khi vừa hydrate vừa hasHydrated
+      started = true;
+      if (Platform.OS !== 'web') {
+        try {
+          await initDatabase();
+        } catch (err: any) {
+          console.warn('[SQLite] Init failed:', err.message);
         }
-        useAppStore.getState().checkAndResetForNewDay();
-        useAppStore.getState().processSyncQueue();
-        setIsHydrated(true);
-      };
+      }
+      // Khôi phục access token từ SecureStore (tách rời Zustand persist).
+      try {
+        await useAppStore.getState().bootstrapAuth();
+      } catch (err: any) {
+        console.warn('[Auth] bootstrapAuth failed:', err.message);
+      }
+      useAppStore.getState().checkAndResetForNewDay();
+      useAppStore.getState().processSyncQueue();
+      setIsHydrated(true);
+    };
+
+    const unsub = useAppStore.persist.onFinishHydration(() => {
       initApp();
     });
-    // If already hydrated (e.g. sync storage or hot reload)
     if (useAppStore.persist.hasHydrated()) {
-      const initApp = async () => {
-        if (Platform.OS !== 'web') {
-          try {
-            await initDatabase();
-          } catch (err: any) {
-            console.warn('[SQLite] Init failed:', err.message);
-          }
-        }
-        useAppStore.getState().checkAndResetForNewDay();
-        useAppStore.getState().processSyncQueue();
-        setIsHydrated(true);
-      };
       initApp();
     }
     return unsub;

@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, DEFAULT_PROFILE, FoodItem, DailyMeals, WorkoutChallenge, DailyNutrition, ActivityTypeInfo } from '../types';
 import { getLocalToday } from '../core/dateFormatter';
 import { calculateNutritionalGoals } from '../core/calculateNutrition';
-import { saveToken, clearTokens } from '../utils/tokenStorage';
+import { saveToken, clearTokens, getToken, getRefreshToken } from '../utils/tokenStorage';
 
 // ─── API Service Imports (Layer-based) ────────────────────────────────────
 import * as diaryApi from '../api/diaryService';
@@ -67,7 +67,13 @@ interface AppState {
 
 
   // Các actions gọi API (Async)
-  login: (token: string, userId: number) => Promise<void>;
+  /** Khôi phục token từ SecureStore lúc khởi động app. Trả về true nếu có token hợp lệ. */
+  bootstrapAuth: () => Promise<boolean>;
+  login: (
+    token: string,
+    userId: number,
+    options?: { refreshToken?: string | null; expiresIn?: number | null },
+  ) => Promise<void>;
   logout: () => Promise<void>;
   addFood: (mealType: keyof DailyMeals, food: FoodItem) => Promise<void>;
   removeFoods: (mealType: keyof DailyMeals, foodIds: number[]) => Promise<void>;
@@ -380,7 +386,19 @@ export const useAppStore = create<AppState>()(
       // ──────────────────────────────────────────────────────────────────────
       // ─── PHẦN 4: XÁC THỰC & TÀI KHOẢN (AUTH ACTIONS) ───
       // ──────────────────────────────────────────────────────────────────────
-      login: async (token, userId) => {
+      bootstrapAuth: async () => {
+        try {
+          const stored = await getToken();
+          if (!stored) return false;
+          set({ token: stored });
+          return true;
+        } catch (e: any) {
+          console.warn('[Auth] bootstrapAuth failed:', e?.message);
+          return false;
+        }
+      },
+
+      login: async (token, userId, options) => {
         try {
           set({ isLoading: true, error: null });
 
@@ -399,14 +417,23 @@ export const useAppStore = create<AppState>()(
             pendingOnboardingSync: false,
           });
 
-          // 1. Lưu token mới
-          await saveToken(token);
+          // 1. Lưu token (kèm refresh + expiresIn nếu BE trả về) vào SecureStore
+          await saveToken({
+            token,
+            refreshToken: options?.refreshToken ?? null,
+            expiresIn: options?.expiresIn ?? null,
+          });
 
-          // 2. Xóa dữ liệu cũ trong Storage để đảm bảo không bị trùng lặp dữ liệu từ user trước
+          // 2. Xóa dữ liệu cũ trong Storage để đảm bảo không bị trùng lặp dữ liệu từ user trước.
+          //    Chỉ xóa các key của app (prefix '@nutritrack'), tránh đụng key của lib khác.
           if (Platform.OS === 'web') {
-            await AsyncStorage.clear();
-            // Sau khi clear hết, phải lưu lại token vừa save vì clear() xóa sạch LocalStorage
-            await saveToken(token); 
+            try {
+              const allKeys = await AsyncStorage.getAllKeys();
+              const ourKeys = allKeys.filter((k) => k.startsWith('@nutritrack'));
+              if (ourKeys.length) await AsyncStorage.multiRemove(ourKeys);
+            } catch (e: any) {
+              console.warn('[Web] Failed to clear app keys:', e?.message);
+            }
           } else {
             const { clearAllData } = require('../db/database');
             await clearAllData();
@@ -1031,9 +1058,10 @@ export const useAppStore = create<AppState>()(
     {
       name: '@nutritrack_state',
       storage: createJSONStorage(() => AsyncStorage),
+      // CHÚ Ý: KHÔNG persist `token` ở đây — token được lưu riêng trong
+      // SecureStore qua `src/utils/tokenStorage.ts` để bảo mật hơn.
       partialize: (state) => ({
         userId: state.userId,
-        token: state.token,
         pendingOnboardingSync: state.pendingOnboardingSync,
         userProfile: state.userProfile,
         activityCalories: state.activityCalories,

@@ -94,7 +94,11 @@ export default function RegisterScreen() {
 
     try {
       const response = await registerUser(email.trim(), password);
-      await login(response.data.token, response.data.userId);
+      const data: any = response.data;
+      await login(data.token, data.userId, {
+        refreshToken: data.refreshToken ?? null,
+        expiresIn: data.expiresIn ?? null,
+      });
       const { userProfile } = useAppStore.getState();
       const isProfileComplete = userProfile && userProfile.height > 0 && userProfile.weight > 0 && userProfile.age > 0;
 
