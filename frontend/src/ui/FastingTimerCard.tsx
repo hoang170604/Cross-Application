@@ -12,6 +12,44 @@ import { AppButton } from './core/AppButton';
 
 // Nhập các thành phần từ core
 import { FASTING_PHASES } from '../core/fastingConstants';
+import { Circle as SvgCircle, G } from 'react-native-svg';
+
+// --- Sub-component: Phase Markers ---
+const PhaseMarkers = ({ goalHours, elapsedHours, ringSize, strokeWidth, handleMarkerPress, activeTooltipId }: any) => {
+  const radius = (ringSize - strokeWidth) / 2;
+  const center = ringSize / 2;
+
+  return (
+    <G>
+      {FASTING_PHASES.map((phase) => {
+        if (phase.startHour > goalHours) return null;
+        
+        // Tính góc (bắt đầu từ đỉnh -90 độ)
+        const angle = (phase.startHour / goalHours) * 360 - 90;
+        const angleRad = (angle * Math.PI) / 180;
+        
+        const x = center + radius * Math.cos(angleRad);
+        const y = center + radius * Math.sin(angleRad);
+        
+        const isReached = elapsedHours >= phase.startHour;
+        const isActive = activeTooltipId === phase.id;
+
+        return (
+          <SvgCircle
+            key={phase.id}
+            cx={x}
+            cy={y}
+            r={isActive ? 6 : 4}
+            fill={isReached ? phase.color : '#E2E8F0'}
+            stroke="#FFFFFF"
+            strokeWidth={2}
+            onPress={() => handleMarkerPress(phase.id)}
+          />
+        );
+      })}
+    </G>
+  );
+};
 
 interface FastingTimerCardProps {
   /** Trạng thái nhịn ăn */
