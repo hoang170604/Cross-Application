@@ -28,7 +28,7 @@ import {
   FastingRecord,
   FastingHistoryRecord,
   FastingPhase,
-} from '../constants/fastingData';
+} from '@/src/core/fastingConstants';
 
 // Trên web SQLite là no-op; vẫn fallback AsyncStorage để demo chạy được.
 const useWebFallback = Platform.OS === 'web';

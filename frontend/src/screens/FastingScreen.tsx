@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { ThemeColors } from '@/src/core/theme';
 import { useTheme } from '@/src/hooks/useTheme';
 
-import { useFasting, formatDateDisplay } from './hooks/useFasting';
-import { FASTING_PHASES } from './constants/fastingData';
-import { CircularTimer } from './components/CircularTimer';
-import { PlanSelector } from './components/PlanSelector';
-import { FastingHistory } from './components/FastingHistory';
+import { useFasting, formatDateDisplay } from '@/src/hooks/useFasting';
+import { FASTING_PHASES } from '@/src/core/fastingConstants';
+import { CircularTimer } from '@/src/ui/CircularTimer';
+import { PlanSelector } from '@/src/ui/PlanSelector';
+import { FastingHistory } from '@/src/ui/FastingHistory';
 
 const FastingScreen = () => {
   const colors = useTheme();

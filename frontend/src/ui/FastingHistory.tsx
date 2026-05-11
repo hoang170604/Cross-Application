@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { ThemeColors } from '@/src/core/theme';
 import { useTheme } from '@/src/hooks/useTheme';
-import { FastingHistoryRecord } from '../constants/fastingData';
+import { FastingHistoryRecord } from '@/src/core/fastingConstants';
 
 export interface FastingHistoryProps {
   history: FastingHistoryRecord[];

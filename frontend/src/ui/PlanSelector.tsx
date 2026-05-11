@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ThemeColors } from '@/src/core/theme';
 import { useTheme } from '@/src/hooks/useTheme';
-import { FASTING_PLANS } from '../constants/fastingData';
+import { FASTING_PLANS } from '@/src/core/fastingConstants';
 
 export interface PlanSelectorProps {
   goalHours: number;

@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { ThemeColors } from '@/src/core/theme';
 import { useTheme } from '@/src/hooks/useTheme';
-import { FASTING_PHASES } from '../constants/fastingData';
-import { formatDuration } from '../hooks/useFasting';
-import { PhaseMarkers } from './PhaseMarkers';
+import { FASTING_PHASES } from '@/src/core/fastingConstants';
+import { formatDuration } from '@/src/hooks/useFasting';
+import { PhaseMarkers } from '@/src/ui/PhaseMarkers';
 
 const { width } = Dimensions.get('window');
 const RING_SIZE = Math.min(240, width - 96);

@@ -749,8 +749,8 @@ export const useAppStore = create<AppState>()(
               const mealType = (meal.mealType || '').toLowerCase() as keyof DailyMeals;
               if (meals[mealType] && Array.isArray(meal.mealLogs)) {
                 meals[mealType] = meal.mealLogs.map((log) => ({
-                  id: log.foodId || log.id,
-                  name: log.foodName || '',
+                  id: log.id,
+                  name: log.food?.name || '',
                   calories: log.calories,
                   protein: log.protein,
                   carb: log.carb,
