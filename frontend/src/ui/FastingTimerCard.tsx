@@ -10,9 +10,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { AppButton } from './core/AppButton';
 
-// Nhập các thành phần mới từ repo
-import { PhaseMarkers } from '../screens/fasting/components/PhaseMarkers';
-import { FASTING_PHASES } from '../screens/fasting/constants/fastingData';
+// Nhập các thành phần từ core
+import { FASTING_PHASES } from '../core/fastingConstants';
 
 interface FastingTimerCardProps {
   /** Trạng thái nhịn ăn */
