@@ -15,6 +15,8 @@ import * as activityDb from '../db/activityDb';
 import * as mealDb from '../db/mealDb';
 import * as trackingDb from '../db/trackingDb';
 import * as syncDb from '../db/syncDb';
+import * as profileDb from '../db/profileDb';
+import { Platform } from 'react-native';
 
 // Cấu trúc hợp đồng dữ liệu cho Store
 interface AppState {
@@ -169,13 +171,25 @@ export const useAppStore = create<AppState>()(
       setError: (error) => set({ error: error }),
       setPendingSync: (val) => set({ pendingOnboardingSync: val }),
 
-      /** Cập nhật hồ sơ và tự động tính toán lại mục tiêu nếu cần */
+      /**
+       * Cập nhật hồ sơ trong memory + persist xuống SQLite (trên native).
+       * Trên web, SQLite là no-op → fallback dựa vào Zustand persist (AsyncStorage).
+       * Trigger tính lại target nutrition nếu các field "core" thay đổi.
+       */
       updateUserProfile: (data) => {
         set((state) => ({ userProfile: { ...state.userProfile, ...data } }));
         const keys = Object.keys(data);
         const criticalKeys = ['weight', 'height', 'age', 'gender', 'goal', 'activityLevel', 'currentWeight'];
         if (keys.some(k => criticalKeys.includes(k))) {
           get().recalculateGoals();
+        }
+        // Đẩy xuống SQLite (best-effort) — schema nhiều cột, hợp cho SQLite hơn
+        // là dump cả object JSON khổng lồ vào AsyncStorage.
+        const { userId, userProfile } = get();
+        if (userId && Platform.OS !== 'web') {
+          profileDb.upsertUserProfile(userId, userProfile).catch((e: any) => {
+            console.warn('[Profile] SQLite upsert failed:', e?.message);
+          });
         }
       },
 
@@ -391,6 +405,20 @@ export const useAppStore = create<AppState>()(
           const stored = await getToken();
           if (!stored) return false;
           set({ token: stored });
+
+          // Sau khi có token, nếu native thì load lại userProfile từ SQLite
+          // (source of truth) để không phụ thuộc giá trị cache trong AsyncStorage.
+          const { userId } = get();
+          if (userId && Platform.OS !== 'web') {
+            try {
+              const dbProfile = await profileDb.getUserProfile(userId);
+              if (dbProfile) {
+                set({ userProfile: dbProfile });
+              }
+            } catch (e: any) {
+              console.warn('[Profile] SQLite load failed:', e?.message);
+            }
+          }
           return true;
         } catch (e: any) {
           console.warn('[Auth] bootstrapAuth failed:', e?.message);
@@ -485,6 +513,15 @@ export const useAppStore = create<AppState>()(
 
           if (!get().userProfile.targetCalories) {
             get().recalculateGoals();
+          }
+
+          // 3. Persist profile vừa fetch xuống SQLite (native) — source of truth
+          if (Platform.OS !== 'web') {
+            try {
+              await profileDb.upsertUserProfile(userId, get().userProfile);
+            } catch (e: any) {
+              console.warn('[Profile] SQLite persist after login failed:', e?.message);
+            }
           }
         } catch (error: any) {
           set({ error: error.message || 'Lỗi đăng nhập' });
@@ -1060,10 +1097,13 @@ export const useAppStore = create<AppState>()(
       storage: createJSONStorage(() => AsyncStorage),
       // CHÚ Ý: KHÔNG persist `token` ở đây — token được lưu riêng trong
       // SecureStore qua `src/utils/tokenStorage.ts` để bảo mật hơn.
+      // Trên native: SQLite (`user_profile`) là source of truth cho userProfile,
+      //   AsyncStorage chỉ giữ "cache" để first render không trễ.
+      // Trên web: SQLite no-op → AsyncStorage là nguồn duy nhất.
       partialize: (state) => ({
         userId: state.userId,
         pendingOnboardingSync: state.pendingOnboardingSync,
-        userProfile: state.userProfile,
+        userProfile: state.userProfile, // cache; SQLite override on bootstrap (native)
         activityCalories: state.activityCalories,
         lastActivityDate: state.lastActivityDate,
         theme: state.theme,

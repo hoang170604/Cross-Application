@@ -12,10 +12,15 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '@/src/api/apiClient';
 import { useAppStore } from '@/src/store/useAppStore';
+import {
+  saveFastingState,
+  getFastingState,
+  clearFastingState,
+} from '@/src/db/fastingDb';
 import {
   STORAGE_KEYS,
   DEFAULT_GOAL_HOURS,
@@ -24,6 +29,9 @@ import {
   FastingHistoryRecord,
   FastingPhase,
 } from '../constants/fastingData';
+
+// Trên web SQLite là no-op; vẫn fallback AsyncStorage để demo chạy được.
+const useWebFallback = Platform.OS === 'web';
 
 // ─── Pure helper functions ─────────────────────────────────────────────────────
 
@@ -133,13 +141,13 @@ export const useFasting = (): UseFastingReturn => {
     ? new Date(startTimestamp + goalHours * 3600 * 1000).toISOString()
     : null;
 
-  // ─── Dynamic Storage Keys (User-specific) ───────────────────────────────────
-  const getKeys = useCallback(() => ({
+  // ─── Web fallback keys — chỉ dùng khi Platform.OS === 'web' ─────────────────
+  const getWebKeys = useCallback(() => ({
     START_TIME: `@fasting/${userId}/startTime`,
     TARGET_HOURS: `@fasting/${userId}/targetHours`,
   }), [userId]);
 
-  // ── Step 1: Resume from AsyncStorage on mount or when userId changes ────────
+  // ── Step 1: Resume từ SQLite (native) hoặc AsyncStorage (web) ───────────────
   const resumeFromStorage = useCallback(async () => {
     if (!userId) {
       setStartTimestamp(null);
@@ -149,30 +157,42 @@ export const useFasting = (): UseFastingReturn => {
     }
 
     try {
-      const keys = getKeys();
-      const [storedStart, storedHours] = await Promise.all([
-        AsyncStorage.getItem(keys.START_TIME),
-        AsyncStorage.getItem(keys.TARGET_HOURS),
-      ]);
-      if (storedStart) {
-        const ts = parseInt(storedStart, 10);
-        const hours = storedHours ? parseInt(storedHours, 10) : DEFAULT_GOAL_HOURS;
-        const elapsed = Math.floor((Date.now() - ts) / 1000);
-        setStartTimestamp(ts);
+      let storedStart: number | null = null;
+      let storedHours: number | null = null;
+
+      if (useWebFallback) {
+        const keys = getWebKeys();
+        const [s, h] = await Promise.all([
+          AsyncStorage.getItem(keys.START_TIME),
+          AsyncStorage.getItem(keys.TARGET_HOURS),
+        ]);
+        if (s) storedStart = parseInt(s, 10);
+        if (h) storedHours = parseInt(h, 10);
+      } else {
+        const row = await getFastingState(userId);
+        if (row) {
+          storedStart = row.start_time;
+          storedHours = row.target_hours;
+        }
+      }
+
+      if (storedStart && Number.isFinite(storedStart)) {
+        const hours = storedHours && Number.isFinite(storedHours) ? storedHours : DEFAULT_GOAL_HOURS;
+        const elapsed = Math.floor((Date.now() - storedStart) / 1000);
+        setStartTimestamp(storedStart);
         setGoalHours(hours);
         setElapsedSeconds(Math.max(0, elapsed));
       } else {
-        // Reset state if no data for this specific user
         setStartTimestamp(null);
         setElapsedSeconds(0);
         setGoalHours(DEFAULT_GOAL_HOURS);
       }
     } catch (e) {
-      console.warn('[Fasting] Failed to read AsyncStorage:', e);
+      console.warn('[Fasting] Failed to read storage:', e);
     } finally {
       setIsInitializing(false);
     }
-  }, [userId, getKeys]);
+  }, [userId, getWebKeys]);
 
   useEffect(() => {
     resumeFromStorage();
@@ -227,23 +247,27 @@ export const useFasting = (): UseFastingReturn => {
     };
   }, [isActive, startTimestamp]);
 
-  // ── Start Fast — AsyncStorage only, no API call ─────────────────────────────
+  // ── Start Fast — lưu vào SQLite (native) hoặc AsyncStorage (web), không gọi API
   const handleStartFast = useCallback(async () => {
     if (!userId) return;
     const now = Date.now();
     try {
-      const keys = getKeys();
-      await Promise.all([
-        AsyncStorage.setItem(keys.START_TIME, String(now)),
-        AsyncStorage.setItem(keys.TARGET_HOURS, String(goalHours)),
-      ]);
+      if (useWebFallback) {
+        const keys = getWebKeys();
+        await Promise.all([
+          AsyncStorage.setItem(keys.START_TIME, String(now)),
+          AsyncStorage.setItem(keys.TARGET_HOURS, String(goalHours)),
+        ]);
+      } else {
+        await saveFastingState(userId, now, goalHours);
+      }
       setStartTimestamp(now);
       setElapsedSeconds(0);
     } catch (e) {
-      console.error('[Fasting] Failed to save to AsyncStorage:', e);
+      console.error('[Fasting] Failed to save fasting state:', e);
       Alert.alert('Lỗi', 'Không thể lưu dữ liệu nhịn ăn. Vui lòng thử lại.');
     }
-  }, [goalHours, userId, getKeys]);
+  }, [goalHours, userId, getWebKeys]);
 
   // ── End Fast — one API call; state ALWAYS resets regardless of result ────────
   const handleEndFast = useCallback(async () => {
@@ -285,13 +309,17 @@ export const useFasting = (): UseFastingReturn => {
     } finally {
       // ALWAYS clear storage and reset UI — user must never be stuck
       try {
-        const keys = getKeys();
-        await Promise.all([
-          AsyncStorage.removeItem(keys.START_TIME),
-          AsyncStorage.removeItem(keys.TARGET_HOURS),
-        ]);
+        if (useWebFallback) {
+          const keys = getWebKeys();
+          await Promise.all([
+            AsyncStorage.removeItem(keys.START_TIME),
+            AsyncStorage.removeItem(keys.TARGET_HOURS),
+          ]);
+        } else {
+          await clearFastingState(userId);
+        }
       } catch (storageErr) {
-        console.warn('[Fasting] Failed to clear AsyncStorage:', storageErr);
+        console.warn('[Fasting] Failed to clear fasting storage:', storageErr);
       }
 
       setStartTimestamp(null);
@@ -312,7 +340,7 @@ export const useFasting = (): UseFastingReturn => {
         );
       }
     }
-  }, [startTimestamp, userId, goalHours, fetchHistory, getKeys]);
+  }, [startTimestamp, userId, goalHours, fetchHistory, getWebKeys]);
 
   return {
     startTimestamp,

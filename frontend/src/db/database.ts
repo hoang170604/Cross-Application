@@ -110,13 +110,49 @@ export async function initDatabase() {
     );
   `);
 
+  // 6. Bảng lưu hồ sơ người dùng (User Profile) — schema nhiều cột, hợp cho SQLite
+  //    Mỗi user_id 1 dòng duy nhất; các trường derived (target*) cũng được lưu để
+  //    đọc ngay lúc khởi động mà không phải tính lại từ AsyncStorage.
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS user_profile (
+      user_id INTEGER PRIMARY KEY,
+      name TEXT,
+      email TEXT,
+      age INTEGER,
+      gender TEXT,
+      height REAL,
+      weight REAL,
+      current_weight REAL,
+      activity_level REAL,
+      goal TEXT,
+      fasting_goal TEXT,
+      target_calories REAL,
+      target_protein REAL,
+      target_carb REAL,
+      target_fat REAL,
+      daily_meals_json TEXT,
+      weight_history_json TEXT,
+      updated_at TEXT NOT NULL
+    );
+  `);
+
+  // 7. Bảng lưu trạng thái nhịn ăn theo user (thay AsyncStorage cũ).
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS fasting_state (
+      user_id INTEGER PRIMARY KEY,
+      start_time INTEGER NOT NULL,    -- epoch ms
+      target_hours INTEGER NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+
   // --- ĐÁNH CHỈ MỤC (INDEXING) ĐỂ TĂNG TỐC TRUY VẤN THEO NGÀY ---
   await db.execAsync('CREATE INDEX IF NOT EXISTS idx_activities_date ON activities(date);');
   await db.execAsync('CREATE INDEX IF NOT EXISTS idx_meal_logs_date ON meal_logs(date);');
   await db.execAsync('CREATE INDEX IF NOT EXISTS idx_water_logs_date ON water_logs(date);');
   await db.execAsync('CREATE INDEX IF NOT EXISTS idx_weight_logs_date ON weight_logs(date);');
 
-  console.log('[SQLite] Database updated with Sync Queue and Indexes.');
+  console.log('[SQLite] Database updated with Sync Queue, Profile, Fasting & Indexes.');
 }
 
 /**
@@ -131,6 +167,8 @@ export async function clearAllData() {
     await db.execAsync('DELETE FROM water_logs;');
     await db.execAsync('DELETE FROM weight_logs;');
     await db.execAsync('DELETE FROM sync_queue;');
+    await db.execAsync('DELETE FROM user_profile;');
+    await db.execAsync('DELETE FROM fasting_state;');
     console.log('[SQLite] All tables cleared successfully.');
   } catch (error: any) {
     console.error('[SQLite] Failed to clear tables:', error.message);
