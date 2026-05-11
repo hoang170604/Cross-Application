@@ -63,11 +63,27 @@ public class DiaryService implements com.crossapplication.main.service.interface
         MealLog mealLog = mealLogMapper.toEntity(mealLogDTO);
 
         // Validate Food reference: dùng foodId từ DTO
-        if (mealLogDTO.getFoodId() != null) {
+        if (mealLogDTO.getFoodId() != null && mealLogDTO.getFoodId() > 0) {
             var foodOpt = foodRepo.findById(mealLogDTO.getFoodId());
             if (foodOpt.isPresent()) {
                 mealLog.setFood(foodOpt.get());
             }
+        } else if (mealLogDTO.getFoodName() != null && !mealLogDTO.getFoodName().trim().isEmpty()) {
+            // Lưu custom food vào DB
+            com.crossapplication.main.entity.Food customFood = new com.crossapplication.main.entity.Food();
+            customFood.setName(mealLogDTO.getFoodName().trim());
+            
+            // Tính toán giá trị dinh dưỡng cho 100g dựa trên lượng nhập vào
+            double ratio = mealLogDTO.getQuantity() != null && mealLogDTO.getQuantity() > 0 
+                ? 100.0 / mealLogDTO.getQuantity() : 1.0;
+                
+            customFood.setCaloriesPer100g((float) (mealLogDTO.getCalories() != null ? mealLogDTO.getCalories() * ratio : 0));
+            customFood.setProteinPer100g((float) (mealLogDTO.getProtein() != null ? mealLogDTO.getProtein() * ratio : 0));
+            customFood.setCarbPer100g((float) (mealLogDTO.getCarb() != null ? mealLogDTO.getCarb() * ratio : 0));
+            customFood.setFatPer100g((float) (mealLogDTO.getFat() != null ? mealLogDTO.getFat() * ratio : 0));
+            
+            customFood = foodRepo.saveFood(customFood);
+            mealLog.setFood(customFood);
         }
         mealLog.setMeal(targetMeal);
         MealLog saved = mealLogRepo.save(mealLog);

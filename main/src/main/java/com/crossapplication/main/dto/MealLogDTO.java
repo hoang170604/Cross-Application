@@ -3,6 +3,7 @@ package com.crossapplication.main.dto;
 import java.io.Serializable;
 
 public class MealLogDTO implements Serializable {
+    private Long id;
     private Long foodId;
     private Long mealId;
     private Double quantity;
@@ -14,6 +15,8 @@ public class MealLogDTO implements Serializable {
     private String foodName;
     private String mealType;
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public Long getFoodId() { return foodId; }
     public void setFoodId(Long foodId) { this.foodId = foodId; }
     public Long getMealId() { return mealId; }
