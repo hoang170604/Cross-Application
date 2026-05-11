@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, StatusBar, SafeAreaView } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  ActivityIndicator, StatusBar, SafeAreaView
+} from 'react-native';
 import { ThemeColors } from '@/src/core/theme';
 import { useTheme } from '@/src/hooks/useTheme';
-
 import { useFasting, formatDateDisplay } from '@/src/hooks/useFasting';
 import { FASTING_PHASES } from '@/src/core/fastingConstants';
 import { CircularTimer } from '@/src/ui/CircularTimer';
 import { PlanSelector } from '@/src/ui/PlanSelector';
-import { FastingHistory } from '@/src/ui/FastingHistory';
 
 const FastingScreen = () => {
   const colors = useTheme();
@@ -20,10 +21,6 @@ const FastingScreen = () => {
     isInitializing,
     isUploading,
     isActive,
-    history,
-    isHistoryLoading,
-    historyError,
-    fetchHistory,
     remainingSeconds,
     progress,
     elapsedHours,
@@ -53,11 +50,8 @@ const FastingScreen = () => {
         barStyle={colors.text === '#F8FAFC' ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
         {/* ── Page Header ── */}
         <View style={styles.pageHeader}>
           <Text style={styles.pageTitle}>Nhịn Ăn Gián Đoạn</Text>
@@ -66,7 +60,7 @@ const FastingScreen = () => {
           </Text>
         </View>
 
-        {/* ── Circular Timer Card ── */}
+        {/* ── Circular Timer ── */}
         <CircularTimer
           goalHours={goalHours}
           isActive={isActive}
@@ -83,9 +77,7 @@ const FastingScreen = () => {
             <View style={styles.scheduleItem}>
               <Text style={styles.scheduleLabel}>Bắt đầu lúc</Text>
               <Text style={styles.scheduleValue} numberOfLines={1}>
-                {startTimestamp
-                  ? formatDateDisplay(new Date(startTimestamp).toISOString())
-                  : '—'}
+                {startTimestamp ? formatDateDisplay(new Date(startTimestamp).toISOString()) : '—'}
               </Text>
             </View>
             <View style={styles.scheduleDivider} />
@@ -98,14 +90,10 @@ const FastingScreen = () => {
           </View>
         </View>
 
-        {/* ── End Fast CTA — sits below schedule, only when active ── */}
+        {/* ── End Fast CTA (active only) ── */}
         {isActive && (
           <TouchableOpacity
-            style={[
-              styles.actionBtn,
-              styles.btnEnd,
-              isUploading && styles.btnDisabled,
-            ]}
+            style={[styles.actionBtn, styles.btnEnd, isUploading && styles.btnDisabled]}
             onPress={handleEndFast}
             disabled={isUploading}
             activeOpacity={0.8}
@@ -124,50 +112,39 @@ const FastingScreen = () => {
         {/* ── Dynamic Biological Phase Card (active only) ── */}
         {isActive && (
           <View style={styles.card}>
-            {/* Header: current phase */}
             <View style={styles.phaseHeader}>
               <View style={[styles.phaseIconBox, { backgroundColor: currentPhase.color + '22' }]}>
                 <Text style={styles.phaseEmoji}>{currentPhase.emoji}</Text>
               </View>
               <View style={styles.phaseTextBlock}>
                 <Text style={styles.phaseLabel}>Giai đoạn hiện tại</Text>
-                <Text style={[styles.phaseTitle, { color: currentPhase.color }]}>
-                  {currentPhase.title}
-                </Text>
+                <Text style={[styles.phaseTitle, { color: currentPhase.color }]}>{currentPhase.title}</Text>
                 <Text style={styles.phaseDesc}>{currentPhase.description}</Text>
               </View>
             </View>
 
-            {/* Progress bar toward next phase */}
             {nextPhase && (
               <View style={styles.phaseProgressWrapper}>
                 <View style={styles.phaseProgressTrack}>
                   <View
                     style={[
                       styles.phaseProgressFill,
-                      {
-                        width: `${Math.round(phaseProgress * 100)}%` as any,
-                        backgroundColor: currentPhase.color,
-                      },
+                      { width: `${Math.round(phaseProgress * 100)}%` as any, backgroundColor: currentPhase.color },
                     ]}
                   />
                 </View>
                 <Text style={styles.phaseProgressLabel}>
-                  Tiếp theo: {nextPhase.emoji} {nextPhase.title} sau {(
-                    (nextPhase.startHour - elapsedHours) * 60
-                  ).toFixed(0)} phút
+                  Tiếp theo: {nextPhase.emoji} {nextPhase.title} sau {((nextPhase.startHour - elapsedHours) * 60).toFixed(0)} phút
                 </Text>
               </View>
             )}
 
-            {/* Phase timeline strip — all phases color-coded */}
             <View style={styles.phaseTimeline}>
               {FASTING_PHASES.map((phase, idx) => {
-                const isReached  = elapsedHours >= phase.startHour;
-                const isCurrent  = phase.id === currentPhase.id;
+                const isReached = elapsedHours >= phase.startHour;
+                const isCurrent = phase.id === currentPhase.id;
                 return (
                   <View key={phase.id} style={styles.phaseTimelineItem}>
-                    {/* Connector line (skip last, extend right) */}
                     {idx < FASTING_PHASES.length - 1 && (
                       <View
                         style={[
@@ -176,26 +153,19 @@ const FastingScreen = () => {
                         ]}
                       />
                     )}
-                    {/* Dot */}
                     <View
                       style={[
                         styles.phaseDot,
                         {
                           backgroundColor: isReached ? phase.color : colors.surface,
-                          borderColor:     isReached ? phase.color : colors.cardBorder,
+                          borderColor: isReached ? phase.color : colors.cardBorder,
                           transform: isCurrent ? [{ scale: 1.25 }] : [],
                         },
                       ]}
                     >
                       {isCurrent && <View style={[styles.phaseDotCore, { backgroundColor: phase.color }]} />}
                     </View>
-                    {/* Hour label */}
-                    <Text
-                      style={[
-                        styles.phaseHourLabel,
-                        { color: isReached ? phase.color : colors.textSecondary },
-                      ]}
-                    >
+                    <Text style={[styles.phaseHourLabel, { color: isReached ? phase.color : colors.textSecondary }]}>
                       {phase.startHour}g
                     </Text>
                   </View>
@@ -205,29 +175,15 @@ const FastingScreen = () => {
           </View>
         )}
 
-        {/* ── Fasting Modes Selector (idle only) ── */}
-        {!isActive && (
-          <PlanSelector goalHours={goalHours} setGoalHours={setGoalHours} />
-        )}
+        {/* ── Fasting Plan Selector (idle only) ── */}
+        {!isActive && <PlanSelector goalHours={goalHours} setGoalHours={setGoalHours} />}
 
-        {/* ── Bottom CTA — Start Fast (idle) only ── */}
+        {/* ── Start Fast CTA (idle only) ── */}
         {!isActive && (
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.btnStart]}
-            onPress={handleStartFast}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={[styles.actionBtn, styles.btnStart]} onPress={handleStartFast} activeOpacity={0.8}>
             <Text style={styles.actionBtnText}>▶  Bắt đầu nhịn ăn</Text>
           </TouchableOpacity>
         )}
-
-        {/* ── Recent Fasts (always shown, idle preferred) ── */}
-        <FastingHistory
-          history={history}
-          isHistoryLoading={isHistoryLoading}
-          historyError={historyError}
-          fetchHistory={fetchHistory}
-        />
 
       </ScrollView>
     </SafeAreaView>
@@ -274,80 +230,28 @@ const getStyles = (colors: ThemeColors) =>
     scheduleLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '500', marginBottom: 4 },
     scheduleValue: { fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
 
-    // \u2500\u2500 Phase card (dynamic biological phases) \u2500\u2500
-    phaseHeader: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 14,
-      marginBottom: 16,
-    },
-    phaseIconBox: {
-      width: 52, height: 52, borderRadius: 26,
-      alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    },
+    phaseHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 16 },
+    phaseIconBox: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     phaseEmoji: { fontSize: 24 },
     phaseTextBlock: { flex: 1 },
-    phaseLabel: {
-      fontSize: 10, fontWeight: '600', color: colors.textSecondary,
-      textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3,
-    },
+    phaseLabel: { fontSize: 10, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 },
     phaseTitle: { fontSize: 15, fontWeight: '800', marginBottom: 4 },
     phaseDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 19, flexShrink: 1 },
 
-    // Progress bar toward next phase
     phaseProgressWrapper: { marginBottom: 16 },
-    phaseProgressTrack: {
-      height: 5,
-      borderRadius: 3,
-      backgroundColor: colors.surface,
-      overflow: 'hidden',
-      marginBottom: 6,
-    },
-    phaseProgressFill: {
-      height: '100%',
-      borderRadius: 3,
-    },
-    phaseProgressLabel: {
-      fontSize: 12, fontWeight: '500', color: colors.textSecondary,
-    },
+    phaseProgressTrack: { height: 5, borderRadius: 3, backgroundColor: colors.surface, overflow: 'hidden', marginBottom: 6 },
+    phaseProgressFill: { height: '100%', borderRadius: 3 },
+    phaseProgressLabel: { fontSize: 12, fontWeight: '500', color: colors.textSecondary },
 
-    // Horizontal phase timeline dots strip
     phaseTimeline: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
-      paddingTop: 8,
-      borderTopWidth: 1,
-      borderTopColor: colors.cardBorder,
-      paddingHorizontal: 10,
+      flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
+      paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.cardBorder, paddingHorizontal: 10,
     },
-    phaseTimelineItem: {
-      flex: 1,
-      alignItems: 'center',
-      position: 'relative',
-      zIndex: 1,
-    },
-    phaseConnector: {
-      position: 'absolute',
-      top: 7,
-      left: '50%',
-      width: '100%',
-      height: 2,
-      zIndex: 1,
-    },
-    phaseDot: {
-      width: 16, height: 16, borderRadius: 8,
-      borderWidth: 2,
-      alignItems: 'center', justifyContent: 'center',
-      marginBottom: 4,
-      zIndex: 2,
-    },
-    phaseDotCore: {
-      width: 6, height: 6, borderRadius: 3,
-    },
-    phaseHourLabel: {
-      fontSize: 10, fontWeight: '600',
-    },
+    phaseTimelineItem: { flex: 1, alignItems: 'center', position: 'relative', zIndex: 1 },
+    phaseConnector: { position: 'absolute', top: 7, left: '50%', width: '100%', height: 2, zIndex: 1 },
+    phaseDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginBottom: 4, zIndex: 2 },
+    phaseDotCore: { width: 6, height: 6, borderRadius: 3 },
+    phaseHourLabel: { fontSize: 10, fontWeight: '600' },
 
     actionBtn: {
       borderRadius: 18, paddingVertical: 18, alignItems: 'center', justifyContent: 'center',

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { Alert } from 'react-native';
 import { useAppStore } from '@/src/store/useAppStore';
 import { getActivitiesByDate, insertActivity, deleteActivity as deleteFromSqlite } from '@/src/db/activityDb';
 import { getLocalToday } from '../core/dateFormatter';
@@ -9,7 +10,8 @@ import { getLocalToday } from '../core/dateFormatter';
  */
 export function useActivity() {
   const { 
-    loggedActivities, 
+    loggedActivities,
+    activityTypes,
     addLoggedActivity, 
     removeLoggedActivity, 
     fetchActivityTypes 
@@ -32,7 +34,7 @@ export function useActivity() {
   }, [fetchActivityTypes]);
 
   const totalBurned = useMemo(() => 
-    loggedActivities.reduce((sum: number, a: any) => sum + (a.caloriesBurned || 0), 0),
+    loggedActivities.reduce((sum: number, a: any) => sum + (a.caloriesBurned ?? a.calories_burned ?? 0), 0),
   [loggedActivities]);
 
   const handleSelectActivity = useCallback(async (activity: any, minutes: number) => {
@@ -70,13 +72,41 @@ export function useActivity() {
     setEditingItem(null);
   }, []);
 
+  const handleDeleteActivity = useCallback((item: any) => {
+    const displayName = item.activity_type || item.id || 'hoạt động';
+    const cals = item.caloriesBurned ?? item.calories_burned ?? 0;
+    const itemUid = item.uid || item.id;
+
+    Alert.alert(
+      'Xóa hoạt động',
+      `Xóa "${displayName}" khỏi danh sách?`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            // 1. Xóa khỏi SQLite (nếu có local numeric ID)
+            if (item.id && typeof item.id === 'number') {
+              await deleteFromSqlite(item.id);
+            }
+            // 2. Xóa khỏi Store + sync backend
+            removeLoggedActivity(itemUid, cals);
+          },
+        },
+      ]
+    );
+  }, [removeLoggedActivity]);
+
   return {
     activities: loggedActivities,
+    activityTypes,
     totalBurned,
     modalVisible,
     editingItem,
     handleSelectActivity,
     handleEditActivity,
+    handleDeleteActivity,
     openAddModal,
     closeModal,
     removeLoggedActivity

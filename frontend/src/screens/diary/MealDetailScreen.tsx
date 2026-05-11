@@ -106,7 +106,12 @@ export default function MealDetailScreen() {
 
           {/* Cột Thông tin món ăn */}
           <View style={styles.foodInfo}>
-            <Text style={[styles.foodName, { color: colors.text }]}>{item.name}</Text>
+            <Text 
+              style={[styles.foodName, { color: colors.isDark ? '#FFFFFF' : '#333333' }]}
+              numberOfLines={2}
+            >
+              {item.name || 'Món ăn không tên'}
+            </Text>
             <Text style={[styles.foodDetail, { color: colors.textSecondary }]}>
               {item.quantity}g • {item.calories} kcal
             </Text>
@@ -139,8 +144,8 @@ export default function MealDetailScreen() {
         rightAction={
           foods.length > 0 ? (
             <TouchableOpacity onPress={toggleEditMode} style={styles.headerBtn}>
-              <Text style={{ color: isEditMode ? '#FF3B30' : '#00E5FF', fontWeight: '700', fontSize: 16 }}>
-                {isEditMode ? 'Hủy' : 'Edit'}
+              <Text numberOfLines={1} style={{ color: isEditMode ? '#FF3B30' : '#00E5FF', fontWeight: 'bold', fontSize: 16 }}>
+                {isEditMode ? 'Hủy' : 'Sửa'}
               </Text>
             </TouchableOpacity>
           ) : undefined
@@ -152,7 +157,7 @@ export default function MealDetailScreen() {
         <View style={[styles.editActions, { borderBottomColor: colors.cardBorder }]}>
           <TouchableOpacity onPress={handleSelectAll}>
             <Text style={{ color: '#00E5FF', fontWeight: '600', fontSize: 15 }}>
-              {selectedIds.length === foods.length ? 'Deselect All' : 'Select All'}
+              {selectedIds.length === foods.length ? 'Bỏ chọn' : 'Chọn tất cả'}
             </Text>
           </TouchableOpacity>
           <Text style={{ color: colors.text, fontWeight: '500' }}>
@@ -199,7 +204,11 @@ export default function MealDetailScreen() {
 
 const styles = StyleSheet.create({
   headerBtn: { 
-    padding: 8 
+    padding: 8,
+    flexWrap: 'nowrap',
+    minWidth: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editActions: {
     flexDirection: 'row',
@@ -231,10 +240,11 @@ const styles = StyleSheet.create({
   },
   foodInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
   foodName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   foodDetail: {

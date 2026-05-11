@@ -7,6 +7,7 @@ import com.crossapplication.main.dto.WeightLogDTO;
 import com.crossapplication.main.entity.WeightLog;
 import com.crossapplication.main.entity.User;
 
+
 @Mapper(componentModel = "spring")
 public interface WeightLogMapper {
     @Mapping(source = "user.id", target = "userId")

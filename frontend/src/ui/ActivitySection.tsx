@@ -20,6 +20,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AddActivityModal, Activity, ACTIVITIES } from './AddActivityModal';
 import { useTheme } from '@/src/hooks/useTheme';
 import { useActivity } from '@/src/hooks';
+import { useAppStore } from '@/src/store/useAppStore';
 import { ThemeColors } from '@/src/core/theme';
 
 // ─── Local Activity format ──────────────────────────────────────────────────
@@ -34,12 +35,19 @@ interface LocalActivity {
 const ActivityItem: React.FC<{ 
   item: any; 
   onPress: () => void;
-}> = ({ item, onPress }) => {
+  onDelete: () => void;
+}> = ({ item, onPress, onDelete }) => {
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
+  const { activityTypes } = useAppStore();
   
+  // Map cả snake_case (SQLite) lẫn camelCase (Store) để tương thích
+  const id = item.id || item.activity_type;
+  const minutes = item.minutes ?? 0;
+  const caloriesBurned = item.caloriesBurned ?? item.calories_burned ?? 0;
+
   // Ánh xạ từ activityType sang icon/màu sắc UI
-  const uiInfo = ACTIVITIES.find(a => a.id === item.id) || ACTIVITIES[0];
+  const uiInfo = activityTypes.find(a => a.id === id) || activityTypes[0] || ACTIVITIES[0];
 
   return (
     <TouchableOpacity 
@@ -61,9 +69,18 @@ const ActivityItem: React.FC<{
           <MaterialCommunityIcons name="chevron-right" size={16} color={colors.textSecondary} style={{ marginLeft: 4 }} />
         </View>
         <Text style={styles.activityStats}>
-          {item.minutes} phút · {item.caloriesBurned} kcal
+          {minutes} phút · {caloriesBurned} kcal
         </Text>
       </View>
+
+      {/* Nút Xóa */}
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={onDelete}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <MaterialCommunityIcons name="trash-can-outline" size={18} color="#EF4444" />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 };
@@ -80,8 +97,10 @@ const ActivitySectionComponent: React.FC = () => {
     editingItem,
     handleSelectActivity,
     handleEditActivity,
+    handleDeleteActivity,
     openAddModal,
-    closeModal
+    closeModal,
+    activityTypes
   } = useActivity();
 
   return (
@@ -122,10 +141,11 @@ const ActivitySectionComponent: React.FC = () => {
         ) : (
           <View>
             {activities.map((item: any, index: number) => (
-              <React.Fragment key={item.uid || item.id}>
+              <React.Fragment key={item.uid || item.id || `${item.activity_type}-${index}`}>
                 <ActivityItem
                   item={item}
                   onPress={() => handleEditActivity(item)}
+                  onDelete={() => handleDeleteActivity(item)}
                 />
                 {index < activities.length - 1 && <View style={styles.divider} />}
               </React.Fragment>
@@ -139,7 +159,7 @@ const ActivitySectionComponent: React.FC = () => {
         visible={modalVisible}
         onClose={closeModal}
         onSelectActivity={handleSelectActivity}
-        initialActivity={editingItem ? ACTIVITIES.find(a => a.id === editingItem.id) : null}
+        initialActivity={editingItem ? (activityTypes.find(a => a.id === editingItem.id) || ACTIVITIES.find(a => a.id === editingItem.id)) : null}
         initialMinutes={editingItem?.minutes || 30}
       />
     </View>
@@ -235,16 +255,14 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
   },
-  actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
+  deleteButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#EF444420',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
+    marginLeft: 10,
   },
   divider: {
     height: 1,

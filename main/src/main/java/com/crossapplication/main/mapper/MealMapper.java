@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import com.crossapplication.main.dto.MealDTO;
 import com.crossapplication.main.entity.Meal;
 
+
 @Mapper(componentModel = "spring", uses = {MealLogMapper.class})
 public interface MealMapper {
 

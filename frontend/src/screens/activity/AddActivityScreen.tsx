@@ -35,7 +35,13 @@ const AddActivityScreen = () => {
   const [inputText, setInputText] = useState(String(DEFAULT_MINUTES));
   const [isFocused, setIsFocused] = useState(false);
 
-  const { addLoggedActivity } = useAppStore();
+  const { addLoggedActivity, activityTypes, fetchActivityTypes, isLoading } = useAppStore();
+
+  React.useEffect(() => {
+    if (activityTypes.length === 0) {
+      fetchActivityTypes();
+    }
+  }, []);
 
   const handlePickActivity = (activity: Activity) => {
     setSelectedActivity(activity);
@@ -126,11 +132,18 @@ const AddActivityScreen = () => {
 
         {step === 'select' ? (
           <FlatList
-            data={ACTIVITIES}
+            data={activityTypes}
             keyExtractor={(item) => item.id}
             renderItem={renderActivityItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              isLoading ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: colors.textSecondary }}>Đang tải...</Text>
+                </View>
+              ) : null
+            }
           />
         ) : (
           <View style={styles.durationContainer}>

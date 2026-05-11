@@ -25,7 +25,13 @@ export function useNutrition() {
 
   // ─── Macro & Calorie Calculations ───────────────────────────────────
   const { totalEatenCalories, totalEatenMacros } = useMemo(() => {
-    if (dailyNutrition) {
+    const meals = userProfile.dailyMeals || { breakfast: [], lunch: [], dinner: [], snack: [] };
+    const allFoods = Object.values(meals).flat();
+    const localHasFood = allFoods.length > 0;
+
+    // Ưu tiên dailyNutrition từ server CHỈ KHI local meal list không rỗng
+    // → Tránh hiển thị giá trị cũ sau khi xóa hết món ăn
+    if (dailyNutrition && localHasFood) {
       return {
         totalEatenCalories: dailyNutrition.totalCalories || 0,
         totalEatenMacros: {
@@ -35,9 +41,7 @@ export function useNutrition() {
         }
       };
     }
-    // Fallback: Tính toán thủ công từ danh sách món ăn nếu server chưa trả về summary
-    const meals = userProfile.dailyMeals || { breakfast: [], lunch: [], dinner: [], snack: [] };
-    const allFoods = Object.values(meals).flat();
+    // Fallback: Tính toán thủ công từ danh sách món ăn local
     return {
       totalEatenCalories: allFoods.reduce((sum, item) => sum + item.calories, 0),
       totalEatenMacros: {
@@ -55,15 +59,16 @@ export function useNutrition() {
     const burned = activityCalories || 0;
     const budget = target + burned; // Tổng ngân sách calo trong ngày
     const remaining = budget - consumed;
+    const isOver = remaining < 0;
     
     return {
       target,
       consumed,
       burned,
       budget,
-      remaining: Math.abs(remaining),
-      isOver: remaining < 0,
-      progress: Math.min(1, consumed / Math.max(1, budget)),
+      remaining,
+      isOver,
+      progress: isOver ? 1 : Math.min(1, consumed / Math.max(1, target)),
     };
   }, [userProfile.targetCalories, totalEatenCalories, activityCalories]);
 

@@ -22,6 +22,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
+import { useAppStore } from '@/src/store/useAppStore';
 import { ActivityTypeInfo } from '../types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -227,6 +228,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({
 
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
+  const { activityTypes } = useAppStore();
 
   const handleClose = useCallback(() => {
     setStep('select');
@@ -297,8 +299,8 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({
           />
         ) : (
           <FlatList
-            data={ACTIVITIES}
-            keyExtractor={(item) => item.id}
+            data={activityTypes.length > 0 ? activityTypes : ACTIVITIES}
+            keyExtractor={(item, index) => item.id ? item.id.toString() : `${item.name}-${index}`}
             renderItem={({ item }) => (
               <ActivityRow item={item} onPress={handlePickActivity} />
             )}

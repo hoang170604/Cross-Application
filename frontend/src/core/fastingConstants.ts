@@ -57,7 +57,6 @@ export const FASTING_PLANS: FastingPlan[] = [
   { id: '16-8',  name: '16:8',  duration: 16, eating:  8, tagline: 'Chế độ phổ biến nhất' },
   { id: '18-6',  name: '18:6',  duration: 18, eating:  6, tagline: 'Đốt mỡ nhanh hơn' },
   { id: '20-4',  name: '20:4',  duration: 20, eating:  4, tagline: 'Chế độ nâng cao' },
-  { id: 'omad',  name: 'OMAD',  duration: 23, eating:  1, tagline: 'Một bữa ăn mỗi ngày' },
 ];
 
 export const DEFAULT_PLAN = FASTING_PLANS[1]; // 16:8

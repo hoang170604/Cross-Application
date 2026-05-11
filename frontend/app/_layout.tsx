@@ -6,6 +6,10 @@ import { useAppStore } from '@/src/store/useAppStore';
 import { View, ActivityIndicator, Platform } from 'react-native';
 import { initDatabase } from '@/src/db/database';
 import { setupNotificationHandler } from '@/src/utils/notifications';
+import { LogBox } from 'react-native';
+
+// Bỏ qua cảnh báo Push Notification của Expo Go trên Android (SDK 53)
+LogBox.ignoreLogs(['expo-notifications: Android Push notifications']);
 
 // Đảm bảo Platform luôn sẵn sàng
 if (typeof Platform === 'undefined') {

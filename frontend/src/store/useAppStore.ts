@@ -11,6 +11,7 @@ import * as diaryApi from '../api/diaryService';
 import * as progressApi from '../api/progressService';
 import * as userApi from '../api/userService';
 import * as workoutApi from '../api/workoutService';
+import * as activityApi from '../api/activityService';
 import * as activityDb from '../db/activityDb';
 import * as mealDb from '../db/mealDb';
 import * as trackingDb from '../db/trackingDb';
@@ -204,9 +205,36 @@ export const useAppStore = create<AppState>()(
       // ──────────────────────────────────────────────────────────────────────
       fetchActivityTypes: async () => {
         try {
-          const res = await progressApi.getActivityTypes();
+          const res = await activityApi.getActivityTypes();
           if (res && res.data) {
-            set({ activityTypes: res.data });
+            const { userProfile } = get();
+            const weight = userProfile.currentWeight || userProfile.weight || 70;
+            
+            // Map backend "met" to frontend rich ActivityTypeInfo
+            const uiMapping: Record<string, any> = {
+              WALKING:  { icon: 'walk',      iconColor: '#3B82F6', bgColor: '#EFF6FF' },
+              RUNNING:  { icon: 'run-fast',  iconColor: '#EF4444', bgColor: '#FEE2E2' },
+              CYCLING:  { icon: 'bike',      iconColor: '#10B981', bgColor: '#D1FAE5' },
+              SWIMMING: { icon: 'swim',      iconColor: '#3B82F6', bgColor: '#E0F2FE' },
+              YOGA:     { icon: 'yoga',      iconColor: '#8B5CF6', bgColor: '#EDE9FE' },
+              GYM:      { icon: 'dumbbell',  iconColor: '#64748B', bgColor: '#F1F5F9' },
+            };
+
+            const enriched = (res.data as any[]).map(type => {
+              const ui = uiMapping[type.id] || { icon: 'help', iconColor: '#94A3B8', bgColor: '#F1F5F9' };
+              // Formula: kcal/min = (MET * 3.5 * weight) / 200
+              const met = type.met || 3.0;
+              const caloriesPerMin = (met * 3.5 * weight) / 200;
+              
+              return {
+                id: type.id,
+                name: type.name,
+                caloriesPerMin: Math.round(caloriesPerMin * 10) / 10,
+                ...ui
+              };
+            });
+
+            set({ activityTypes: enriched });
           }
         } catch (error: any) {
           console.warn('[Store] fetchActivityTypes failed:', error.message);
@@ -228,24 +256,28 @@ export const useAppStore = create<AppState>()(
               ...a,
               id: a.activity_type,
               uid: a.uid,
+              minutes: a.minutes,
+              caloriesBurned: a.calories_burned
             }));
             set({ 
               loggedActivities: mapped,
-              activityCalories: mapped.reduce((sum: number, a: any) => sum + (a.calories_burned || 0), 0),
+              activityCalories: mapped.reduce((sum: number, a: any) => sum + (a.caloriesBurned || 0), 0),
               lastActivityDate: targetDate
             });
           }
 
           set({ isLoading: true });
           // 2. Sau đó mới gọi API để cập nhật bản mới nhất từ server
-          const res = await progressApi.getActivitiesBetween(userId, targetDate, targetDate);
+          const res = await activityApi.getActivityHistory(userId, targetDate, targetDate);
           
           if (res && res.data) {
             // Map backend data sang local format nếu cần
             const mapped = res.data.map((a: any) => ({
               ...a,
-              id: a.activityType, // Map activityType sang id dùng trong UI
-              uid: a.id,          // Map backend primary key sang uid
+              id: a.activityType, // Map backend field
+              uid: a.id,          // Backend ID
+              minutes: a.durationMinutes, // Map backend field
+              caloriesBurned: a.caloriesBurned,
             }));
             
             set({ 
@@ -256,7 +288,7 @@ export const useAppStore = create<AppState>()(
           }
         } catch (error: any) {
           console.warn('[Store] fetchActivities failed:', error.message);
-          // Fallback logic cho local state
+          // Fallback logic
           const today = getLocalToday();
           const { lastActivityDate } = get();
           if (lastActivityDate !== today) {
@@ -320,10 +352,11 @@ export const useAppStore = create<AppState>()(
         // 2. Gửi lên backend
         if (userId) {
           try {
-            const res = await progressApi.addActivity(userId, {
+            const res = await activityApi.addActivity(userId, {
               activityType: activity.id,
               durationMinutes: activity.minutes,
               caloriesBurned: activity.caloriesBurned,
+              logDate: today
             });
             
             // Nếu thành công, update lại uid bằng real ID từ backend
@@ -341,7 +374,7 @@ export const useAppStore = create<AppState>()(
               activityType: activity.id,
               durationMinutes: activity.minutes,
               caloriesBurned: activity.caloriesBurned,
-              date: today
+              logDate: today
             });
           }
         }
@@ -365,9 +398,9 @@ export const useAppStore = create<AppState>()(
         }));
 
         // 2. Sync to Backend (Nếu uid không phải là temp)
-        if (typeof uid === 'number' || !uid.startsWith('temp_')) {
+        if (typeof uid === 'number' || !uid.toString().startsWith('temp_')) {
           try {
-            await progressApi.updateActivity(uid as number, {
+            await activityApi.updateActivity(uid as number, {
               activityType: activity.id,
               durationMinutes: activity.minutes,
               caloriesBurned: activity.caloriesBurned,
@@ -388,9 +421,9 @@ export const useAppStore = create<AppState>()(
         }));
 
         // 2. Sync to Backend
-        if (userId && (typeof uid === 'number' || !uid.startsWith('temp_'))) {
+        if (userId && (typeof uid === 'number' || !uid.toString().startsWith('temp_'))) {
           try {
-            await progressApi.deleteActivity(uid as number);
+            await activityApi.deleteActivity(uid as number);
           } catch (error: any) {
             console.warn('[Store] removeLoggedActivity failed:', error.message);
           }
@@ -608,7 +641,7 @@ export const useAppStore = create<AppState>()(
               ...userProfile,
               dailyMeals: {
                 ...currentMeals,
-                [mealType]: [...currentMeals[mealType], food]
+                [mealType]: [...currentMeals[mealType], { ...food, id: Date.now() + Math.floor(Math.random() * 1000) }]
               }
             }
           });
@@ -646,24 +679,32 @@ export const useAppStore = create<AppState>()(
           // Lọc bỏ những món có id nằm trong danh sách cần xóa
           const currentMeals = userProfile.dailyMeals || { breakfast: [], lunch: [], dinner: [], snack: [] };
           const updatedMealList = currentMeals[mealType].filter((food) => !foodIds.includes(food.id));
+          const updatedMeals = {
+            ...currentMeals,
+            [mealType]: updatedMealList
+          };
 
           // Cập nhật State local (Optimistic)
           set({
             userProfile: {
               ...userProfile,
-              dailyMeals: {
-                ...currentMeals,
-                [mealType]: updatedMealList
-              }
+              dailyMeals: updatedMeals
             }
           });
+
+          // Nếu TẤT CẢ các bữa đều trống → reset dailyNutrition về null ngay
+          // để UI không còn hiển thị giá trị cũ từ server nữa
+          const allFoodsGone = Object.values(updatedMeals).every(arr => arr.length === 0);
+          if (allFoodsGone) {
+            set({ dailyNutrition: null });
+          }
 
           // Gọi API để xóa các log trên server (Thực hiện song song)
           await Promise.allSettled(
             foodIds.map((id) => diaryApi.deleteMealLog(id))
           ).catch((e) => console.warn('[Store] Bulk delete partial fail:', e));
 
-          // Fetch lại daily nutrition
+          // Fetch lại daily nutrition từ server
           await get().fetchDailyNutrition(today);
         } catch (error: any) {
           set({ error: error.message || 'Lỗi khi xóa món ăn' });
@@ -749,8 +790,8 @@ export const useAppStore = create<AppState>()(
               const mealType = (meal.mealType || '').toLowerCase() as keyof DailyMeals;
               if (meals[mealType] && Array.isArray(meal.mealLogs)) {
                 meals[mealType] = meal.mealLogs.map((log) => ({
-                  id: log.id,
-                  name: log.food?.name || '',
+                  id: log.id || (Date.now() + Math.floor(Math.random() * 10000)),
+                  name: log.food?.name || (log as any).foodName || '',
                   calories: log.calories,
                   protein: log.protein,
                   carb: log.carb,

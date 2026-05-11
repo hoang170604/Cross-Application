@@ -1,5 +1,12 @@
+/**
+ * @file PlanSelector.tsx
+ * @description Thẻ chọn chế độ nhịn ăn — thiết kế premium dạng danh sách
+ * với icon emoji, tên chế độ, cửa sổ ăn và mô tả ngắn.
+ */
+
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemeColors } from '@/src/core/theme';
 import { useTheme } from '@/src/hooks/useTheme';
 import { FASTING_PLANS } from '@/src/core/fastingConstants';
@@ -9,39 +16,85 @@ export interface PlanSelectorProps {
   setGoalHours: (hours: number) => void;
 }
 
+// Bổ sung emoji cho mỗi chế độ
+const PLAN_META: Record<string, { emoji: string; color: string }> = {
+  '14-10': { emoji: '🌱', color: '#10B981' },
+  '16-8':  { emoji: '⭐', color: '#0ea5e9' },
+  '18-6':  { emoji: '🔥', color: '#F59E0B' },
+  '20-4':  { emoji: '⚡', color: '#8B5CF6' },
+};
+
 export const PlanSelector: React.FC<PlanSelectorProps> = ({ goalHours, setGoalHours }) => {
   const colors = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   return (
     <View style={styles.card}>
-      <Text style={styles.sectionTitle}>Chế độ nhịn ăn</Text>
-      <View style={styles.planGrid}>
-        {FASTING_PLANS.map((plan) => {
+      {/* Card Header */}
+      <View style={styles.header}>
+        <MaterialCommunityIcons name="clock-time-four-outline" size={20} color="#0ea5e9" />
+        <Text style={styles.headerTitle}>Chế Độ Nhịn Ăn</Text>
+      </View>
+
+      <Text style={styles.headerSubtitle}>
+        Chọn lịch trình phù hợp với lối sống của bạn
+      </Text>
+
+      {/* Plan List */}
+      <View style={styles.planList}>
+        {FASTING_PLANS.map((plan, idx) => {
           const isSelected = goalHours === plan.duration;
+          const meta = PLAN_META[plan.id] ?? { emoji: '🕐', color: '#64748B' };
+          const isLast = idx === FASTING_PLANS.length - 1;
+
           return (
-            <TouchableOpacity
-              key={plan.id}
-              style={[styles.planChip, isSelected && styles.planChipActive]}
-              onPress={() => setGoalHours(plan.duration)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.planChipName, isSelected && styles.planChipNameActive]}>
-                {plan.name}
-              </Text>
-              <Text style={[styles.planChipEating, isSelected && styles.planChipEatingActive]}>
-                {plan.eating}g ăn
-              </Text>
-              {isSelected && (
-                <View style={styles.planSelectedDot} />
-              )}
-            </TouchableOpacity>
+            <React.Fragment key={plan.id}>
+              <TouchableOpacity
+                style={[styles.planRow, isSelected && styles.planRowActive]}
+                onPress={() => setGoalHours(plan.duration)}
+                activeOpacity={0.7}
+              >
+                {/* Left: Emoji Badge */}
+                <View style={[styles.emojiBadge, { backgroundColor: meta.color + '20' }]}>
+                  <Text style={styles.emoji}>{meta.emoji}</Text>
+                </View>
+
+                {/* Center: Plan Info */}
+                <View style={styles.planInfo}>
+                  <View style={styles.planNameRow}>
+                    <Text style={[styles.planName, isSelected && { color: meta.color }]}>
+                      {plan.name}
+                    </Text>
+                    {isSelected && (
+                      <View style={[styles.badge, { backgroundColor: meta.color + '20' }]}>
+                        <Text style={[styles.badgeText, { color: meta.color }]}>Đang chọn</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.planTagline}>{plan.tagline}</Text>
+                  <View style={styles.windowRow}>
+                    <View style={styles.windowChip}>
+                      <MaterialCommunityIcons name="timer-sand" size={11} color={colors.textSecondary} />
+                      <Text style={styles.windowText}>{plan.duration}g nhịn</Text>
+                    </View>
+                    <View style={styles.windowChip}>
+                      <MaterialCommunityIcons name="food-fork-drink" size={11} color={colors.textSecondary} />
+                      <Text style={styles.windowText}>{plan.eating}g ăn</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Right: Radio */}
+                <View style={[styles.radio, isSelected && { borderColor: meta.color }]}>
+                  {isSelected && <View style={[styles.radioFill, { backgroundColor: meta.color }]} />}
+                </View>
+              </TouchableOpacity>
+
+              {!isLast && <View style={styles.divider} />}
+            </React.Fragment>
           );
         })}
       </View>
-      <Text style={styles.planTagline}>
-        {FASTING_PLANS.find(p => p.duration === goalHours)?.tagline ?? ''}
-      </Text>
     </View>
   );
 };
@@ -60,61 +113,122 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
   },
-  sectionTitle: {
-    fontSize: 13, fontWeight: '600', color: colors.textSecondary,
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 16,
-  },
-  planGrid: {
+  header: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 12,
-  },
-  planChip: {
-    width: '30%',
-    flexGrow: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 16,
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.cardBorder,
-    position: 'relative',
+    gap: 8,
+    marginBottom: 4,
   },
-  planChipActive: {
-    backgroundColor: '#0ea5e914',
-    borderColor: '#0ea5e9',
-  },
-  planChipName: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 17,
     fontWeight: '800',
-    color: colors.textSecondary,
-    letterSpacing: 0.2,
+    color: colors.text,
+    letterSpacing: -0.3,
   },
-  planChipNameActive: { color: '#0ea5e9' },
-  planChipEating: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.textSecondary,
-    marginTop: 2,
-    opacity: 0.7,
-  },
-  planChipEatingActive: { color: '#0ea5e9', opacity: 1 },
-  planSelectedDot: {
-    position: 'absolute',
-    top: 7,
-    right: 7,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#0ea5e9',
-  },
-  planTagline: {
+  headerSubtitle: {
     fontSize: 13,
     color: colors.textSecondary,
+    fontWeight: '400',
+    marginBottom: 18,
+    marginTop: 2,
+  },
+  planList: {
+    gap: 0,
+  },
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+  },
+  planRowActive: {
+    backgroundColor: colors.surface,
+    borderColor: colors.cardBorder,
+  },
+  emojiBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  emoji: {
+    fontSize: 22,
+  },
+  planInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  planNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  planName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: 0.1,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 20,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  planTagline: {
+    fontSize: 12,
+    color: colors.textSecondary,
     fontWeight: '500',
-    textAlign: 'center',
-    fontStyle: 'italic',
+  },
+  windowRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 2,
+  },
+  windowChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: colors.background,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  windowText: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  radioFill: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.cardBorder,
+    opacity: 0.5,
+    marginHorizontal: 12,
   },
 });
