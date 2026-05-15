@@ -7,7 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.crossapplication.main.dto.WorkoutChallengeDTO;
-import com.crossapplication.main.entity.WorkoutChallenge;
 import com.crossapplication.main.repository.interfaces.WorkoutChallengeRepository;
 import com.crossapplication.main.service.interfaces.WorkoutChallengeService;
 
@@ -43,7 +42,7 @@ public class WorkoutChallengeServiceTest {
         dto.setChallengeName("Test");
         dto.setTargetValue(100.0);
         dto.setCurrentValue(100.0);
-        WorkoutChallenge created = challengeService.create(dto);
+        WorkoutChallengeDTO created = challengeService.create(dto);
         assertFalse(created.getIsActive(), "Challenge at target should be inactive");
     }
 }

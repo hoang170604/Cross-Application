@@ -1,7 +1,6 @@
 package com.crossapplication.main.service.services;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,6 +11,7 @@ import com.crossapplication.main.dto.UserDTO;
 import com.crossapplication.main.entity.NutritionGoal;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.entity.UserProfile;
+import com.crossapplication.main.mapper.UserMapper;
 import com.crossapplication.main.repository.interfaces.NutritionGoalRepository;
 import com.crossapplication.main.repository.interfaces.UserProfileRepository;
 import com.crossapplication.main.repository.interfaces.UserRepositoryInterface;
@@ -36,6 +36,9 @@ public class UserService implements UserServiceInterface {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public User register(String email, String password) {
@@ -162,14 +165,7 @@ public class UserService implements UserServiceInterface {
     @Override
     public Optional<UserDTO> getById(Long id) {
         Optional<User> uopt = userRepo.findById(id);
-        if (uopt.isEmpty()) return Optional.empty();
-        User u = uopt.get();
-        UserDTO dto = new UserDTO();
-        dto.setId(u.getId());
-        dto.setEmail(u.getEmail());
-        dto.setCreatedAt(u.getCreatedAt());
-        dto.setRole(u.getRole());
-        return Optional.of(dto);
+        return uopt.map(userMapper::toDto);
     }
 
     @Override
@@ -187,15 +183,6 @@ public class UserService implements UserServiceInterface {
     @Override
     public List<UserDTO> getAllUsers() {
         List<User> users = userRepo.findAll();
-        List<UserDTO> dtos = new ArrayList<>();
-        for (User u : users) {
-            UserDTO dto = new UserDTO();
-            dto.setId(u.getId());
-            dto.setEmail(u.getEmail());
-            dto.setCreatedAt(u.getCreatedAt());
-            dto.setRole(u.getRole());
-            dtos.add(dto);
-        }
-        return dtos;
+        return users.stream().map(userMapper::toDto).toList();
     }
 }

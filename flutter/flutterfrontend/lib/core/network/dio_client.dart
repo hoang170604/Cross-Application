@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutterfrontend/core/constants/values.dart';
+import 'package:flutterfrontend/core/network/auth_interceptor.dart';
+import 'package:flutterfrontend/core/services/token_service.dart';
 
 class DioClient {
   static final DioClient _instance = DioClient._internal();
@@ -23,7 +25,7 @@ class DioClient {
       ),
     );
 
-    // Add interceptors if needed
+    // Add logging interceptor
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
@@ -55,6 +57,14 @@ class DioClient {
   }
 
   Dio get client => _dio;
+
+  /// Add authentication interceptor to Dio client
+  /// Call this after TokenService is initialized
+  void addAuthInterceptor(TokenService tokenService) {
+    _dio.interceptors.add(
+      AuthInterceptor(tokenService: tokenService, dio: _dio),
+    );
+  }
 
   Future<void> close() async {
     _dio.close();

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.crossapplication.main.dto.FastingStateDTO;
 import com.crossapplication.main.entity.FastingState;
 import com.crossapplication.main.entity.User;
+import com.crossapplication.main.mapper.FastingStateMapper;
 import com.crossapplication.main.repository.interfaces.FastingStateRepository;
 import com.crossapplication.main.repository.interfaces.UserRepositoryInterface;
 import com.crossapplication.main.service.interfaces.FastingStateService;
@@ -27,23 +28,28 @@ public class FastingStateServiceImpl implements FastingStateService {
     @Autowired
     private com.crossapplication.main.repository.interfaces.FastingSessionRepository fastingSessionRepository;
 
+    @Autowired
+    private FastingStateMapper fastingStateMapper;
+
     @Override
     @Transactional
-    public FastingState createOrUpdate(FastingStateDTO dto) {
+    public FastingStateDTO createOrUpdate(FastingStateDTO dto) {
         if (dto.getUserId() == null) throw new IllegalArgumentException("userId required");
         User u = userRepository.findById(dto.getUserId()).orElseThrow(() -> new IllegalArgumentException("user not found"));
         Optional<FastingState> opt = fastingStateRepository.findById(dto.getUserId());
-        FastingState e = opt.orElseGet(FastingState::new);
+        FastingState e = opt.orElse(fastingStateMapper.toEntity(dto));
         e.setUser(u);
         e.setIsFasting(dto.getIsFasting());
         e.setStartTime(dto.getStartTime());
         e.setFastingGoalHours(dto.getFastingGoalHours());
-        return fastingStateRepository.save(e);
+        FastingState saved = fastingStateRepository.save(e);
+        return fastingStateMapper.toDto(saved);
     }
 
     @Override
-    public Optional<FastingState> getByUserId(Long userId) {
-        return fastingStateRepository.findById(userId);
+    public Optional<FastingStateDTO> getByUserId(Long userId) {
+        return fastingStateRepository.findById(userId)
+            .map(fastingStateMapper::toDto);
     }
 
     @Override

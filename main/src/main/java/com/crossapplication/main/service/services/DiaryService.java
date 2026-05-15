@@ -5,15 +5,17 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.crossapplication.main.dto.MealDTO;
 import com.crossapplication.main.entity.Meal;
 import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.entity.User;
+import com.crossapplication.main.mapper.MealLogMapper;
+import com.crossapplication.main.mapper.MealMapper;
 import com.crossapplication.main.repository.impl.MealRepository;
 import com.crossapplication.main.repository.interfaces.MealLogRepository;
 import com.crossapplication.main.service.interfaces.DailyNutritionService;
-
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DiaryService implements com.crossapplication.main.service.interfaces.DiaryService{
@@ -29,6 +31,12 @@ public class DiaryService implements com.crossapplication.main.service.interface
 
     @Autowired
     private com.crossapplication.main.repository.interfaces.FoodRepositoryInterface foodRepo;
+
+    @Autowired
+    private MealMapper mealMapper;
+
+    @Autowired
+    private MealLogMapper mealLogMapper;
 
     @Override
     @Transactional
@@ -50,7 +58,7 @@ public class DiaryService implements com.crossapplication.main.service.interface
 
             targetMeal = mealRepo.save(targetMeal);
         }
-
+        
         // Validate Food reference: nếu foodId không tồn tại trong DB thì set null
         // để tránh FK constraint violation. MealLog vẫn lưu đủ calories/protein/carb/fat inline.
         if (mealLog.getFood() != null && mealLog.getFood().getId() != null) {
@@ -61,7 +69,6 @@ public class DiaryService implements com.crossapplication.main.service.interface
                 mealLog.setFood(foodOpt.get());
             }
         }
-
         mealLog.setMeal(targetMeal);
         MealLog saved = mealLogRepo.save(mealLog);
         // update daily totals
@@ -70,9 +77,11 @@ public class DiaryService implements com.crossapplication.main.service.interface
     }
 
     @Override
-    public List<Meal> getDailyDiary(Long id, LocalDate date) {
-        List<Meal> meals = mealRepo.findByUserIdAndDate(id, date);
-        return meals;
+    public List<MealDTO> getDailyDiary(Long id, LocalDate date) {
+        return mealRepo.findByUserIdAndDate(id, date)
+            .stream()
+            .map(mealMapper::toDto)
+            .toList();
     }
 
     @Override
@@ -91,7 +100,7 @@ public class DiaryService implements com.crossapplication.main.service.interface
     }
 
     @Override
-    public Meal createMeal(Long userId, LocalDate date, String mealType) {
+    public MealDTO createMeal(Long userId, LocalDate date, String mealType) {
         List<Meal> existingMeal = mealRepo.findByUserIdAndMealType(userId, mealType);
         Meal targetMeal = existingMeal.stream()
                 .filter(m -> m.getDate() != null && m.getDate().equals(date))
@@ -110,7 +119,7 @@ public class DiaryService implements com.crossapplication.main.service.interface
             targetMeal = mealRepo.save(targetMeal);
         }
 
-        return targetMeal;
+        return mealMapper.toDto(targetMeal);
     }
 
     @Override

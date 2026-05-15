@@ -7,8 +7,10 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.crossapplication.main.dto.WaterLogDTO;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.entity.WaterLog;
+import com.crossapplication.main.mapper.WaterLogMapper;
 import com.crossapplication.main.repository.interfaces.WaterLogRepository;
 import com.crossapplication.main.service.interfaces.WaterServiceInterface;
 
@@ -20,9 +22,12 @@ public class WaterService implements WaterServiceInterface {
     @Autowired
     private WaterLogRepository waterLogRepository;
 
+    @Autowired
+    private WaterLogMapper waterLogMapper;
+
     @Override
     @Transactional
-    public WaterLog logWater(Long userId, LocalDateTime timestamp, double amountMl, String source, String externalId) {
+    public WaterLogDTO logWater(Long userId, LocalDateTime timestamp, double amountMl, String source, String externalId) {
         WaterLog w = new WaterLog();
         User u = new User();
         u.setId(userId);
@@ -32,7 +37,8 @@ public class WaterService implements WaterServiceInterface {
         w.setSource(source);
         w.setExternalId(externalId);
         w.setCreatedAt(timestamp);
-        return waterLogRepository.save(w);
+        WaterLog saved = waterLogRepository.save(w);
+        return waterLogMapper.toDto(saved);
     }
 
     @Override
@@ -41,7 +47,10 @@ public class WaterService implements WaterServiceInterface {
     }
 
     @Override
-    public List<WaterLog> getLogsBetween(Long userId, LocalDate start, LocalDate end) {
-        return waterLogRepository.findByUserIdAndLogDateBetween(userId, start, end);
+    public List<WaterLogDTO> getLogsBetween(Long userId, LocalDate start, LocalDate end) {
+        return waterLogRepository.findByUserIdAndLogDateBetween(userId, start, end)
+            .stream()
+            .map(waterLogMapper::toDto)
+            .toList();
     }
 }

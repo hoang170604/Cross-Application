@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import com.crossapplication.main.dto.ReportSummary;
 import com.crossapplication.main.entity.DailyNutrition;
 import com.crossapplication.main.entity.WeightLog;
+import com.crossapplication.main.mapper.DailyNutritionMapper;
+import com.crossapplication.main.mapper.WeightLogMapper;
 import com.crossapplication.main.repository.interfaces.DailyNutritionRepository;
 import com.crossapplication.main.repository.interfaces.WeightLogRepository;
 import com.crossapplication.main.service.interfaces.ProgressService;
@@ -22,6 +24,12 @@ public class ProgressServiceImpl implements ProgressService {
 
     @Autowired
     private DailyNutritionRepository dailyRepo;
+
+    @Autowired
+    private WeightLogMapper weightLogMapper;
+
+    @Autowired
+    private DailyNutritionMapper dailyNutritionMapper;
 
     @Override
     public List<WeightLog> getWeightHistory(Long userId, LocalDate startDate, LocalDate endDate) {

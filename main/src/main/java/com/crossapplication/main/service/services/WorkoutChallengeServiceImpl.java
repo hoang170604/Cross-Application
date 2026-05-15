@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.crossapplication.main.dto.WorkoutChallengeDTO;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.entity.WorkoutChallenge;
+import com.crossapplication.main.mapper.WorkoutChallengeMapper;
 import com.crossapplication.main.repository.interfaces.UserRepositoryInterface;
 import com.crossapplication.main.repository.interfaces.WorkoutChallengeRepository;
 import com.crossapplication.main.service.interfaces.WorkoutChallengeService;
@@ -26,45 +27,49 @@ public class WorkoutChallengeServiceImpl implements WorkoutChallengeService {
     @Autowired
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
+    @Autowired
+    private WorkoutChallengeMapper workoutChallengeMapper;
+
     @Override
     @Transactional
-    public WorkoutChallenge create(WorkoutChallengeDTO dto) {
+    public WorkoutChallengeDTO create(WorkoutChallengeDTO dto) {
         if (dto.getUserId() == null) throw new IllegalArgumentException("userId required");
         User u = userRepository.findById(dto.getUserId()).orElseThrow(() -> new IllegalArgumentException("user not found"));
-        WorkoutChallenge e = new WorkoutChallenge();
+        WorkoutChallenge e = workoutChallengeMapper.toEntity(dto);
         e.setUser(u);
-        e.setChallengeName(dto.getChallengeName());
-        e.setTargetValue(dto.getTargetValue());
-        e.setCurrentValue(dto.getCurrentValue() != null ? dto.getCurrentValue() : 0.0);
-        e.setUnit(dto.getUnit());
-        e.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
-        e.setStartDate(dto.getStartDate());
-        e.setEndDate(dto.getEndDate());
         // if initial currentValue already meets target, mark inactive
         if (e.getTargetValue() != null && e.getCurrentValue() != null && e.getCurrentValue() >= e.getTargetValue()) {
             e.setIsActive(false);
         }
-        return workoutChallengeRepository.save(e);
+        WorkoutChallenge saved = workoutChallengeRepository.save(e);
+        return workoutChallengeMapper.toDto(saved);
     }
 
     @Override
-    public Optional<WorkoutChallenge> getById(Long id) {
-        return workoutChallengeRepository.findById(id);
+    public Optional<WorkoutChallengeDTO> getById(Long id) {
+        return workoutChallengeRepository.findById(id)
+            .map(workoutChallengeMapper::toDto);
     }
 
     @Override
-    public List<WorkoutChallenge> listByUser(Long userId) {
-        return workoutChallengeRepository.findByUserId(userId);
+    public List<WorkoutChallengeDTO> listByUser(Long userId) {
+        return workoutChallengeRepository.findByUserId(userId)
+            .stream()
+            .map(workoutChallengeMapper::toDto)
+            .toList();
     }
 
     @Override
-    public List<WorkoutChallenge> listAll() {
-        return workoutChallengeRepository.findAll();
+    public List<WorkoutChallengeDTO> listAll() {
+        return workoutChallengeRepository.findAll()
+            .stream()
+            .map(workoutChallengeMapper::toDto)
+            .toList();
     }
 
     @Override
     @Transactional
-    public WorkoutChallenge update(Long id, WorkoutChallengeDTO dto) {
+    public WorkoutChallengeDTO update(Long id, WorkoutChallengeDTO dto) {
         WorkoutChallenge e = workoutChallengeRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("not found"));
         if (dto.getChallengeName() != null) e.setChallengeName(dto.getChallengeName());
         if (dto.getTargetValue() != null) e.setTargetValue(dto.getTargetValue());
@@ -83,7 +88,7 @@ public class WorkoutChallengeServiceImpl implements WorkoutChallengeService {
                 eventPublisher.publishEvent(new com.crossapplication.main.events.ChallengeCompletedEvent(this, saved.getId(), saved.getUser() != null ? saved.getUser().getId() : null));
             }
         }
-        return saved;
+        return workoutChallengeMapper.toDto(saved);
     }
 
     @Override

@@ -1,5 +1,8 @@
 package com.crossapplication.main.config;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +17,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.crossapplication.main.util.JwtAuthenticationFilter;
 
@@ -39,20 +45,36 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    // --- THÊM MỚI: Cấu hình CORS chi tiết để thông đường cho Flutter Web ---
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Cho phép tất cả các nguồn (Origin) truy cập - Rất quan trọng cho Flutter Web
+        configuration.setAllowedOriginPatterns(List.of("*")); 
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Enable CORS
-                .cors(org.springframework.security.config.Customizer.withDefaults())
-                // CSRF disabled (we use JWT instead)
+                // SỬA: Sử dụng cấu hình corsConfigurationSource ở trên thay vì defaults
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                
                 .csrf(csrf -> csrf.disable())
 
-                // Session management - stateless (JWT based)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - no authentication required
+                        // THÊM: Cho phép tất cả các request OPTIONS (Preflight) đi qua
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
@@ -61,11 +83,9 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
 
-                // Exception handling
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(401);
@@ -74,7 +94,6 @@ public class SecurityConfig {
                         })
                 )
 
-                // Add JWT filter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
