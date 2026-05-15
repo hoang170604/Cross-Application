@@ -7,7 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.crossapplication.main.dto.WorkoutChallengeDTO;
-import com.crossapplication.main.entity.WorkoutChallenge;
 import com.crossapplication.main.repository.interfaces.WorkoutChallengeRepository;
 import com.crossapplication.main.service.interfaces.WorkoutChallengeService;
 

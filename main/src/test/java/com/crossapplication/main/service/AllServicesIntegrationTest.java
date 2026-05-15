@@ -15,10 +15,10 @@ import com.crossapplication.main.dto.ActivityDTO;
 import com.crossapplication.main.dto.FastingSessionDTO;
 import com.crossapplication.main.dto.FastingStateDTO;
 import com.crossapplication.main.dto.MealDTO;
-import com.crossapplication.main.dto.MealLogDTO;
 import com.crossapplication.main.dto.WaterLogDTO;
 import com.crossapplication.main.dto.WorkoutChallengeDTO;
 import com.crossapplication.main.entity.DailyNutrition;
+import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.repository.interfaces.ActivityRepository;
 import com.crossapplication.main.repository.interfaces.DailyNutritionRepository;
@@ -167,20 +167,21 @@ public class AllServicesIntegrationTest {
         food = foodRepo.saveFood(food);
 
         // Create meal log
-        MealLogDTO log = new MealLogDTO();
-        log.setFoodId(food.getId());
-        log.setQuantity(100.0);
-        log.setCalories(130.0);
+        MealLog log = new MealLog();
+        log.setFood(food);
+        log.setQuantity(100);
+        log.setCalories(130);
         log.setProtein(2.7);
-        log.setCarb(28.0);
+        log.setCarb(28);
         log.setFat(0.3);
 
         // Add to breakfast
-        MealLogDTO saved = diaryService.addFoodToMeal(testUser.getId(), today, "breakfast", log);
+        MealLog saved = diaryService.addFoodToMeal(testUser.getId(), today, "breakfast", log);
 
         assertThat(saved).isNotNull();
-        assertThat(saved.getFoodName()).isEqualTo("Rice");
-        assertThat(saved.getMealType()).isEqualTo("breakfast");
+        assertThat(saved.getFood().getName()).isEqualTo("Rice");
+        assertThat(saved.getMeal()).isNotNull();
+        assertThat(saved.getMeal().getMealType()).isEqualTo("breakfast");
     }
 
     @Test
@@ -195,12 +196,12 @@ public class AllServicesIntegrationTest {
         food.setFatPer100g(3.6f);
         food = foodRepo.saveFood(food);
 
-        MealLogDTO log = new MealLogDTO();
-        log.setFoodId(food.getId());
-        log.setQuantity(150.0);
+        MealLog log = new MealLog();
+        log.setFood(food);
+        log.setQuantity(150);
         log.setCalories(247.5);
         log.setProtein(46.5);
-        log.setCarb(0.0);
+        log.setCarb(0);
         log.setFat(5.4);
 
         diaryService.addFoodToMeal(testUser.getId(), today, "lunch", log);
@@ -328,12 +329,12 @@ public class AllServicesIntegrationTest {
         food.setFatPer100g(0.2f);
         food = foodRepo.saveFood(food);
 
-        MealLogDTO log = new MealLogDTO();
-        log.setFoodId(food.getId());
-        log.setQuantity(200.0);
-        log.setCalories(104.0);
+        MealLog log = new MealLog();
+        log.setFood(food);
+        log.setQuantity(200);
+        log.setCalories(104);
         log.setProtein(0.6);
-        log.setCarb(28.0);
+        log.setCarb(28);
         log.setFat(0.4);
 
         diaryService.addFoodToMeal(testUser.getId(), today, "breakfast", log);
