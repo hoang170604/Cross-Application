@@ -8,6 +8,7 @@ import 'package:flutterfrontend/core/services/user_session_manager.dart';
 import 'package:flutterfrontend/data/datasources/index.dart';
 import 'package:flutterfrontend/domain/usecases/index.dart';
 import 'package:flutterfrontend/presentation/bloc/auth/auth_bloc.dart';
+import 'package:flutterfrontend/presentation/bloc/profile/profile_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -157,6 +158,11 @@ Future<void> setupServiceLocator() async {
         tokenService: getIt<TokenService>(),
         sessionManager: getIt<UserSessionManager>(),
       ),
+    );
+
+    print('📦 Registering ProfileBloc...');
+    getIt.registerSingleton<ProfileBloc>(
+      ProfileBloc(userUsecase: getIt<UserUsecase>()),
     );
     
     print('✅ Service Locator setup completed successfully!');

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'third_screen.dart';
 import '../home/user_setup_data.dart';
+import 'package:flutterfrontend/presentation/bloc/profile/profile_bloc.dart';
 
 class SecondScreen extends StatefulWidget {
   final UserSetupData setupData;
@@ -182,7 +185,10 @@ class _SecondScreenState extends State<SecondScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ThirdScreen(setupData: updatedSetupData),
+                      builder: (context) => BlocProvider(
+                        create: (context) => GetIt.instance<ProfileBloc>(),
+                        child: ThirdScreen(setupData: updatedSetupData),
+                      ),
                     ),
                   );
                 },
