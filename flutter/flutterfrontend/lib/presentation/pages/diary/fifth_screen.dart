@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import '../home/user_setup_data.dart';
+import 'package:flutterfrontend/core/services/user_session_manager.dart';
+import 'package:flutterfrontend/domain/usecases/user_usecase.dart';
+import 'package:flutterfrontend/domain/entities/nutrition_goal_entity.dart';
+import 'package:flutterfrontend/domain/entities/user_profile_entity.dart';
+import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FifthScreen extends StatefulWidget {
-  const FifthScreen({super.key});
+  final UserSetupData? setupData;
+  
+  const FifthScreen({super.key, this.setupData});
 
   @override
   State<FifthScreen> createState() => _FifthScreenState();
@@ -12,6 +21,60 @@ class _FifthScreenState extends State<FifthScreen> {
   double weight = 45.0;
   int steps = 9;
   int selectedNavIndex = 0;
+  
+  // Nutrition data từ database
+  NutritionGoalEntity? _nutritionGoal;
+  UserProfileEntity? _userProfile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Nếu có setupData, sử dụng dữ liệu từ đó
+      if (widget.setupData?.nutritionGoal != null) {
+        setState(() {
+          _nutritionGoal = widget.setupData!.nutritionGoal;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Nếu không, load từ database
+      final prefs = await SharedPreferences.getInstance();
+      final sessionManager = UserSessionManager(prefs: prefs);
+      final userId = sessionManager.getUserId();
+
+      if (userId == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final userUsecase = GetIt.instance<UserUsecase>();
+      
+      // Load nutrition goal từ database
+      final nutritionGoal = await userUsecase.getNutritionGoal(userId);
+      final userProfile = await userUsecase.getUserProfile(userId);
+
+      setState(() {
+        _nutritionGoal = nutritionGoal;
+        _userProfile = userProfile;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  double get _targetCalories => _nutritionGoal?.targetCalories ?? 2500;
+  double get _targetProtein => _nutritionGoal?.targetProtein ?? 100;
+  double get _targetCarbs => _nutritionGoal?.targetCarb ?? 281;
+  double get _targetFats => _nutritionGoal?.targetFat ?? 56;
 
   @override
   Widget build(BuildContext context) {
@@ -223,6 +286,54 @@ class _FifthScreenState extends State<FifthScreen> {
                             _buildNutritionItem('Lunch', 'GỊ72 kcal'),
                             _buildNutritionItem('Dinner', 'GỊ18 kcal'),
                             _buildNutritionItem('Snack', 'GỊ103 kcal'),
+
+                            const SizedBox(height: 24),
+
+                            // Macro breakdown section
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey[200]!),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Mục tiêu dinh dưỡng',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildMacroItem(
+                                    'Calo',
+                                    '${_targetCalories.toStringAsFixed(0)} kcal',
+                                    Colors.orange,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildMacroItem(
+                                    'Protein',
+                                    '${_targetProtein.toStringAsFixed(0)} g',
+                                    Colors.red,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildMacroItem(
+                                    'Carbs',
+                                    '${_targetCarbs.toStringAsFixed(0)} g',
+                                    Colors.blue,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildMacroItem(
+                                    'Fats',
+                                    '${_targetFats.toStringAsFixed(0)} g',
+                                    Colors.green,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -544,6 +655,42 @@ class _FifthScreenState extends State<FifthScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMacroItem(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey,
+          ),
+        ),
+      ],
     );
   }
 }

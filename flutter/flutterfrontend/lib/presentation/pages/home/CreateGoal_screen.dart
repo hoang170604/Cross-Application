@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'CreateGoals_screen.dart';
+import 'user_setup_data.dart';
+import '../diary/second_screen.dart';
 
 class CreateGoal extends StatefulWidget {
   const CreateGoal({super.key});
@@ -180,25 +182,40 @@ class _CreateGoalState extends State<CreateGoal> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreateGoals(),
-                      ),
-                    );
+                    if (selectedOptions.isNotEmpty) {
+                      // Lấy mục tiêu đầu tiên được chọn (hoặc bạn có thể cho phép chọn nhiều)
+                      final selectedGoal = selectedOptions.first;
+                      
+                      // Tạo UserSetupData với mục tiêu được chọn
+                      final setupData = UserSetupData(
+                        selectedGoal: selectedGoal,
+                      );
+                      
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SecondScreen(setupData: setupData),
+                        ),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[800],
+                    backgroundColor: selectedOptions.isEmpty
+                        ? Colors.grey[400]
+                        : Colors.grey[800],
+                    disabledBackgroundColor: Colors.grey[400],
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Tiếp theo',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: selectedOptions.isEmpty
+                          ? Colors.grey[600]
+                          : Colors.white,
                     ),
                   ),
                 ),

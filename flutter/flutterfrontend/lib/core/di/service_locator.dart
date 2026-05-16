@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutterfrontend/core/network/dio_client.dart';
 import 'package:flutterfrontend/core/services/token_service.dart';
 import 'package:flutterfrontend/core/services/session_manager.dart';
+import 'package:flutterfrontend/core/services/user_session_manager.dart';
 import 'package:flutterfrontend/data/datasources/index.dart';
 import 'package:flutterfrontend/domain/usecases/index.dart';
 import 'package:flutterfrontend/presentation/bloc/auth/auth_bloc.dart';
@@ -37,6 +38,11 @@ Future<void> setupServiceLocator() async {
         tokenService: getIt<TokenService>(),
         sharedPreferences: getIt<SharedPreferences>(),
       ),
+    );
+
+    print('📦 Registering UserSessionManager...');
+    getIt.registerSingleton<UserSessionManager>(
+      UserSessionManager(prefs: getIt<SharedPreferences>()),
     );
 
     // Network
@@ -149,6 +155,7 @@ Future<void> setupServiceLocator() async {
       AuthBloc(
         userUsecase: getIt<UserUsecase>(),
         tokenService: getIt<TokenService>(),
+        sessionManager: getIt<UserSessionManager>(),
       ),
     );
     

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'fifth_screen.dart';
+import '../home/user_setup_data.dart';
 
 class FourthScreen extends StatefulWidget {
-  const FourthScreen({super.key});
+  final UserSetupData setupData;
+  
+  const FourthScreen({super.key, required this.setupData});
 
   @override
   State<FourthScreen> createState() => _FourthScreenState();
@@ -12,46 +15,75 @@ class FourthScreen extends StatefulWidget {
 class _FourthScreenState extends State<FourthScreen> {
   // Dữ liệu cho biểu đồ pie
   late List<PieSlice> slices;
-  int totalCalories = 2500; // Tổng calories khuyến cáo trong một ngày
+  late double totalCalories;
+  late double proteinGrams;
+  late double carbsGrams;
+  late double fatsGrams;
 
   @override
   void initState() {
     super.initState();
+    _initializeNutritionData();
+  }
+
+  void _initializeNutritionData() {
+    // Lấy dữ liệu từ setupData
+    final nutrition = widget.setupData.nutritionGoal;
+    
+    if (nutrition != null) {
+      totalCalories = nutrition.targetCalories ?? 2500;
+      proteinGrams = nutrition.targetProtein ?? 0;
+      carbsGrams = nutrition.targetCarb ?? 0;
+      fatsGrams = nutrition.targetFat ?? 0;
+    } else {
+      // Fallback values
+      totalCalories = 2500;
+      proteinGrams = 100;
+      carbsGrams = 281;
+      fatsGrams = 56;
+    }
+    
     _initializeSlices();
   }
 
   void _initializeSlices() {
+    // Tính calories từ mỗi macro
+    double proteinCalories = proteinGrams * 4;
+    double carbsCalories = carbsGrams * 4;
+    double fatsCalories = fatsGrams * 9;
+    double totalMacroCalories = proteinCalories + carbsCalories + fatsCalories;
+    
+    // Tính percentage
+    double proteinPercent = totalMacroCalories > 0 ? (proteinCalories / totalMacroCalories) * 100 : 0;
+    double carbsPercent = totalMacroCalories > 0 ? (carbsCalories / totalMacroCalories) * 100 : 0;
+    double fatsPercent = totalMacroCalories > 0 ? (fatsCalories / totalMacroCalories) * 100 : 0;
+    
+    // Điều chỉnh để phù hợp (vì có thể lỗi làm tròn)
+    double otherPercent = 100 - (proteinPercent + carbsPercent + fatsPercent);
+    if (otherPercent < 0) otherPercent = 0;
+    
     slices = [
       PieSlice(
         label: 'Protein',
-        percentage: 17.5,
+        percentage: proteinPercent,
         color: const Color(0xFF2563EB), // Blue
       ),
       PieSlice(
         label: 'Carbs',
-        percentage: 6.2,
+        percentage: carbsPercent,
         color: const Color(0xFFEF4444), // Red
       ),
       PieSlice(
         label: 'Fats',
-        percentage: 5.0,
+        percentage: fatsPercent,
         color: const Color(0xFFFCD34D), // Yellow
       ),
-      PieSlice(
-        label: 'Vitamins & Minerals',
-        percentage: 0.3,
-        color: const Color(0xFF10B981), // Green
-      ),
-      PieSlice(
-        label: 'Fiber',
-        percentage: 31.8,
-        color: const Color(0xFF14B8A6), // Teal
-      ),
-      PieSlice(
-        label: 'Water',
-        percentage: 43.2,
-        color: const Color(0xFFFF9500), // Orange
-      ),
+      if (otherPercent > 0)
+        PieSlice(
+          label: 'Other',
+          percentage: otherPercent,
+          color: const Color(0xFF10B981), // Green
+        ),
     ];
   }
 
@@ -97,6 +129,9 @@ class _FourthScreenState extends State<FourthScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 child: Column(
                   children: [
+                    // Personal Info Section
+                    _buildPersonalInfoSection(),
+                    const SizedBox(height: 30),
                     // Pie chart with legend
                     Stack(
                       alignment: Alignment.center,
@@ -130,7 +165,7 @@ class _FourthScreenState extends State<FourthScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const FifthScreen(),
+                      builder: (context) => FifthScreen(setupData: widget.setupData),
                     ),
                   );
                 },
@@ -157,6 +192,173 @@ class _FourthScreenState extends State<FourthScreen> {
     );
   }
 
+  Widget _buildPersonalInfoSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Thông tin cá nhân',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: [
+                  Text(
+                    'Tuổi',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${widget.setupData.calculatedAge ?? 0}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'BMI',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(widget.setupData.bmi ?? 0).toStringAsFixed(1)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'Giới tính',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.setupData.isMale == true ? '♂ Nam' : '♀ Nữ',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: [
+                  Text(
+                    'Chiều cao',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${widget.setupData.height?.toStringAsFixed(0) ?? '0'} ${widget.setupData.isCentimeters == true ? 'cm' : 'ft'}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'Cân nặng',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${widget.setupData.weight?.toStringAsFixed(0) ?? '0'} ${widget.setupData.isKilograms == true ? 'kg' : 'lbs'}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'Mục tiêu',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Flexible(
+                    child: Text(
+                      widget.setupData.selectedGoal ?? 'Không có',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCaloriesDisplay() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -177,7 +379,7 @@ class _FourthScreenState extends State<FourthScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '$totalCalories',
+            '${totalCalories.toStringAsFixed(0)}',
             style: const TextStyle(
               fontSize: 44,
               fontWeight: FontWeight.bold,
@@ -192,6 +394,76 @@ class _FourthScreenState extends State<FourthScreen> {
               fontWeight: FontWeight.w500,
               color: Colors.grey[600],
             ),
+          ),
+          const SizedBox(height: 16),
+          // Macro breakdown
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: [
+                  Text(
+                    'Protein',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${proteinGrams.toStringAsFixed(0)}g',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'Carbs',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${carbsGrams.toStringAsFixed(0)}g',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFEF4444),
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'Fats',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${fatsGrams.toStringAsFixed(0)}g',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFCD34D),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),

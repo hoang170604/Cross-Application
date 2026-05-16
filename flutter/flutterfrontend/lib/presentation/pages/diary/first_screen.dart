@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'second_screen.dart';
+import '../home/user_setup_data.dart';
 
 class FirstScreen extends StatelessWidget {
   const FirstScreen({super.key});
@@ -87,7 +88,7 @@ class FirstScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const SecondScreen(),
+                        builder: (context) => SecondScreen(setupData: UserSetupData()),
                       ),
                     );
                   },

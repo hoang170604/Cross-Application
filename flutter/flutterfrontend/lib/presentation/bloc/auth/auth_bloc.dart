@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutterfrontend/core/services/token_service.dart';
+import 'package:flutterfrontend/core/services/user_session_manager.dart';
 import 'package:flutterfrontend/domain/usecases/user_usecase.dart';
 import 'package:flutterfrontend/domain/entities/user_entity.dart';
 import 'auth_event.dart';
@@ -8,10 +9,12 @@ import 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final UserUsecase userUsecase;
   final TokenService tokenService;
+  final UserSessionManager sessionManager;
 
   AuthBloc({
     required this.userUsecase,
     required this.tokenService,
+    required this.sessionManager,
   }) : super(const AuthInitial()) {
     // Register event handlers
     on<LoginEvent>(_onLoginEvent);
@@ -48,6 +51,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
           // Create user entity from response
           final user = _mapToUserEntity(userData);
+          
+          // Save userId to session for profile setup
+          if (user.id != null) {
+            await sessionManager.setUserId(user.id!);
+          }
 
           emit(AuthSuccess(user: user, token: token));
         } else {
@@ -102,6 +110,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       // Clear token from secure storage
       await tokenService.deleteToken();
+      // Clear userId from session
+      await sessionManager.logout();
       emit(const AuthLoggedOut());
     } catch (e) {
       emit(AuthError(error: _getErrorMessage(e)));

@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'fourth_screen.dart';
+import '../home/user_setup_data.dart';
+import 'package:flutterfrontend/core/services/nutrition_calculator_service.dart';
+import 'package:flutterfrontend/core/services/user_session_manager.dart';
+import 'package:flutterfrontend/domain/usecases/user_usecase.dart';
+import 'package:get_it/get_it.dart';
+import 'package:flutterfrontend/domain/entities/user_profile_entity.dart';
 
 class ThirdScreen extends StatefulWidget {
-  const ThirdScreen({super.key});
+  final UserSetupData setupData;
+  
+  const ThirdScreen({super.key, required this.setupData});
 
   @override
   State<ThirdScreen> createState() => _ThirdScreenState();
@@ -14,6 +23,7 @@ class _ThirdScreenState extends State<ThirdScreen> {
   bool _isMale = true;
   double _height = 168;
   double _weight = 70;
+  bool _isLoading = false;
 
   double _calculateBMI() {
     // Convert to metric
@@ -33,6 +43,89 @@ class _ThirdScreenState extends State<ThirdScreen> {
     } else {
       return 'Béo phì';
     }
+  }
+
+  Future<void> _saveProfileAndNavigate() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Tính BMI
+      double heightCm = _isCentimeters ? _height : _height * 30.48;
+      double weightKg = _isKilograms ? _weight : _weight * 0.453592;
+      double bmi = NutritionCalculatorService.calculateBMI(heightCm, weightKg);
+
+      // Tính tuổi từ ngày sinh
+      int age = widget.setupData.calculateAge();
+
+      // Tính nutrition goal
+      String gender = _isMale ? 'male' : 'female';
+      var nutritionGoal = NutritionCalculatorService.calculateNutritionGoal(
+        age: age,
+        gender: gender,
+        heightCm: heightCm,
+        weightKg: weightKg,
+        goal: widget.setupData.selectedGoal ?? 'healthy eating',
+      );
+
+      // Lấy userId từ session
+      final sessionManager = UserSessionManager(prefs: await _getPrefs());
+      final userId = sessionManager.getUserId();
+
+      if (userId == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chưa đăng nhập. Vui lòng đăng nhập lại.')),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Gọi usecase để lưu vào database
+      final userUsecase = GetIt.instance<UserUsecase>();
+      final userProfile = UserProfileEntity(
+        userId: userId,
+        age: age,
+        gender: gender,
+        height: heightCm,
+        weight: weightKg,
+        goal: widget.setupData.selectedGoal ?? 'healthy eating',
+        activityLevel: 1.55,
+      );
+
+      await userUsecase.updateProfileAndCalculateGoal(userId, userProfile);
+
+      // Cập nhật setupData
+      final updatedSetupData = widget.setupData.copyWith(
+        height: _height,
+        weight: _weight,
+        isCentimeters: _isCentimeters,
+        isKilograms: _isKilograms,
+        isMale: _isMale,
+        bmi: bmi,
+        calculatedAge: age,
+        nutritionGoal: nutritionGoal,
+      );
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FourthScreen(setupData: updatedSetupData),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: ${e.toString()}')),
+      );
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<SharedPreferences> _getPrefs() async {
+    return await SharedPreferences.getInstance();
   }
 
   @override
@@ -401,29 +494,32 @@ class _ThirdScreenState extends State<ThirdScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const FourthScreen(),
-                    ),
-                  );
-                },
+                onPressed: _isLoading ? null : _saveProfileAndNavigate,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 26, 197, 63),
+                  disabledBackgroundColor: Colors.grey[400],
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Tiếp theo',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color.fromARGB(255, 255, 255, 255),
-                  ),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Tiếp theo',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color.fromARGB(255, 255, 255, 255),
+                        ),
+                      ),
               ),
             ),
           ),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'third_screen.dart';
+import '../home/user_setup_data.dart';
 
 class SecondScreen extends StatefulWidget {
-  const SecondScreen({super.key});
+  final UserSetupData setupData;
+  
+  const SecondScreen({super.key, required this.setupData});
 
   @override
   State<SecondScreen> createState() => _SecondScreenState();
@@ -169,10 +172,17 @@ class _SecondScreenState extends State<SecondScreen> {
               height: 52,
               child: ElevatedButton(
                 onPressed: () {
+                  // Cập nhật setupData với ngày sinh
+                  final updatedSetupData = widget.setupData.copyWith(
+                    day: _selectedDay,
+                    month: _selectedMonth,
+                    year: _selectedYear,
+                  );
+                  
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ThirdScreen(),
+                      builder: (context) => ThirdScreen(setupData: updatedSetupData),
                     ),
                   );
                 },

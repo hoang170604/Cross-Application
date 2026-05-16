@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.crossapplication.main.dto.ApiResponse;
 import com.crossapplication.main.dto.MealDTO;
 import com.crossapplication.main.dto.MealLogDTO;
+import com.crossapplication.main.entity.MealLog;
+import com.crossapplication.main.mapper.MealLogMapper;
+import com.crossapplication.main.mapper.MealMapper;
 import com.crossapplication.main.service.interfaces.DiaryService;
 
 @RestController
@@ -29,6 +32,12 @@ public class DiaryController {
 
     @Autowired
     private DiaryService diaryService;
+
+    @Autowired
+    private MealMapper mealMapper;
+
+    @Autowired
+    private MealLogMapper mealLogMapper;
 
     @GetMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
@@ -40,7 +49,8 @@ public class DiaryController {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("userId and date are required", "INVALID_PARAMS"));
             }
-            List<MealDTO> meals = diaryService.getMealsBetween(userId, date, date);
+            List<MealDTO> meals = diaryService.getMealsBetween(userId, date, date).stream()
+                    .map(mealMapper::toDto).toList();
             return ResponseEntity.ok(ApiResponse.success(meals));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
@@ -63,7 +73,8 @@ public class DiaryController {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("startDate must be on or before endDate", "INVALID_DATE_RANGE"));
             }
-            List<MealLogDTO> logs = diaryService.getMealLogsBetween(userId, startDate, endDate);
+            List<MealLogDTO> logs = diaryService.getMealLogsBetween(userId, startDate, endDate).stream()
+                    .map(mealLogMapper::toDto).toList();
             return ResponseEntity.ok(ApiResponse.success(logs));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
@@ -86,7 +97,8 @@ public class DiaryController {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("startDate must be on or before endDate", "INVALID_DATE_RANGE"));
             }
-            List<MealDTO> meals = diaryService.getMealsBetween(userId, startDate, endDate);
+            List<MealDTO> meals = diaryService.getMealsBetween(userId, startDate, endDate).stream()
+                    .map(mealMapper::toDto).toList();
             return ResponseEntity.ok(ApiResponse.success(meals));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
@@ -100,7 +112,9 @@ public class DiaryController {
             @RequestBody MealLogDTO mealLogDto, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         try {
             LocalDate d = date != null ? date : LocalDate.now();
-            MealLogDTO saved = diaryService.addFoodToMeal(userId, d, mealType, mealLogDto);
+            MealLog mealLog = mealLogMapper.toEntity(mealLogDto);
+            MealLog result = diaryService.addFoodToMeal(userId, d, mealType, mealLog);
+            MealLogDTO saved = mealLogMapper.toDto(result);
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(saved, "Food added successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "FOOD_ADD_FAILED"));
@@ -115,7 +129,8 @@ public class DiaryController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     public ResponseEntity<ApiResponse<?>> updateMealLog(@PathVariable Long id, @RequestBody MealLogDTO update) {
         try {
-            MealLogDTO saved = diaryService.updateMealLog(id, update);
+            MealLog result = diaryService.updateMealLog(id, update);
+            MealLogDTO saved = mealLogMapper.toDto(result);
             return ResponseEntity.ok(ApiResponse.success(saved, "Meal log updated successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage(), "MEAL_LOG_UPDATE_FAILED"));
