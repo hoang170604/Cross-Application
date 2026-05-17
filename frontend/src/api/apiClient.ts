@@ -52,11 +52,11 @@ apiClient.interceptors.response.use(
         const { useAppStore } = require('../store/useAppStore');
         useAppStore.getState().logout();
         Alert.alert('Phiên hết hạn', 'Vui lòng đăng nhập lại để tiếp tục.');
-      } 
+      }
       else if (serverMessage && !isAuthRequest && !(isProfileCheck && is404)) {
         let translatedMessage = String(serverMessage);
         const msg = translatedMessage.toLowerCase().trim();
-        
+
         if (msg.includes('invalid credentials')) {
           translatedMessage = 'Email hoặc mật khẩu không chính xác.';
         } else if (msg.includes('not found')) {
