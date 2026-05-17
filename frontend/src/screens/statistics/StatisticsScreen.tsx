@@ -5,11 +5,14 @@ import { BarChart, LineChart } from 'react-native-gifted-charts';
 
 // ─── Import Atomic Hooks & Components ─────────────────────────────────────────
 import { useNutrition } from '@/src/hooks';
-import apiClient from '@/src/api/apiClient';
+import { getWeightHistory, getNutritionReport, getWaterLogsBetween } from '@/src/api/progressService';
+import { getFastingSessions } from '@/src/api/fastingService';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
 import { PhysiologyStatsCard } from '@/src/ui/fasting/PhysiologyStatsCard';
 import { NutritionSummaryCard } from '@/src/ui/diary/NutritionSummaryCard';
+import { useAppStore } from '@/src/store/useAppStore';
+import { getLocalToday } from '@/src/core/dateFormatter';
 
 /**
  * Màn hình Thống kê sức khỏe nâng cao (Statistics / Dashboard Screen).
@@ -24,45 +27,61 @@ import { NutritionSummaryCard } from '@/src/ui/diary/NutritionSummaryCard';
  */
 export default function StatisticsScreen() {
   // ─── ĐỒNG BỘ HOOKS & DỮ LIỆU CŨ ──────────────────────────────────────────────
-  const { 
-    userProfile, 
+  const {
+    userProfile,
     calorieStats,
-    bmr, 
-    bmi 
+    bmr,
+    bmi
   } = useNutrition();
 
-  const [remoteWeightHistory, setRemoteWeightHistory] = useState(userProfile.weightHistory || []);
-  const [remoteCalorieHistory, setRemoteCalorieHistory] = useState<number[]>([]);
+  const { userId } = useAppStore();
 
-  // Trì hoãn gọi API thực tế để đảm bảo mượt mà
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const summaryRes = await apiClient.get('/api/progress/summary');
-        if (summaryRes.data && Array.isArray(summaryRes.data.calorieHistory)) {
-          setRemoteCalorieHistory(summaryRes.data.calorieHistory);
-        }
-
-        const weightRes = await apiClient.get('/api/progress/weight-history');
-        if (weightRes.data && Array.isArray(weightRes.data)) {
-          setRemoteWeightHistory(weightRes.data);
-        }
-      } catch (error: any) {
-        if (error.response?.status === 404) {
-          console.warn('API chưa sẵn sàng ở BE, dùng Local Mock Data');
-          setRemoteCalorieHistory([]);
-        }
-      }
-    };
-    
-    InteractionManager.runAfterInteractions(() => {
-      fetchStats();
-    });
-  }, []);
+  const [remoteWeightHistory, setRemoteWeightHistory] = useState<any[]>(userProfile.weightHistory || []);
+  const [remoteCalorieHistory, setRemoteCalorieHistory] = useState<any[]>([]);
+  const [remoteWaterHistory, setRemoteWaterHistory] = useState<any[]>([]);
+  const [remoteFastingHistory, setRemoteFastingHistory] = useState<any[]>([]);
 
   // ─── STATE QUẢN LÝ BỘ LỌC THỜI GIAN & TÙY CHỌN UI ─────────────────────────────
   const [timeFilter, setTimeFilter] = useState<'week' | 'month'>('week');
   const [showOverview, setShowOverview] = useState(false); // Collapsible cho phần chỉ số sinh lý cũ
+
+  // Trì hoãn gọi API thực tế để đảm bảo mượt mà
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!userId) return;
+      try {
+        const endDate = getLocalToday();
+        const startDate = new Date(Date.now() - (timeFilter === 'week' ? 6 : 29) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        const [nutritionRes, weightRes, waterRes, fastingRes] = await Promise.allSettled([
+          getNutritionReport(userId, startDate, endDate),
+          getWeightHistory(userId, startDate, endDate),
+          getWaterLogsBetween(userId, startDate, endDate),
+          getFastingSessions(userId)
+        ]);
+
+        if (nutritionRes.status === 'fulfilled' && nutritionRes.value.data) {
+          setRemoteCalorieHistory(nutritionRes.value.data);
+        }
+        if (weightRes.status === 'fulfilled' && weightRes.value.data) {
+          setRemoteWeightHistory(weightRes.value.data);
+        }
+        if (waterRes.status === 'fulfilled' && waterRes.value.data) {
+          setRemoteWaterHistory(waterRes.value.data);
+        }
+        if (fastingRes.status === 'fulfilled' && fastingRes.value.data) {
+          const sessions = fastingRes.value.data.filter((s: any) => s.startTime >= startDate);
+          setRemoteFastingHistory(sessions);
+        }
+      } catch (error: any) {
+        console.warn('API fetch statistics error', error.message);
+      }
+    };
+
+    InteractionManager.runAfterInteractions(() => {
+      fetchStats();
+    });
+  }, [timeFilter, userId]);
 
   const colors = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
@@ -71,152 +90,201 @@ export default function StatisticsScreen() {
   const cardWidth = screenWidth - 48; // paddingHorizontal: 24 ở ScrollView
   const chartWidth = cardWidth - 32;  // paddingHorizontal: 16 ở Thẻ Card
 
-  // ─── THIẾT LẬP MOCK DATA CHO CÁC BIỂU ĐỒ ──────────────────────────────────────
+  // ─── HELPER TẠO NGÀY ──────────────────────────────────────────────────────────
+  const dateList = useMemo(() => {
+    const days = timeFilter === 'week' ? 7 : 30;
+    const dates = [];
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    return dates;
+  }, [timeFilter]);
 
-  // 1. Thống kê Nước uống (Water Tracking)
-  const weeklyWaterData = [
-    { value: 1800, label: 'T2', frontColor: '#3498db' },
-    { value: 2200, label: 'T3', frontColor: '#2ecc71' }, // Highlight khi vượt mục tiêu
-    { value: 1500, label: 'T4', frontColor: '#3498db' },
-    { value: 2400, label: 'T5', frontColor: '#2ecc71' },
-    { value: 2000, label: 'T6', frontColor: '#2ecc71' },
-    { value: 1200, label: 'T7', frontColor: '#3498db' },
-    { value: 2100, label: 'CN', frontColor: '#2ecc71' },
-  ];
+  const getWeekLabel = (dateStr: string) => {
+    const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    return days[new Date(dateStr).getDay()];
+  };
 
-  const monthlyWaterData = [
-    { value: 14200, label: 'T1', frontColor: '#3498db' }, // Tuần 1
-    { value: 15800, label: 'T2', frontColor: '#2ecc71' },
-    { value: 13500, label: 'T3', frontColor: '#3498db' },
-    { value: 16100, label: 'T4', frontColor: '#2ecc71' },
-  ];
+  // ─── 1. THỐNG KÊ NƯỚC UỐNG (WATER TRACKING) ──────────────────────────────────
+  const { waterTarget: storeWaterTarget } = useAppStore();
+  const waterTarget = storeWaterTarget || 2000;
 
-  const activeWaterData = timeFilter === 'week' ? weeklyWaterData : monthlyWaterData;
-  const waterTarget = timeFilter === 'week' ? 2000 : 14000; // 2000ml/ngày * 7 ngày
-  const avgWater = Math.round(activeWaterData.reduce((acc, curr) => acc + curr.value, 0) / activeWaterData.length);
+  const activeWaterData = useMemo(() => {
+    if (timeFilter === 'week') {
+      return dateList.map((dateStr) => {
+        const logs = remoteWaterHistory.filter(h => h.logDate === dateStr || h.timestamp?.startsWith(dateStr));
+        const value = logs.reduce((sum, log) => sum + (log.amountMl || 0), 0);
+        return {
+          value,
+          label: getWeekLabel(dateStr),
+          frontColor: value >= waterTarget ? '#2ecc71' : '#3498db'
+        };
+      });
+    } else {
+      // Nhóm thành 4 tuần
+      const weeksData = [];
+      for (let i = 0; i < 4; i++) {
+        const weekDates = dateList.slice(i * 7, (i + 1) * 7); // xấp xỉ 28 ngày
+        let weekValue = 0;
+        weekDates.forEach(dateStr => {
+          const logs = remoteWaterHistory.filter(h => h.logDate === dateStr || h.timestamp?.startsWith(dateStr));
+          weekValue += logs.reduce((sum, log) => sum + (log.amountMl || 0), 0);
+        });
+        weeksData.push({
+          value: weekValue,
+          label: `T${i + 1}`,
+          frontColor: weekValue >= waterTarget * 7 ? '#2ecc71' : '#3498db'
+        });
+      }
+      return weeksData;
+    }
+  }, [dateList, remoteWaterHistory, timeFilter, waterTarget]);
 
-  // 2. Thống kê Nhịn ăn (Fasting Tracker) - Dùng cột dọc dạng viên thuốc giống mẫu (Pill-shaped Bar Chart)
-  const weeklyFastingData = [
-    { value: 16, label: 'T2' },
-    { value: 14, label: 'T3' },
-    { value: 18, label: 'T4' },
-    { value: 16, label: 'T5' },
-    { value: 12, label: 'T6' },
-    { value: 15, label: 'T7' },
-    { value: 16, label: 'CN' },
-  ];
+  const avgWater = Math.round(activeWaterData.reduce((acc, curr) => acc + curr.value, 0) / Math.max(1, activeWaterData.length));
+  const displayWaterTarget = timeFilter === 'week' ? waterTarget : waterTarget * 7;
 
-  const monthlyFastingData = [
-    { value: 15.5, label: 'T1' },
-    { value: 16.2, label: 'T2' },
-    { value: 14.8, label: 'T3' },
-    { value: 17.0, label: 'T4' },
-  ];
+  // ─── 2. THỐNG KÊ NHỊN ĂN (FASTING TRACKER) ────────────────────────────────────
+  const userFastingGoal = userProfile.fastingGoal || 16;
 
-  const rawFastingData = timeFilter === 'week' ? weeklyFastingData : monthlyFastingData;
-  const fastingGoal = 16;
-  
-  // Tạo dữ liệu cột đôi (Grouped Bar Chart) sát nhau giống mẫu
-  const activeFastingData: any[] = [];
-  rawFastingData.forEach(item => {
-    // Cột Thực tế (Trắng sáng)
-    activeFastingData.push({
-      value: item.value,
-      frontColor: '#ffffff',
-      label: item.label,
-      spacing: 2, // Khoảng cách cực nhỏ để sát cột mục tiêu
-      labelTextStyle: { color: colors.textSecondary, fontSize: 10, fontWeight: '700' }
+  const activeFastingData = useMemo(() => {
+    const rawFastingData = [];
+    if (timeFilter === 'week') {
+      dateList.forEach(dateStr => {
+        const logs = remoteFastingHistory.filter(h => h.startTime?.startsWith(dateStr));
+        const duration = logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0) / 60;
+        rawFastingData.push({ value: parseFloat(duration.toFixed(1)), label: getWeekLabel(dateStr) });
+      });
+    } else {
+      for (let i = 0; i < 4; i++) {
+        const weekDates = dateList.slice(i * 7, (i + 1) * 7);
+        let weekDuration = 0;
+        let daysWithLog = 0;
+        weekDates.forEach(dateStr => {
+          const logs = remoteFastingHistory.filter(h => h.startTime?.startsWith(dateStr));
+          if (logs.length > 0) {
+            weekDuration += logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0) / 60;
+            daysWithLog++;
+          }
+        });
+        const avgDuration = daysWithLog > 0 ? (weekDuration / daysWithLog) : 0;
+        rawFastingData.push({ value: parseFloat(avgDuration.toFixed(1)), label: `T${i + 1}` });
+      }
+    }
+
+    const chartData: any[] = [];
+    rawFastingData.forEach((item) => {
+      chartData.push({
+        value: item.value,
+        frontColor: '#ffffff',
+        label: item.label,
+        spacing: 2,
+        labelTextStyle: { color: colors.textSecondary, fontSize: 10, fontWeight: '700' }
+      });
+      chartData.push({
+        value: userFastingGoal,
+        frontColor: 'rgba(255, 255, 255, 0.15)',
+        spacing: timeFilter === 'week' ? 14 : 36,
+      });
     });
-    // Cột Mục tiêu (Xám mờ, luôn cố định ở mức fastingGoal)
-    activeFastingData.push({
-      value: fastingGoal,
-      frontColor: 'rgba(255, 255, 255, 0.15)',
-      spacing: timeFilter === 'week' ? 14 : 36, // Khoảng cách giữa các ngày
+    return chartData;
+  }, [dateList, remoteFastingHistory, timeFilter, colors.textSecondary, userFastingGoal]);
+
+  const rawFastingValues = activeFastingData.filter((_, i) => i % 2 === 0).map(d => d.value);
+  const totalFasting = rawFastingValues.reduce((acc, curr) => acc + curr, 0);
+  const avgFasting = (totalFasting / Math.max(1, rawFastingValues.length)).toFixed(1);
+
+  // ─── 3. THỐNG KÊ CALO NẠP VÀO (CALORIES INTAKE) ───────────────────────────────
+  const calorieTarget = userProfile.targetCalories || 2000;
+
+  const activeCalorieData = useMemo(() => {
+    return dateList.map((dateStr, index) => {
+      const log = remoteCalorieHistory.find(h => h.date === dateStr);
+      let label = '';
+      if (timeFilter === 'week') {
+        label = getWeekLabel(dateStr);
+      } else {
+        const day = index + 1;
+        label = (day % 5 === 0 || day === 1 || day === 30) ? `N${day}` : '';
+      }
+      return {
+        value: log ? log.totalCalories : 0,
+        label
+      };
     });
-  });
+  }, [dateList, remoteCalorieHistory, timeFilter]);
 
-  const totalFasting = rawFastingData.reduce((acc, curr) => acc + curr.value, 0);
-  const avgFasting = (totalFasting / rawFastingData.length).toFixed(1);
+  const totalCalorie = activeCalorieData.reduce((acc, curr) => acc + curr.value, 0);
+  const daysWithCalorie = activeCalorieData.filter(d => d.value > 0).length;
+  const avgCalorie = Math.round(totalCalorie / Math.max(1, daysWithCalorie));
 
-  // 3. Thống kê Calo nạp vào (Calories Intake) - Biểu đồ đường vùng tô màu (Area Chart + Bezier)
-  const weeklyCalorieData = [
-    { value: 1850, label: 'T2' },
-    { value: 2100, label: 'T3' },
-    { value: 1950, label: 'T4' },
-    { value: 2200, label: 'T5' },
-    { value: 1750, label: 'T6' },
-    { value: 2400, label: 'T7' },
-    { value: 2000, label: 'CN' },
-  ];
+  // ─── 4. THỐNG KÊ TIẾN ĐỘ CÂN NẶNG (WEIGHT PROGRESS) ────────────────────────────
+  const activeWeightData = useMemo(() => {
+    // Để LineChart đẹp, nếu ngày không có dữ liệu, lấy dữ liệu gần nhất phía trước
+    let lastKnownWeight = userProfile.currentWeight || userProfile.weight || 70;
 
-  // Mock dữ liệu 30 ngày cho tháng nạp calo
-  const monthlyCalorieData = Array.from({ length: 30 }, (_, index) => {
-    const day = index + 1;
-    const val = 1950 + Math.sin(day * 0.7) * 250 + (day % 3) * 60 + (index % 5 === 0 ? -120 : 70);
-    return {
-      value: Math.round(val),
-      label: day % 5 === 0 || day === 1 || day === 30 ? `N${day}` : '',
-    };
-  });
+    // Khởi tạo lastKnownWeight dựa trên history cũ hơn nếu có
+    if (remoteWeightHistory.length > 0) {
+      const pastLogs = [...remoteWeightHistory].sort((a, b) => a.date.localeCompare(b.date));
+      const beforeStart = pastLogs.filter(h => h.date < dateList[0]);
+      if (beforeStart.length > 0) {
+        lastKnownWeight = beforeStart[beforeStart.length - 1].weight;
+      } else {
+        lastKnownWeight = pastLogs[0].weight;
+      }
+    }
 
-  const activeCalorieData = timeFilter === 'week' ? weeklyCalorieData : monthlyCalorieData;
-  const calorieTarget = 2000; // TDEE mục tiêu mặc định
-  const avgCalorie = Math.round(activeCalorieData.reduce((acc, curr) => acc + curr.value, 0) / activeCalorieData.length);
+    return dateList.map((dateStr, index) => {
+      const log = remoteWeightHistory.find(h => h.date === dateStr);
+      if (log && log.weight) {
+        lastKnownWeight = log.weight;
+      }
+      let label = '';
+      if (timeFilter === 'week') {
+        label = getWeekLabel(dateStr);
+      } else {
+        const day = index + 1;
+        label = (day % 5 === 0 || day === 1 || day === 30) ? `N${day}` : '';
+      }
+      return {
+        value: lastKnownWeight,
+        label
+      };
+    });
+  }, [dateList, remoteWeightHistory, timeFilter, userProfile.currentWeight, userProfile.weight]);
 
-  // 4. Thống kê Tiến độ Cân nặng (Weight Progress) - Biểu đồ đường trơn (Line Chart) + Tooltip
-  const weeklyWeightData = [
-    { value: 68.5, label: 'T2' },
-    { value: 68.2, label: 'T3' },
-    { value: 68.4, label: 'T4' },
-    { value: 68.0, label: 'T5' },
-    { value: 67.9, label: 'T6' },
-    { value: 68.1, label: 'T7' },
-    { value: 67.8, label: 'CN' },
-  ];
-
-  // Mock dữ liệu 30 ngày giảm cân đều đặn
-  const monthlyWeightData = Array.from({ length: 30 }, (_, index) => {
-    const day = index + 1;
-    const trend = 69.8 - (index * 0.08); // Xu hướng giảm cân
-    const fluctuation = Math.sin(day * 0.9) * 0.25 + (index % 4 === 0 ? 0.15 : -0.05);
-    return {
-      value: parseFloat((trend + fluctuation).toFixed(1)),
-      label: day % 5 === 0 || day === 1 || day === 30 ? `N${day}` : '',
-    };
-  });
-
-  const activeWeightData = timeFilter === 'week' ? weeklyWeightData : monthlyWeightData;
   const weightValues = activeWeightData.map(d => d.value);
   const minWeight = Math.min(...weightValues);
   const maxWeight = Math.max(...weightValues);
-  
-  // Tính toán dynamic range cho trục Y cân nặng
-  const weightYOffset = Math.floor(minWeight) - 1;
+
+  const weightYOffset = Math.max(0, Math.floor(minWeight) - 1);
   const weightYMax = Math.ceil(maxWeight) + 1;
   const relativeMax = weightYMax - weightYOffset;
-  const weightStepValue = parseFloat((relativeMax / 4).toFixed(1));
-  const currentWeight = activeWeightData[activeWeightData.length - 1].value;
-  const weightLoss = parseFloat((activeWeightData[0].value - currentWeight).toFixed(1));
+  const weightStepValue = Math.max(0.5, parseFloat((relativeMax / 4).toFixed(1)));
+  const currentWeightDisp = activeWeightData[activeWeightData.length - 1]?.value || 0;
+  const weightLoss = parseFloat((activeWeightData[0]?.value - currentWeightDisp).toFixed(1));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       {/* ─── HEADER & BỘ LỌC THỜI GIAN KHÔNG GIAN ─── */}
       <View style={styles.header}>
         <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>DASHBOARD</Text>
+          <Text style={styles.headerTitle}>Thống kê</Text>
           <Text style={styles.headerSubtitle}>Xu hướng & Phân tích Sức khỏe</Text>
         </View>
 
         {/* Tab Control chọn thời gian tinh tế */}
         <View style={styles.tabContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.tabButton, timeFilter === 'week' && styles.activeTabButton]}
             onPress={() => setTimeFilter('week')}
             activeOpacity={0.8}
           >
             <Text style={[styles.tabText, timeFilter === 'week' && styles.activeTabText]}>Tuần này</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.tabButton, timeFilter === 'month' && styles.activeTabButton]}
             onPress={() => setTimeFilter('month')}
             activeOpacity={0.8}
@@ -226,14 +294,14 @@ export default function StatisticsScreen() {
         </View>
       </View>
 
-      <ScrollView 
-        style={{ flex: 1 }} 
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }} 
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         {/* ─── TỔNG QUAN SINH LÝ CŨ (COLLAPSIBLE) ─── */}
         <View style={styles.overviewSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.overviewToggle}
             onPress={() => setShowOverview(!showOverview)}
             activeOpacity={0.7}
@@ -262,7 +330,7 @@ export default function StatisticsScreen() {
               <Text style={styles.cardSubtitle}>Trung bình ngày: {avgWater} ml</Text>
             </View>
             <View style={styles.badgeBlue}>
-              <Text style={styles.badgeTextBlue}>Mục tiêu: {waterTarget}ml</Text>
+              <Text style={styles.badgeTextBlue}>Mục tiêu: {displayWaterTarget}ml</Text>
             </View>
           </View>
 
@@ -277,10 +345,10 @@ export default function StatisticsScreen() {
               yAxisLabelWidth={35}
               noOfSections={4}
               maxValue={timeFilter === 'week' ? 3000 : 20000}
-              
+
               // Custom Reference Line cho mục tiêu nước uống
               showReferenceLine1
-              referenceLine1Position={waterTarget}
+              referenceLine1Position={displayWaterTarget}
               referenceLine1Config={{
                 color: '#e74c3c',
                 thickness: 1.5,
@@ -296,7 +364,7 @@ export default function StatisticsScreen() {
               xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700' }}
               rulesType="dashed"
               rulesColor={colors.cardBorder}
-              
+
               // Thiết kế cột
               barBorderRadius={6}
               isAnimated
@@ -321,7 +389,7 @@ export default function StatisticsScreen() {
               </Text>
             </View>
             <View style={styles.badgePurple}>
-              <Text style={styles.badgeTextPurple}>Mục tiêu: 16h</Text>
+              <Text style={styles.badgeTextPurple}>Mục tiêu: {userFastingGoal}h</Text>
             </View>
           </View>
 
@@ -344,10 +412,10 @@ export default function StatisticsScreen() {
               height={180}
               barWidth={timeFilter === 'week' ? 10 : 12}
               initialSpacing={timeFilter === 'week' ? 12 : 24}
-              
+
               // Bo tròn cột dạng viên thuốc
               barBorderRadius={6}
-              
+
               // Trục và lưới tinh tế
               yAxisThickness={0}
               xAxisThickness={1}
@@ -369,13 +437,13 @@ export default function StatisticsScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginTop: 20, paddingHorizontal: 4 }}>
             <View style={{ alignItems: 'center' }}>
               <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '700', marginBottom: 6 }}>Tổng cộng</Text>
-              <View style={{ 
-                flexDirection: 'row', 
-                alignItems: 'center', 
-                borderWidth: 1, 
-                borderColor: colors.cardBorder, 
-                borderRadius: 20, 
-                paddingHorizontal: 16, 
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: colors.cardBorder,
+                borderRadius: 20,
+                paddingHorizontal: 16,
                 paddingVertical: 6,
                 backgroundColor: colors.isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)'
               }}>
@@ -386,13 +454,13 @@ export default function StatisticsScreen() {
 
             <View style={{ alignItems: 'center' }}>
               <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '700', marginBottom: 6 }}>Trung bình ngày</Text>
-              <View style={{ 
-                flexDirection: 'row', 
-                alignItems: 'center', 
-                borderWidth: 1, 
-                borderColor: colors.cardBorder, 
-                borderRadius: 20, 
-                paddingHorizontal: 16, 
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: colors.cardBorder,
+                borderRadius: 20,
+                paddingHorizontal: 16,
                 paddingVertical: 6,
                 backgroundColor: colors.isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)'
               }}>
@@ -428,7 +496,7 @@ export default function StatisticsScreen() {
               width={chartWidth - 60}
               height={180}
               yAxisLabelWidth={35}
-              
+
               // Thiết lập biểu đồ vùng (Area Chart)
               areaChart
               curved
@@ -438,11 +506,11 @@ export default function StatisticsScreen() {
               endFillColor="rgba(249, 115, 22, 0.01)"
               startOpacity={0.9}
               endOpacity={0.1}
-              
+
               // Điểm đánh dấu
               dataPointsColor="#ea580c"
               dataPointsRadius={timeFilter === 'week' ? 5 : 2}
-              
+
               // Trục và Lưới
               yAxisThickness={0}
               xAxisThickness={1}
@@ -453,7 +521,7 @@ export default function StatisticsScreen() {
               maxValue={3200}
               rulesType="dashed"
               rulesColor={colors.cardBorder}
-              
+
               // Custom Reference Line cho mục tiêu TDEE
               showReferenceLine1
               referenceLine1Position={calorieTarget}
@@ -484,7 +552,7 @@ export default function StatisticsScreen() {
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.cardTitle}>Tiến trình Cân nặng</Text>
-              <Text style={styles.cardSubtitle}>Hiện tại: {currentWeight} kg</Text>
+              <Text style={styles.cardSubtitle}>Hiện tại: {currentWeightDisp} kg</Text>
             </View>
             <View style={styles.badgeTeal}>
               <Text style={styles.badgeTextTeal}>
@@ -502,13 +570,13 @@ export default function StatisticsScreen() {
               curved
               color="#06b6d4" // Teal/Cyan
               thickness={3.5}
-              
+
               // dynamic Y Axis offset không bắt đầu từ 0
               yAxisOffset={weightYOffset}
               maxValue={relativeMax}
               stepValue={weightStepValue}
               noOfSections={4}
-              
+
               // Điểm và Grid
               dataPointsColor="#0891b2"
               dataPointsRadius={timeFilter === 'week' ? 6 : 3}
@@ -519,11 +587,11 @@ export default function StatisticsScreen() {
               xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10, fontWeight: '700' }}
               rulesType="dashed"
               rulesColor={colors.cardBorder}
-              
+
               // Khoảng cách
               spacing={timeFilter === 'week' ? (chartWidth - 60) / 6 : (chartWidth - 60) / 29}
               initialSpacing={12}
-              
+
               // Tương tác chạm và Tooltip động cực kỳ cao cấp
               pointerConfig={{
                 pointerColor: '#06b6d4',
@@ -558,10 +626,10 @@ export default function StatisticsScreen() {
 
 // ─── PHONG CÁCH GIAO DIỆN PREMIUM HSL (STYLE SYSTEM) ─────────────────────────
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  header: { 
-    paddingHorizontal: 24, 
-    paddingTop: 20, 
-    paddingBottom: 20, 
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 20,
     backgroundColor: colors.card,
     borderBottomWidth: 1,
     borderBottomColor: colors.cardBorder,
@@ -574,10 +642,10 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   headerTextContainer: {
     marginBottom: 16,
   },
-  headerTitle: { 
-    fontSize: 22, 
-    fontWeight: '900', 
-    letterSpacing: 1.5, 
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 1.5,
     color: colors.text,
   },
   headerSubtitle: {
@@ -586,22 +654,22 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '500',
     marginTop: 2,
   },
-  tabContainer: { 
-    flexDirection: 'row', 
+  tabContainer: {
+    flexDirection: 'row',
     backgroundColor: colors.background,
     padding: 4,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  tabButton: { 
+  tabButton: {
     flex: 1,
-    paddingVertical: 10, 
+    paddingVertical: 10,
     alignItems: 'center',
     borderRadius: 8,
     backgroundColor: 'transparent',
   },
-  activeTabButton: { 
+  activeTabButton: {
     backgroundColor: colors.card,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
@@ -609,16 +677,16 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  tabText: { 
-    color: colors.textSecondary, 
-    fontWeight: '700', 
+  tabText: {
+    color: colors.textSecondary,
+    fontWeight: '700',
     fontSize: 13,
   },
-  activeTabText: { 
-    color: colors.text, 
-    fontWeight: '800', 
+  activeTabText: {
+    color: colors.text,
+    fontWeight: '800',
   },
-  
+
   // Section tổng quan sinh lý cũ
   overviewSection: {
     marginVertical: 16,
@@ -666,18 +734,18 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 
   // Redesign Thẻ Card cao cấp
-  card: { 
-    backgroundColor: colors.card, 
-    borderRadius: 24, 
-    padding: 16, 
-    marginBottom: 20, 
-    borderWidth: 1, 
-    borderColor: colors.cardBorder, 
-    shadowColor: colors.shadow, 
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: colors.isDark ? 0.2 : 0.04, 
-    shadowRadius: 16, 
-    elevation: 2, 
+    shadowOpacity: colors.isDark ? 0.2 : 0.04,
+    shadowRadius: 16,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -685,9 +753,9 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 16,
   },
-  cardTitle: { 
-    fontWeight: '900', 
-    fontSize: 16, 
+  cardTitle: {
+    fontWeight: '900',
+    fontSize: 16,
     color: colors.text,
   },
   cardSubtitle: {
@@ -696,7 +764,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
-  
+
   // Badges tinh tế cho góc thẻ
   badgeBlue: {
     backgroundColor: 'rgba(52, 152, 219, 0.12)',

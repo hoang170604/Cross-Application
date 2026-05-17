@@ -14,6 +14,7 @@ const RING_BORDER = 12;
 export interface CircularTimerProps {
   goalHours: number;
   isActive: boolean;
+  fastingMode: 'idle' | 'fasting' | 'eating';
   progress: number;
   remainingSeconds: number;
   elapsedSeconds: number;
@@ -23,6 +24,7 @@ export interface CircularTimerProps {
 export const CircularTimer: React.FC<CircularTimerProps> = ({
   goalHours,
   isActive,
+  fastingMode,
   progress,
   remainingSeconds,
   elapsedSeconds,
@@ -80,7 +82,7 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
                   cx={RING_SIZE / 2}
                   cy={RING_SIZE / 2}
                   r={(RING_SIZE - RING_BORDER) / 2}
-                  stroke="#0ea5e9"
+                  stroke={fastingMode === 'eating' ? '#10B981' : '#0ea5e9'}
                   strokeWidth={RING_BORDER}
                   fill="none"
                   strokeDasharray={`${2 * Math.PI * ((RING_SIZE - RING_BORDER) / 2)}`}
@@ -92,18 +94,20 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
           </View>
 
           {/* ── Phase markers on the ring track ── */}
-          <PhaseMarkers
-            goalHours={goalHours}
-            elapsedHours={elapsedHours}
-            activeTooltipId={activeTooltipId}
-            handleMarkerPress={handleMarkerPress}
-            ringSize={RING_SIZE}
-            strokeWidth={RING_BORDER}
-          />
+          {fastingMode === 'fasting' && (
+            <PhaseMarkers
+              goalHours={goalHours}
+              elapsedHours={elapsedHours}
+              activeTooltipId={activeTooltipId}
+              handleMarkerPress={handleMarkerPress}
+              ringSize={RING_SIZE}
+              strokeWidth={RING_BORDER}
+            />
+          )}
 
           {/* ── Center content: tooltip (if active) → label → timer → elapsed ── */}
           <View style={styles.ringCenter}>
-            {activeTooltipId && (() => {
+            {activeTooltipId && fastingMode === 'fasting' && (() => {
               const phase = FASTING_PHASES.find(p => p.id === activeTooltipId);
               if (!phase) return null;
               return (
@@ -128,7 +132,7 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
             })()}
 
             <Text style={styles.ringLabel}>
-              {isActive ? 'Thời gian còn lại' : 'Mục tiêu'}
+              {isActive ? 'Thời gian đã trôi qua' : 'Mục tiêu'}
             </Text>
             <Text
               style={styles.ringTimer}
@@ -137,12 +141,12 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
               minimumFontScale={0.6}
             >
               {isActive
-                ? formatDuration(remainingSeconds)
+                ? formatDuration(elapsedSeconds)
                 : `${String(goalHours).padStart(2, '0')}:00:00`}
             </Text>
             {isActive && (
               <Text style={styles.ringElapsed}>
-                {formatDuration(elapsedSeconds)} đã trôi qua
+                Còn lại {formatDuration(remainingSeconds)}
               </Text>
             )}
           </View>
@@ -165,8 +169,9 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 12,
     elevation: 2,
+    overflow: 'hidden',
   },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  row: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
   badge: {
     backgroundColor: '#0ea5e918',
     paddingHorizontal: 14,
@@ -177,7 +182,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   badgeText: { fontSize: 14, fontWeight: '800', color: '#0ea5e9', letterSpacing: 0.2 },
   
-  ringWrapper: { alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  ringWrapper: { alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   ringContainer: {
     position: 'relative',
     alignItems: 'center',

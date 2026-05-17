@@ -27,6 +27,17 @@ const PLAN_META: Record<string, { emoji: string; color: string }> = {
 export const PlanSelector: React.FC<PlanSelectorProps> = ({ goalHours, setGoalHours }) => {
   const colors = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const [isCustomExpanded, setIsCustomExpanded] = React.useState(false);
+
+  const isStandardPlan = FASTING_PLANS.some(p => p.duration === goalHours);
+  const isCustomSelected = !isStandardPlan || isCustomExpanded;
+
+  const handleDecrease = () => {
+    if (goalHours > 1) setGoalHours(goalHours - 1);
+  };
+  const handleIncrease = () => {
+    if (goalHours < 23) setGoalHours(goalHours + 1);
+  };
 
   return (
     <View style={styles.card}>
@@ -43,15 +54,17 @@ export const PlanSelector: React.FC<PlanSelectorProps> = ({ goalHours, setGoalHo
       {/* Plan List */}
       <View style={styles.planList}>
         {FASTING_PLANS.map((plan, idx) => {
-          const isSelected = goalHours === plan.duration;
+          const isSelected = goalHours === plan.duration && !isCustomExpanded;
           const meta = PLAN_META[plan.id] ?? { emoji: '🕐', color: '#64748B' };
-          const isLast = idx === FASTING_PLANS.length - 1;
 
           return (
             <React.Fragment key={plan.id}>
               <TouchableOpacity
                 style={[styles.planRow, isSelected && styles.planRowActive]}
-                onPress={() => setGoalHours(plan.duration)}
+                onPress={() => {
+                  setIsCustomExpanded(false);
+                  setGoalHours(plan.duration);
+                }}
                 activeOpacity={0.7}
               >
                 {/* Left: Emoji Badge */}
@@ -89,11 +102,54 @@ export const PlanSelector: React.FC<PlanSelectorProps> = ({ goalHours, setGoalHo
                   {isSelected && <View style={[styles.radioFill, { backgroundColor: meta.color }]} />}
                 </View>
               </TouchableOpacity>
-
-              {!isLast && <View style={styles.divider} />}
+              <View style={styles.divider} />
             </React.Fragment>
           );
         })}
+
+        {/* Custom Plan Option */}
+        <TouchableOpacity
+          style={[styles.planRow, isCustomSelected && styles.planRowActive]}
+          onPress={() => setIsCustomExpanded(true)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.emojiBadge, { backgroundColor: '#db277720' }]}>
+            <Text style={styles.emoji}>⚙️</Text>
+          </View>
+          
+          <View style={styles.planInfo}>
+            <View style={styles.planNameRow}>
+              <Text style={[styles.planName, isCustomSelected && { color: '#db2777' }]}>Tùy chỉnh</Text>
+              {isCustomSelected && (
+                <View style={[styles.badge, { backgroundColor: '#db277720' }]}>
+                  <Text style={[styles.badgeText, { color: '#db2777' }]}>Đang chọn</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.planTagline}>Tự thiết lập thời gian nhịn ăn</Text>
+          </View>
+          
+          <View style={[styles.radio, isCustomSelected && { borderColor: '#db2777' }]}>
+            {isCustomSelected && <View style={[styles.radioFill, { backgroundColor: '#db2777' }]} />}
+          </View>
+        </TouchableOpacity>
+        
+        {/* Expanded Custom Controls */}
+        {isCustomSelected && (
+          <View style={styles.customControls}>
+             <Text style={styles.customLabel}>Nhịn ăn: {goalHours} giờ</Text>
+             <View style={styles.customStepper}>
+                <TouchableOpacity style={styles.stepBtn} onPress={handleDecrease}>
+                   <MaterialCommunityIcons name="minus" size={20} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.stepValue}>{goalHours}g</Text>
+                <TouchableOpacity style={styles.stepBtn} onPress={handleIncrease}>
+                   <MaterialCommunityIcons name="plus" size={20} color={colors.text} />
+                </TouchableOpacity>
+             </View>
+             <Text style={styles.customSubLabel}>Thời gian ăn uống sẽ là {24 - goalHours} giờ</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -230,5 +286,54 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.cardBorder,
     opacity: 0.5,
     marginHorizontal: 12,
+  },
+  customControls: {
+    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    marginTop: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#db277730',
+  },
+  customLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  customStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+    marginBottom: 8,
+  },
+  stepBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  stepValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#db2777',
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  customSubLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    marginTop: 4,
   },
 });

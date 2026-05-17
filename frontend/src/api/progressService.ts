@@ -43,6 +43,17 @@ export const getDailyWaterTotal = async (userId: number, date: string): Promise<
   return response.data;
 };
 
+export const getWaterLogsBetween = async (
+  userId: number,
+  startDate: string,
+  endDate: string
+): Promise<ApiResponse<WaterLog[]>> => {
+  const response = await apiClient.get<ApiResponse<WaterLog[]>>(
+    `/api/water/logs?userId=${userId}&startDate=${startDate}&endDate=${endDate}`
+  );
+  return response.data;
+};
+
 // ─── Activity ────────────────────────────────────────────────────────
 
 export interface ActivityPayload {

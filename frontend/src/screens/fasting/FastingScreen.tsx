@@ -21,6 +21,7 @@ const FastingScreen = () => {
     isInitializing,
     isUploading,
     isActive,
+    fastingMode,
     remainingSeconds,
     progress,
     elapsedHours,
@@ -31,6 +32,7 @@ const FastingScreen = () => {
     setGoalHours,
     handleStartFast,
     handleEndFast,
+    handleStopCycle,
   } = useFasting();
 
   if (isInitializing) {
@@ -38,7 +40,7 @@ const FastingScreen = () => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0ea5e9" />
-          <Text style={styles.loadingText}>Đang khôi phục phiên nhịn ăn…</Text>
+          <Text style={styles.loadingText}>Đang khôi phục chu kỳ…</Text>
         </View>
       </SafeAreaView>
     );
@@ -56,7 +58,7 @@ const FastingScreen = () => {
         <View style={styles.pageHeader}>
           <Text style={styles.pageTitle}>Nhịn Ăn Gián Đoạn</Text>
           <Text style={styles.pageSubtitle}>
-            {isActive ? 'Đang nhịn ăn ✦' : 'Sẵn sàng bắt đầu?'}
+            {fastingMode === 'fasting' ? 'Đang nhịn ăn ✦' : fastingMode === 'eating' ? 'Thời gian ăn uống 🍽️' : 'Sẵn sàng bắt đầu?'}
           </Text>
         </View>
 
@@ -64,6 +66,7 @@ const FastingScreen = () => {
         <CircularTimer
           goalHours={goalHours}
           isActive={isActive}
+          fastingMode={fastingMode}
           progress={progress}
           remainingSeconds={remainingSeconds}
           elapsedSeconds={elapsedSeconds}
@@ -90,27 +93,49 @@ const FastingScreen = () => {
           </View>
         </View>
 
-        {/* ── End Fast CTA (active only) ── */}
-        {isActive && (
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.btnEnd, isUploading && styles.btnDisabled]}
-            onPress={handleEndFast}
-            disabled={isUploading}
-            activeOpacity={0.8}
-          >
-            {isUploading ? (
-              <View style={styles.btnRow}>
-                <ActivityIndicator color="#fff" style={{ marginRight: 10 }} />
-                <Text style={styles.actionBtnText}>Đang lưu…</Text>
-              </View>
-            ) : (
-              <Text style={styles.actionBtnText}>⏹  Kết thúc nhịn ăn</Text>
-            )}
-          </TouchableOpacity>
-        )}
+        {/* ── Action Buttons ── */}
+        <View style={styles.actionContainer}>
+          {fastingMode === 'fasting' && (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.btnEnd, isUploading && styles.btnDisabled]}
+              onPress={handleEndFast}
+              disabled={isUploading}
+              activeOpacity={0.8}
+            >
+              {isUploading ? (
+                <View style={styles.btnRow}>
+                  <ActivityIndicator color="#fff" style={{ marginRight: 10 }} />
+                  <Text style={styles.actionBtnText}>Đang lưu…</Text>
+                </View>
+              ) : (
+                <Text style={styles.actionBtnText}>🍽️ Bắt đầu ăn uống</Text>
+              )}
+            </TouchableOpacity>
+          )}
 
-        {/* ── Dynamic Biological Phase Card (active only) ── */}
-        {isActive && (
+          {fastingMode === 'eating' && (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.btnStart]}
+              onPress={handleStartFast}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionBtnText}>▶ Tiếp tục nhịn ăn</Text>
+            </TouchableOpacity>
+          )}
+
+          {isActive && (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.btnStopCycle]}
+              onPress={handleStopCycle}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.btnStopCycleText}>Kết thúc chu kỳ</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* ── Dynamic Biological Phase Card (fasting only) ── */}
+        {fastingMode === 'fasting' && (
           <View style={styles.card}>
             <View style={styles.phaseHeader}>
               <View style={[styles.phaseIconBox, { backgroundColor: currentPhase.color + '22' }]}>
@@ -171,6 +196,22 @@ const FastingScreen = () => {
                   </View>
                 );
               })}
+            </View>
+          </View>
+        )}
+
+        {/* ── Eating Phase Card (eating only) ── */}
+        {fastingMode === 'eating' && (
+          <View style={styles.card}>
+            <View style={styles.phaseHeader}>
+              <View style={[styles.phaseIconBox, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
+                <Text style={styles.phaseEmoji}>🍽️</Text>
+              </View>
+              <View style={styles.phaseTextBlock}>
+                <Text style={styles.phaseLabel}>Nạp năng lượng</Text>
+                <Text style={[styles.phaseTitle, { color: '#22C55E' }]}>Thời gian ăn uống</Text>
+                <Text style={styles.phaseDesc}>Hãy nạp đủ năng lượng và dưỡng chất lành mạnh cho cơ thể trong khung giờ này nhé.</Text>
+              </View>
             </View>
           </View>
         )}
@@ -253,14 +294,17 @@ const getStyles = (colors: ThemeColors) =>
     phaseDotCore: { width: 6, height: 6, borderRadius: 3 },
     phaseHourLabel: { fontSize: 10, fontWeight: '600' },
 
+    actionContainer: { gap: 12, marginTop: 4, marginBottom: 16 },
     actionBtn: {
       borderRadius: 18, paddingVertical: 18, alignItems: 'center', justifyContent: 'center',
-      marginTop: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+      shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.18, shadowRadius: 10, elevation: 4,
     },
     btnStart: { backgroundColor: '#0ea5e9' },
-    btnEnd: { backgroundColor: '#f43f5e' },
+    btnEnd: { backgroundColor: '#10B981' },
+    btnStopCycle: { backgroundColor: colors.surface, borderWidth: 1, borderColor: '#f43f5e', shadowOpacity: 0, elevation: 0 },
     btnDisabled: { opacity: 0.6 },
     btnRow: { flexDirection: 'row', alignItems: 'center' },
     actionBtnText: { fontSize: 17, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
+    btnStopCycleText: { fontSize: 16, fontWeight: '700', color: '#f43f5e', letterSpacing: 0.3 },
   });
