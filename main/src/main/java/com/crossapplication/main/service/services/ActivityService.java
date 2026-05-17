@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.crossapplication.main.dto.ActivityDTO;
 import com.crossapplication.main.entity.Activity;
@@ -14,8 +15,6 @@ import com.crossapplication.main.mapper.ActivityMapper;
 import com.crossapplication.main.repository.interfaces.ActivityRepository;
 import com.crossapplication.main.service.interfaces.ActivityServiceInterface;
 import com.crossapplication.main.service.interfaces.DailyNutritionService;
-
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ActivityService implements ActivityServiceInterface {
@@ -72,9 +71,7 @@ public class ActivityService implements ActivityServiceInterface {
         if (update.getExternalId() != null) existing.setExternalId(update.getExternalId());
 
         Activity saved = activityRepository.save(existing);
-        Double newCaloriesObj = saved.getCaloriesBurned();
-        double newCalories = newCaloriesObj == null ? 0.0 : newCaloriesObj.doubleValue();
-        double delta = newCalories - oldCalories;
+        
         // Activity calories KHÔNG ảnh hưởng đến DailyNutrition.
         return activityMapper.toDto(saved);
     }
@@ -83,19 +80,19 @@ public class ActivityService implements ActivityServiceInterface {
     @Transactional
     public void deleteActivity(Long activityId) {
         var opt = activityRepository.findById(activityId);
-        if (opt.isEmpty())
-            return;
+        if (opt.isEmpty()) return;
         Activity a = opt.get();
         // Activity calories KHÔNG ảnh hưởng đến DailyNutrition.
         activityRepository.deleteById(activityId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ActivityDTO> getActivitiesBetween(Long userId, LocalDate start, LocalDate end) {
         return activityRepository.findByUserIdAndLogDateBetween(userId, start, end)
-                .stream()
-                .map(activityMapper::toDto)
-                .toList();
+            .stream()
+            .map(activityMapper::toDto)
+            .toList();
     }
 
     @Override

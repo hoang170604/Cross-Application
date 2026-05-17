@@ -34,8 +34,9 @@ class AppValues {
   // ==================== Server Configuration ====================
   /// Backend API Server Configuration
   /// For Android Emulator: use 10.0.2.2 (special alias for host machine)
-  /// For Physical Device or iOS: use 127.0.0.1 or your machine IP
-  static const String apiHost = '10.0.2.2'; // Android Emulator: 10.0.2.2, Physical: 127.0.0.1
+  /// For Web: use localhost (127.0.0.1)
+  /// For Physical Device or iOS: use your machine IP
+  static const String apiHost = 'localhost'; // Web: localhost, Android Emulator: 10.0.2.2, Physical: your_machine_ip
   static const int apiPort = 8081;
 
   /// API Base URL
@@ -63,7 +64,6 @@ class AppValues {
 
   /// HTTP Headers
   static const Map<String, String> defaultHttpHeaders = {
-    'Content-Type': 'application/json; charset=UTF-8',
     'Accept': 'application/json',
   };
 

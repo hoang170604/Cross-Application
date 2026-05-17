@@ -1,4 +1,6 @@
-class NutritionGoalEntity {
+import 'package:equatable/equatable.dart';
+
+class NutritionGoalEntity extends Equatable {
   final int? id;
   final int? userId;
   final double? targetCalories;
@@ -7,7 +9,7 @@ class NutritionGoalEntity {
   final double? targetFat;
   final DateTime? createdAt;
 
-  NutritionGoalEntity({
+  const NutritionGoalEntity({
     this.id,
     this.userId,
     this.targetCalories,
@@ -16,6 +18,17 @@ class NutritionGoalEntity {
     this.targetFat,
     this.createdAt,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        userId,
+        targetCalories,
+        targetProtein,
+        targetCarb,
+        targetFat,
+        createdAt,
+      ];
 
   NutritionGoalEntity copyWith({
     int? id,

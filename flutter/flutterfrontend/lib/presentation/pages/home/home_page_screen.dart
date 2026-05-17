@@ -207,7 +207,7 @@ class _HomePageState extends State<HomePage>
       child: Column(
         children: [
           Text(
-            'Chào mừng đến với Flutter!,',
+            'Chào mừng đến với CrossApplication!',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 24,
