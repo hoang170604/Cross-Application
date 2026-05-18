@@ -181,7 +181,14 @@ export default function StatisticsScreen() {
         frontColor: '#ffffff',
         label: item.label,
         spacing: 2,
-        labelTextStyle: { color: colors.textSecondary, fontSize: 10, fontWeight: '700' }
+        labelTextStyle: { 
+          color: colors.textSecondary, 
+          fontSize: 10, 
+          fontWeight: '700',
+          width: 36,
+          marginLeft: -13,
+          textAlign: 'center'
+        }
       });
       chartData.push({
         value: userFastingGoal,
@@ -412,6 +419,7 @@ export default function StatisticsScreen() {
               height={180}
               barWidth={timeFilter === 'week' ? 10 : 12}
               initialSpacing={timeFilter === 'week' ? 12 : 24}
+              labelWidth={30}
 
               // Bo tròn cột dạng viên thuốc
               barBorderRadius={6}

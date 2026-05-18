@@ -15,7 +15,7 @@ public interface MealLogMapper {
     MealLogDTO toDto(MealLog entity);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "food", ignore = true)
+    @Mapping(target = "food.id", source = "foodId")
     @Mapping(target = "meal", ignore = true)
     MealLog toEntity(MealLogDTO dto);
 }

@@ -141,7 +141,7 @@ const ActivitySectionComponent: React.FC = () => {
         ) : (
           <View>
             {activities.map((item: any, index: number) => (
-              <React.Fragment key={item.uid || item.id || `${item.activity_type}-${index}`}>
+              <React.Fragment key={item.uid ? `uid-${item.uid}` : `${item.activity_type || item.id || 'activity'}-${index}`}>
                 <ActivityItem
                   item={item}
                   onPress={() => handleEditActivity(item)}
