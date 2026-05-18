@@ -92,13 +92,25 @@ export default function StatisticsScreen() {
 
   // ─── HELPER TẠO NGÀY ──────────────────────────────────────────────────────────
   const dateList = useMemo(() => {
-    const days = timeFilter === 'week' ? 7 : 30;
     const dates = [];
     const today = new Date();
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      dates.push(d.toISOString().split('T')[0]);
+    if (timeFilter === 'week') {
+      // Luôn bắt đầu từ Thứ Hai (T2) đến Chủ Nhật (CN) của tuần hiện tại
+      const dayOfWeek = today.getDay(); // 0=CN, 1=T2, 2=T3, ...
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + mondayOffset);
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        dates.push(d.toISOString().split('T')[0]);
+      }
+    } else {
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+      }
     }
     return dates;
   }, [timeFilter]);
