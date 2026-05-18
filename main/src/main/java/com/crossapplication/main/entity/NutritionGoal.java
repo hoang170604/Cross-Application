@@ -13,6 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name="nutrition_goal")
 public class NutritionGoal {
@@ -21,6 +23,7 @@ public class NutritionGoal {
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name="user_id", nullable=false, foreignKey=@ForeignKey(name="fk_goal_user"))
     private User user;

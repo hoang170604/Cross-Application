@@ -83,7 +83,7 @@ function InitialLayout() {
     
     // Nhóm màn hình dành cho quy trình Onboarding và Đăng nhập
     const inAuthGroup = !segments[0] || [
-      'index', 'PrimaryGoal', 'DietMode', 'BiologicalStats', 'AhaMoment', 'PlanResult', 'WelcomeProfile', 'LoginScreen', 'RegisterScreen'
+      'index', 'PrimaryGoal', 'DietMode', 'BiologicalStats', 'AhaMoment', 'PlanResult', 'WelcomeProfile', 'LoginScreen', 'RegisterScreen', 'SyncLoadingScreen'
     ].includes(segments[0]);
     
     // Kiểm tra đã đăng nhập chưa

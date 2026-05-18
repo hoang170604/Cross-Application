@@ -18,17 +18,18 @@ export default function SyncLoadingScreen() {
 
       try {
 
-        const payload = {
-          name: userProfile.name,
-          fastingGoal: userProfile.fastingGoal,
-          age: userProfile.age,
-          gender: userProfile.gender,
-          height: userProfile.height,
-          weight: userProfile.weight,
-          activityLevel: userProfile.activityLevel,
-          goal: userProfile.goal
+              const payload = {
+          name: userProfile.name || 'Người dùng mới',
+          fastingGoal: userProfile.fastingGoal || '16:8',
+          age: userProfile.age || 25,
+          gender: userProfile.gender || 'male',
+          height: userProfile.height || 170,
+          weight: userProfile.weight || 70,
+          activityLevel: userProfile.activityLevel || 1.375,
+          goal: userProfile.goal || 'maintain'
         };
 
+        console.log('[SyncProfile] Sending onboarding profile sync payload:', payload);
         const responseData = await syncOnboardingProfile(userId, payload);
         
         // Cập nhật lại state với các chỉ số mục tiêu do BE tính toán

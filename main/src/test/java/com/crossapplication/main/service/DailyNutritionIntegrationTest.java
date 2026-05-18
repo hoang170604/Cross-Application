@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.crossapplication.main.dto.MealLogDTO;
 import com.crossapplication.main.entity.Food;
+import com.crossapplication.main.entity.MealLog;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.repository.interfaces.DailyNutritionRepository;
 import com.crossapplication.main.repository.interfaces.FoodRepositoryInterface;
@@ -57,8 +57,8 @@ public class DailyNutritionIntegrationTest {
         LocalDate date = LocalDate.now();
 
         // add 3 meal logs
-        MealLogDTO m1 = new MealLogDTO();
-        m1.setFoodId(f.getId());
+        MealLog m1 = new MealLog();
+        m1.setFood(f);
         m1.setQuantity(100.0);
         m1.setCalories(200.0);
         m1.setProtein(10.0);
@@ -66,8 +66,8 @@ public class DailyNutritionIntegrationTest {
         m1.setFat(5.0);
         diaryService.addFoodToMeal(userId, date, "breakfast", m1);
 
-        MealLogDTO m2 = new MealLogDTO();
-        m2.setFoodId(f.getId());
+        MealLog m2 = new MealLog();
+        m2.setFood(f);
         m2.setQuantity(100.0);
         m2.setCalories(300.0);
         m2.setProtein(15.0);
@@ -75,8 +75,8 @@ public class DailyNutritionIntegrationTest {
         m2.setFat(8.0);
         diaryService.addFoodToMeal(userId, date, "lunch", m2);
 
-        MealLogDTO m3 = new MealLogDTO();
-        m3.setFoodId(f.getId());
+        MealLog m3 = new MealLog();
+        m3.setFood(f);
         m3.setQuantity(100.0);
         m3.setCalories(250.0);
         m3.setProtein(12.0);

@@ -463,11 +463,14 @@ export const useAppStore = create<AppState>()(
         try {
           set({ isLoading: true, error: null });
 
+          const currentProfile = get().userProfile;
+          const currentPendingSync = get().pendingOnboardingSync;
+
           // Reset toàn bộ state thuộc về user cũ trước khi gán user mới.
           set({
             token,
             userId,
-            userProfile: DEFAULT_PROFILE,
+            userProfile: currentPendingSync ? currentProfile : DEFAULT_PROFILE,
             dailyNutrition: null,
             workoutChallenges: [],
             activityCalories: 0,
@@ -475,7 +478,7 @@ export const useAppStore = create<AppState>()(
             loggedActivities: [],
             waterIntake: 0,
             latestWeight: null,
-            pendingOnboardingSync: false,
+            pendingOnboardingSync: currentPendingSync,
           });
 
           // 1. Lưu token (kèm refresh + expiresIn nếu BE trả về) vào SecureStore

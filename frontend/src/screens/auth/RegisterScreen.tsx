@@ -99,10 +99,10 @@ export default function RegisterScreen() {
         refreshToken: data.refreshToken ?? null,
         expiresIn: data.expiresIn ?? null,
       });
-      const { userProfile } = useAppStore.getState();
+      const { userProfile, pendingOnboardingSync: currentPendingSync } = useAppStore.getState();
       const isProfileComplete = userProfile && userProfile.height > 0 && userProfile.weight > 0 && userProfile.age > 0;
 
-      if (pendingOnboardingSync) {
+      if (currentPendingSync) {
         router.replace('/SyncLoadingScreen');
       } else if (!isProfileComplete) {
         if (Platform.OS === 'web') {

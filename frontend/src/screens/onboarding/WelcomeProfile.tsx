@@ -48,7 +48,7 @@ export default function WelcomeProfileScreen() {
       router.replace('/SyncLoadingScreen');
     } else {
       await setPendingSync(true);
-      router.replace('/LoginScreen');
+      router.replace('/RegisterScreen');
     }
   };
 
