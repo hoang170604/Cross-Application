@@ -1,19 +1,21 @@
-import React from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// ─── Import Atomic Hooks ─────────────────────────────────────────────────────
+// ─── Import Atomic Hooks & APIs ──────────────────────────────────────────────
 import { useAppStore } from '@/src/store/useAppStore';
 import { resetAllStorage } from '@/scripts/resetStorage';
 import { pickAvatar } from '@/src/utils/imagePicker';
+import { getUserById, getUserProfile } from '@/src/api/userService';
 
 // ─── Import UI Components & Core ────────────────────────────────────────────
 import { GoalSelectionModal } from '@/src/ui/shared/GoalSelectionModal';
 import { ThemeSelectionModal } from '@/src/ui/shared/ThemeSelectionModal';
+import { BiologicalStatsModal } from '@/src/ui/shared/BiologicalStatsModal';
 import { CachedImage } from '@/src/ui/shared/CachedImage';
-import { useState, useMemo } from 'react';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
 
@@ -28,11 +30,48 @@ export default function ProfileScreen() {
   // Truy cập dữ liệu toàn cục qua Context — bao gồm logout
   const {
     userProfile,
+    userId,
     logout,
     theme,
     setTheme,
     updateUserProfile,
   } = useAppStore();
+
+  // Tự động tải lại thông tin hồ sơ và email từ Backend khi vào màn hình
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProfile = async () => {
+        if (!userId) return;
+        try {
+          // Lấy email tài khoản
+          const infoRes = await getUserById(userId);
+          if (infoRes && infoRes.data) {
+            updateUserProfile({ email: infoRes.data.email });
+          }
+
+          // Lấy chỉ số sinh lý
+          const userRes = await getUserProfile(userId);
+          if (userRes && userRes.data) {
+            const d = userRes.data;
+            updateUserProfile({
+              name: d.name || userProfile.name,
+              age: d.age || userProfile.age,
+              gender: d.gender || userProfile.gender,
+              height: d.height || userProfile.height,
+              weight: d.weight || userProfile.weight,
+              currentWeight: d.weight || userProfile.currentWeight,
+              activityLevel: d.activityLevel || userProfile.activityLevel,
+              goal: d.goal || userProfile.goal,
+            });
+          }
+        } catch (error: any) {
+          console.warn('[ProfileScreen] Fetch profile error:', error.message);
+        }
+      };
+
+      fetchProfile();
+    }, [userId])
+  );
 
   // ─── Pick & compress avatar (WebP) ──────────────────────────────────────
   const handlePickAvatar = async () => {
@@ -46,10 +85,11 @@ export default function ProfileScreen() {
 
   const [isGoalModalVisible, setGoalModalVisible] = useState(false);
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
+  const [isStatsModalVisible, setStatsModalVisible] = useState(false);
 
   const height = userProfile.height || 170;
   const currentWeight = userProfile.currentWeight !== undefined ? userProfile.currentWeight : (userProfile.weight || 70);
-  const gender = userProfile.gender || 'Nam';
+  const gender = userProfile.gender === 'female' || userProfile.gender === 'Nữ' ? 'Nữ' : 'Nam';
   const age = userProfile.age || 25;
   const name = userProfile.name || 'Người dùng mới';
 
@@ -114,12 +154,6 @@ export default function ProfileScreen() {
       subtitle: `${gender}, ${age} tuổi, ${height}cm, ${currentWeight}kg`
     },
     {
-      id: 'noti',
-      icon: '🔔',
-      title: 'Thông báo',
-      subtitle: 'Đã bật'
-    },
-    {
       id: 'theme',
       icon: theme === 'system' ? '⚙️' : theme === 'dark' ? '🌙' : '☀️',
       title: 'Giao diện',
@@ -130,6 +164,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
+        {/* Tiêu đề chính */}
         <Text style={styles.headerTitle}>HỒ SƠ</Text>
 
         {/* Thẻ định danh người dùng */}
@@ -175,6 +210,8 @@ export default function ProfileScreen() {
               onPress={() => {
                 if (item.id === 'goal') {
                   setGoalModalVisible(true);
+                } else if (item.id === 'stats') {
+                  setStatsModalVisible(true);
                 } else if (item.id === 'theme') {
                   setThemeModalVisible(true);
                 }
@@ -208,6 +245,10 @@ export default function ProfileScreen() {
       <GoalSelectionModal
         visible={isGoalModalVisible}
         onClose={() => setGoalModalVisible(false)}
+      />
+      <BiologicalStatsModal
+        visible={isStatsModalVisible}
+        onClose={() => setStatsModalVisible(false)}
       />
       <ThemeSelectionModal
         visible={isThemeModalVisible}

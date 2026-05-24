@@ -1,5 +1,6 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet, InteractionManager } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
 
@@ -13,6 +14,27 @@ import { PhysiologyStatsCard } from '@/src/ui/fasting/PhysiologyStatsCard';
 import { NutritionSummaryCard } from '@/src/ui/diary/NutritionSummaryCard';
 import { useAppStore } from '@/src/store/useAppStore';
 import { getLocalToday } from '@/src/core/dateFormatter';
+
+/**
+ * Màn hình Thống kê sức khỏe nâng cao (Statistics / Dashboard Screen).
+ *
+ * Chức năng:
+ * - Trực quan hóa 4 chỉ số quan trọng: Nước uống, Nhịn ăn, Calo nạp vào, Tiến trình Cân nặng.
+ * - Hỗ trợ lọc thời gian linh hoạt giữa "Tuần này" và "Tháng này".
+ * - Thiết kế giao diện cao cấp (Premium UI/UX) sử dụng các thẻ bo góc, đổ bóng mềm mại, 
+ *   màu sắc HSL tối ưu, gradient màu mượt mà, và các đường nét đứt mục tiêu rõ ràng.
+ * - Tương tác chạm thông minh (Tooltip hiển thị cân nặng, tiêu điểm cột dữ liệu).
+ * - Sử dụng Mock Data chất lượng cao phục vụ review giao diện, sẵn sàng móc nối API thực tế.
+ */
+/**
+ * Chuyển đổi đối tượng Date thành chuỗi định dạng local YYYY-MM-DD không bị lệch múi giờ.
+ */
+const formatDateStr = (date: Date): string => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+const WEEK_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 /**
  * Màn hình Thống kê sức khỏe nâng cao (Statistics / Dashboard Screen).
@@ -45,43 +67,51 @@ export default function StatisticsScreen() {
   const [timeFilter, setTimeFilter] = useState<'week' | 'month'>('week');
   const [showOverview, setShowOverview] = useState(false); // Collapsible cho phần chỉ số sinh lý cũ
 
-  // Trì hoãn gọi API thực tế để đảm bảo mượt mà
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!userId) return;
-      try {
-        const endDate = getLocalToday();
-        const startDate = new Date(Date.now() - (timeFilter === 'week' ? 6 : 29) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Trì hoãn gọi API thực tế để đảm bảo mượt mà và cập nhật thời gian thực khi vào lại màn hình
+  useFocusEffect(
+    useCallback(() => {
+      const fetchStats = async () => {
+        if (!userId) return;
+        try {
+          const endDate = getLocalToday();
+          const startD = new Date();
+          startD.setDate(startD.getDate() - (timeFilter === 'week' ? 6 : 29));
+          const startDate = formatDateStr(startD);
 
-        const [nutritionRes, weightRes, waterRes, fastingRes] = await Promise.allSettled([
-          getNutritionReport(userId, startDate, endDate),
-          getWeightHistory(userId, startDate, endDate),
-          getWaterLogsBetween(userId, startDate, endDate),
-          getFastingSessions(userId)
-        ]);
+          const [nutritionRes, weightRes, waterRes, fastingRes] = await Promise.allSettled([
+            getNutritionReport(userId, startDate, endDate),
+            getWeightHistory(userId, startDate, endDate),
+            getWaterLogsBetween(userId, startDate, endDate),
+            getFastingSessions(userId)
+          ]);
 
-        if (nutritionRes.status === 'fulfilled' && nutritionRes.value.data) {
-          setRemoteCalorieHistory(nutritionRes.value.data);
+          if (nutritionRes.status === 'fulfilled' && nutritionRes.value.data) {
+            setRemoteCalorieHistory(nutritionRes.value.data);
+          }
+          if (weightRes.status === 'fulfilled' && weightRes.value.data) {
+            setRemoteWeightHistory(weightRes.value.data);
+          }
+          if (waterRes.status === 'fulfilled' && waterRes.value.data) {
+            setRemoteWaterHistory(waterRes.value.data);
+          }
+          if (fastingRes.status === 'fulfilled' && fastingRes.value.data) {
+            const sessions = fastingRes.value.data.filter((s: any) => s.startTime && s.startTime.substring(0, 10) >= startDate);
+            setRemoteFastingHistory(sessions);
+          }
+        } catch (error: any) {
+          console.warn('API fetch statistics error', error.message);
         }
-        if (weightRes.status === 'fulfilled' && weightRes.value.data) {
-          setRemoteWeightHistory(weightRes.value.data);
-        }
-        if (waterRes.status === 'fulfilled' && waterRes.value.data) {
-          setRemoteWaterHistory(waterRes.value.data);
-        }
-        if (fastingRes.status === 'fulfilled' && fastingRes.value.data) {
-          const sessions = fastingRes.value.data.filter((s: any) => s.startTime >= startDate);
-          setRemoteFastingHistory(sessions);
-        }
-      } catch (error: any) {
-        console.warn('API fetch statistics error', error.message);
-      }
-    };
+      };
 
-    InteractionManager.runAfterInteractions(() => {
-      fetchStats();
-    });
-  }, [timeFilter, userId]);
+      const task = InteractionManager.runAfterInteractions(() => {
+        fetchStats();
+      });
+
+      return () => {
+        task.cancel();
+      };
+    }, [timeFilter, userId])
+  );
 
   const colors = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
@@ -103,13 +133,13 @@ export default function StatisticsScreen() {
       for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
-        dates.push(d.toISOString().split('T')[0]);
+        dates.push(formatDateStr(d));
       }
     } else {
       for (let i = 29; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
-        dates.push(d.toISOString().split('T')[0]);
+        dates.push(formatDateStr(d));
       }
     }
     return dates;
@@ -126,12 +156,15 @@ export default function StatisticsScreen() {
 
   const activeWaterData = useMemo(() => {
     if (timeFilter === 'week') {
-      return dateList.map((dateStr) => {
-        const logs = remoteWaterHistory.filter(h => h.logDate === dateStr || h.timestamp?.startsWith(dateStr));
+      return dateList.map((dateStr, index) => {
+        const logs = remoteWaterHistory.filter(h => {
+          const dStr = h.logDate || h.createdAt || h.timestamp;
+          return dStr && dStr.substring(0, 10) === dateStr;
+        });
         const value = logs.reduce((sum, log) => sum + (log.amountMl || 0), 0);
         return {
           value,
-          label: getWeekLabel(dateStr),
+          label: WEEK_LABELS[index],
           frontColor: value >= waterTarget ? '#2ecc71' : '#3498db'
         };
       });
@@ -142,7 +175,10 @@ export default function StatisticsScreen() {
         const weekDates = dateList.slice(i * 7, (i + 1) * 7); // xấp xỉ 28 ngày
         let weekValue = 0;
         weekDates.forEach(dateStr => {
-          const logs = remoteWaterHistory.filter(h => h.logDate === dateStr || h.timestamp?.startsWith(dateStr));
+          const logs = remoteWaterHistory.filter(h => {
+            const dStr = h.logDate || h.createdAt || h.timestamp;
+            return dStr && dStr.substring(0, 10) === dateStr;
+          });
           weekValue += logs.reduce((sum, log) => sum + (log.amountMl || 0), 0);
         });
         weeksData.push({
@@ -162,12 +198,12 @@ export default function StatisticsScreen() {
   const userFastingGoal = userProfile.fastingGoal || 16;
 
   const activeFastingData = useMemo(() => {
-    const rawFastingData = [];
+    const rawFastingData: any[] = [];
     if (timeFilter === 'week') {
-      dateList.forEach(dateStr => {
-        const logs = remoteFastingHistory.filter(h => h.startTime?.startsWith(dateStr));
+      dateList.forEach((dateStr, index) => {
+        const logs = remoteFastingHistory.filter(h => h.startTime && h.startTime.substring(0, 10) === dateStr);
         const duration = logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0) / 60;
-        rawFastingData.push({ value: parseFloat(duration.toFixed(1)), label: getWeekLabel(dateStr) });
+        rawFastingData.push({ value: parseFloat(duration.toFixed(1)), label: WEEK_LABELS[index] });
       });
     } else {
       for (let i = 0; i < 4; i++) {
@@ -175,7 +211,7 @@ export default function StatisticsScreen() {
         let weekDuration = 0;
         let daysWithLog = 0;
         weekDates.forEach(dateStr => {
-          const logs = remoteFastingHistory.filter(h => h.startTime?.startsWith(dateStr));
+          const logs = remoteFastingHistory.filter(h => h.startTime && h.startTime.substring(0, 10) === dateStr);
           if (logs.length > 0) {
             weekDuration += logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0) / 60;
             daysWithLog++;
@@ -220,10 +256,10 @@ export default function StatisticsScreen() {
 
   const activeCalorieData = useMemo(() => {
     return dateList.map((dateStr, index) => {
-      const log = remoteCalorieHistory.find(h => h.date === dateStr);
+      const log = remoteCalorieHistory.find(h => h.date && h.date.substring(0, 10) === dateStr);
       let label = '';
       if (timeFilter === 'week') {
-        label = getWeekLabel(dateStr);
+        label = WEEK_LABELS[index];
       } else {
         const day = index + 1;
         label = (day % 5 === 0 || day === 1 || day === 30) ? `N${day}` : '';
@@ -246,8 +282,10 @@ export default function StatisticsScreen() {
 
     // Khởi tạo lastKnownWeight dựa trên history cũ hơn nếu có
     if (remoteWeightHistory.length > 0) {
-      const pastLogs = [...remoteWeightHistory].sort((a, b) => a.date.localeCompare(b.date));
-      const beforeStart = pastLogs.filter(h => h.date < dateList[0]);
+      const pastLogs = [...remoteWeightHistory]
+        .filter(h => h.date)
+        .sort((a, b) => a.date.substring(0, 10).localeCompare(b.date.substring(0, 10)));
+      const beforeStart = pastLogs.filter(h => h.date.substring(0, 10) < dateList[0]);
       if (beforeStart.length > 0) {
         lastKnownWeight = beforeStart[beforeStart.length - 1].weight;
       } else {
@@ -256,13 +294,13 @@ export default function StatisticsScreen() {
     }
 
     return dateList.map((dateStr, index) => {
-      const log = remoteWeightHistory.find(h => h.date === dateStr);
+      const log = remoteWeightHistory.find(h => h.date && h.date.substring(0, 10) === dateStr);
       if (log && log.weight) {
         lastKnownWeight = log.weight;
       }
       let label = '';
       if (timeFilter === 'week') {
-        label = getWeekLabel(dateStr);
+        label = WEEK_LABELS[index];
       } else {
         const day = index + 1;
         label = (day % 5 === 0 || day === 1 || day === 30) ? `N${day}` : '';
@@ -386,8 +424,6 @@ export default function StatisticsScreen() {
 
               // Thiết kế cột
               barBorderRadius={6}
-              isAnimated
-              animationDuration={600}
             />
           </View>
           <View style={styles.cardFooter}>
@@ -448,8 +484,6 @@ export default function StatisticsScreen() {
               maxValue={20}
               rulesType="dashed"
               rulesColor={colors.cardBorder}
-              isAnimated
-              animationDuration={700}
             />
           </View>
 
@@ -519,7 +553,6 @@ export default function StatisticsScreen() {
 
               // Thiết lập biểu đồ vùng (Area Chart)
               areaChart
-              curved
               color="#f97316" // Orange
               thickness={3}
               startFillColor="rgba(249, 115, 22, 0.4)"
@@ -553,7 +586,7 @@ export default function StatisticsScreen() {
               }}
 
               // Khoảng cách
-              spacing={timeFilter === 'week' ? (chartWidth - 60) / 6 : (chartWidth - 60) / 29}
+              spacing={timeFilter === 'week' ? (chartWidth - 60 - 12) / 6 : (chartWidth - 60 - 12) / 29}
               initialSpacing={12}
               isAnimated
               animationDuration={800}
@@ -593,7 +626,6 @@ export default function StatisticsScreen() {
 
               // dynamic Y Axis offset không bắt đầu từ 0
               yAxisOffset={weightYOffset}
-              maxValue={relativeMax}
               stepValue={weightStepValue}
               noOfSections={4}
 
@@ -609,7 +641,7 @@ export default function StatisticsScreen() {
               rulesColor={colors.cardBorder}
 
               // Khoảng cách
-              spacing={timeFilter === 'week' ? (chartWidth - 60) / 6 : (chartWidth - 60) / 29}
+              spacing={timeFilter === 'week' ? (chartWidth - 60 - 12) / 6 : (chartWidth - 60 - 12) / 29}
               initialSpacing={12}
 
               // Tương tác chạm và Tooltip động cực kỳ cao cấp

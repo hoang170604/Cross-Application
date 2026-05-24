@@ -40,7 +40,7 @@ public class UserProfile {
     @Column(name="goal", length=20, nullable=false)
     private String goal;
 
-    @Column(name="name", length=100)
+    @Column(name="name", columnDefinition="NVARCHAR(100)")
     private String name;
 
     @Column(name="fasting_goal", length=20)

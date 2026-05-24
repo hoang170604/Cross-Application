@@ -547,6 +547,21 @@ export const useAppStore = create<AppState>()(
             console.log('[Store] User profile fetch error:', e.message);
           }
 
+          // Fetch thông tin email tài khoản từ server
+          try {
+            const infoRes = await userApi.getUserById(userId);
+            if (infoRes && infoRes.data) {
+              set((state) => ({
+                userProfile: {
+                  ...state.userProfile,
+                  email: infoRes.data.email || state.userProfile.email
+                }
+              }));
+            }
+          } catch (e: any) {
+            console.log('[Store] User info fetch error:', e.message);
+          }
+
           if (!get().userProfile.targetCalories) {
             get().recalculateGoals();
           }

@@ -96,8 +96,21 @@ public class UserService implements UserServiceInterface {
         if (uopt.isEmpty()) throw new IllegalArgumentException("User not found");
         User u = uopt.get();
 
-        // Persist UserProfile
-        profile.setUser(u);
+        // Persist UserProfile - Check if profile already exists to update it, avoiding duplicate key error
+        UserProfile existingProfile = profileRepo.findByUserId(id).orElse(null);
+        if (existingProfile != null) {
+            existingProfile.setAge(profile.getAge());
+            existingProfile.setGender(profile.getGender());
+            existingProfile.setHeight(profile.getHeight());
+            existingProfile.setWeight(profile.getWeight());
+            existingProfile.setActivityLevel(profile.getActivityLevel());
+            existingProfile.setGoal(profile.getGoal());
+            existingProfile.setName(profile.getName());
+            existingProfile.setFastingGoal(profile.getFastingGoal());
+            profile = existingProfile;
+        } else {
+            profile.setUser(u);
+        }
         profileRepo.save(profile);
 
         // 1. Tính Tỷ lệ trao đổi chất cơ bản (BMR) theo phương trình Mifflin-St Jeor
