@@ -164,6 +164,7 @@ const FoodCardItem = React.memo(({ food, onQuickAdd, colors }: FoodCardItemProps
     </View>
   );
 });
+FoodCardItem.displayName = 'FoodCardItem';
 
 
 // ─────────────────────────────────────────────────────────────────────────────

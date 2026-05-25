@@ -23,7 +23,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
 import { useAppStore } from '@/src/store/useAppStore';
-import { ActivityTypeInfo } from '../types';
+import { ActivityTypeInfo } from '@/src/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

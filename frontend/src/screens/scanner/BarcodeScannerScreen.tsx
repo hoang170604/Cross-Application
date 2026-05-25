@@ -26,6 +26,13 @@ try {
   // sẽ render placeholder
 }
 
+// Tránh lỗi Hook rules bằng cách đảm bảo useCameraPermissions luôn là 1 hàm hook hợp lệ
+if (!useCameraPermissions) {
+  useCameraPermissions = () => {
+    return [{ granted: false, canAskAgain: true } as any, async () => ({ granted: false } as any)];
+  };
+}
+
 const SUPPORTED_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e', 'qr', 'code128'];
 
 export default function BarcodeScannerScreen() {
@@ -33,10 +40,8 @@ export default function BarcodeScannerScreen() {
   const [scanned, setScanned] = useState(false);
   const scannedRef = useRef(false);
 
-  // Hook quyền camera (nếu lib có)
-  const [permission, requestPermission] = useCameraPermissions
-    ? useCameraPermissions()
-    : [{ granted: false, canAskAgain: true } as any, async () => ({ granted: false } as any)];
+  // Hook quyền camera
+  const [permission, requestPermission] = useCameraPermissions();
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain) {
