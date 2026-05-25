@@ -1147,6 +1147,14 @@ export const useAppStore = create<AppState>()(
           } catch (err: any) {
             console.warn(`[Sync] Failed to process item ${item.id}:`, err.message);
             await syncDb.incrementRetryCount(item.id!);
+
+            // Nếu lỗi do kết nối mạng hoặc server không phản hồi (timeout), 
+            // ngưng đồng bộ toàn bộ hàng đợi ngay lập tức để tránh lãng phí tài nguyên
+            const isNetworkOrTimeout = err.message?.includes('timeout') || err.message === 'Network Error' || !err.response;
+            if (isNetworkOrTimeout) {
+              console.log('[Sync] Phát hiện lỗi mạng hoặc timeout. Hủy tiến trình đồng bộ hàng đợi.');
+              break;
+            }
           }
         }
       },
