@@ -11,7 +11,6 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "App cần camera để quét mã vạch sản phẩm thực phẩm.",
         "NSPhotoLibraryUsageDescription": "App cần truy cập thư viện ảnh để bạn chọn ảnh đại diện.",
         "NSLocationWhenInUseUsageDescription": "App dùng vị trí để gợi ý nhà hàng/cửa hàng healthy gần bạn (tùy chọn)."
       }
@@ -27,7 +26,6 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.NutriTrackApp",
       "permissions": [
-        "CAMERA",
         "READ_MEDIA_IMAGES",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
@@ -55,12 +53,6 @@
       "expo-sqlite",
       "expo-font",
       "expo-web-browser",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "App cần camera để quét mã vạch sản phẩm thực phẩm."
-        }
-      ],
       [
         "expo-image-picker",
         {

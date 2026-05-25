@@ -423,18 +423,33 @@ export default function SearchScanScreen() {
           </View>
 
           {/* Search bar */}
-          <View style={{ position: 'relative', marginBottom: 12 }}>
-            <Ionicons name="search" size={20} color={colors.textSecondary} style={{ position: 'absolute', left: 16, top: 14, zIndex: 1 }} />
+          <View style={{ 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            backgroundColor: colors.card, 
+            borderRadius: 999, 
+            paddingHorizontal: 16, 
+            paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+            marginBottom: 12,
+            borderWidth: 1,
+            borderColor: colors.cardBorder || 'transparent',
+            shadowColor: colors.shadow, 
+            shadowOpacity: 0.04, 
+            shadowRadius: 4, 
+            elevation: 1 
+          }}>
+            <Ionicons name="search" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="Tìm món ăn..."
               placeholderTextColor={colors.textSecondary}
               style={{
-                width: '100%', paddingLeft: 48, paddingRight: 16, paddingVertical: 12,
-                backgroundColor: colors.card, borderRadius: 999,
-                fontSize: 16, color: colors.text,
-                shadowColor: colors.shadow, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+                flex: 1,
+                fontSize: 16, 
+                color: colors.text,
+                paddingVertical: 4,
+                paddingHorizontal: 0,
               }}
             />
           </View>

@@ -99,10 +99,10 @@ export function useNutrition() {
     // Meal Specific Stats
     mealStats: useMemo(() => {
       const config = [
-        { id: 'breakfast', name: 'Bữa sáng', emoji: '🍳', targetRatio: 0 },
-        { id: 'lunch', name: 'Bữa trưa', emoji: '🍝', targetRatio: 0.4 },
-        { id: 'dinner', name: 'Bữa tối', emoji: '🥗', targetRatio: 0.4 },
-        { id: 'snack', name: 'Đồ ăn vặt', emoji: '🥨', targetRatio: 0 },
+        { id: 'breakfast', name: 'Bữa sáng', emoji: '🍳', targetRatio: 0.3 }, // 30%
+        { id: 'lunch', name: 'Bữa trưa', emoji: '🍝', targetRatio: 0.35 }, // 35%
+        { id: 'dinner', name: 'Bữa tối', emoji: '🥗', targetRatio: 0.25 }, // 25%
+        { id: 'snack', name: 'Đồ ăn vặt', emoji: '🥨', targetRatio: 0.1 }, // 10%
       ];
 
       return config.map(meal => {
