@@ -423,35 +423,20 @@ export default function SearchScanScreen() {
           </View>
 
           {/* Search bar */}
-          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-            <View style={{ flex: 1, position: 'relative' }}>
-              <Ionicons name="search" size={20} color={colors.textSecondary} style={{ position: 'absolute', left: 16, top: 14, zIndex: 1 }} />
-              <TextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Tìm món ăn..."
-                placeholderTextColor={colors.textSecondary}
-                style={{
-                  width: '100%', paddingLeft: 48, paddingRight: 16, paddingVertical: 12,
-                  backgroundColor: colors.card, borderRadius: 999,
-                  fontSize: 16, color: colors.text,
-                  shadowColor: colors.shadow, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
-                }}
-              />
-            </View>
-            {/* Nút quét mã vạch — mở màn BarcodeScannerScreen (expo-camera) */}
-            <TouchableOpacity
-              onPress={() => router.push({ pathname: '/BarcodeScan' as any, params: { mealType } })}
-              accessibilityLabel="Quét mã vạch"
+          <View style={{ position: 'relative', marginBottom: 12 }}>
+            <Ionicons name="search" size={20} color={colors.textSecondary} style={{ position: 'absolute', left: 16, top: 14, zIndex: 1 }} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Tìm món ăn..."
+              placeholderTextColor={colors.textSecondary}
               style={{
-                width: 48, height: 48, borderRadius: 24,
-                backgroundColor: GREEN,
-                alignItems: 'center', justifyContent: 'center',
-                shadowColor: colors.shadow, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2,
+                width: '100%', paddingLeft: 48, paddingRight: 16, paddingVertical: 12,
+                backgroundColor: colors.card, borderRadius: 999,
+                fontSize: 16, color: colors.text,
+                shadowColor: colors.shadow, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
               }}
-            >
-              <Ionicons name="barcode-outline" size={22} color="#fff" />
-            </TouchableOpacity>
+            />
           </View>
 
           {/* Filter chips */}

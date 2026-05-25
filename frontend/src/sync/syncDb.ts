@@ -1,4 +1,4 @@
-import { getDatabase } from './database';
+import { getDatabase } from '../db/database';
 
 export interface SyncItem {
   id?: number;

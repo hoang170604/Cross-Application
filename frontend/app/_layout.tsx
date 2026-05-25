@@ -140,7 +140,6 @@ function InitialLayout() {
       <Stack.Screen name="SyncLoadingScreen" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="SearchScan" />
-      <Stack.Screen name="BarcodeScan" />
       <Stack.Screen name="FoodDetail" />
       <Stack.Screen name="AddActivity" />
     </Stack>
