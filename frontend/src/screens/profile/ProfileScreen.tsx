@@ -15,6 +15,7 @@ import { getUserById, getUserProfile } from '@/src/api/userService';
 import { GoalSelectionModal } from '@/src/ui/shared/GoalSelectionModal';
 import { ThemeSelectionModal } from '@/src/ui/shared/ThemeSelectionModal';
 import { BiologicalStatsModal } from '@/src/ui/shared/BiologicalStatsModal';
+import { ChangePasswordModal } from '@/src/ui/shared/ChangePasswordModal';
 import { CachedImage } from '@/src/ui/shared/CachedImage';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
@@ -86,6 +87,7 @@ export default function ProfileScreen() {
   const [isGoalModalVisible, setGoalModalVisible] = useState(false);
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
   const [isStatsModalVisible, setStatsModalVisible] = useState(false);
+  const [isPasswordModalVisible, setPasswordModalVisible] = useState(false);
 
   const height = userProfile.height || 170;
   const currentWeight = userProfile.currentWeight !== undefined ? userProfile.currentWeight : (userProfile.weight || 70);
@@ -159,6 +161,12 @@ export default function ProfileScreen() {
       title: 'Giao diện',
       subtitle: theme === 'system' ? 'Theo hệ thống' : theme === 'dark' ? 'Chế độ tối' : 'Chế độ sáng'
     },
+    {
+      id: 'password',
+      icon: '🔑',
+      title: 'Đổi mật khẩu',
+      subtitle: 'Cập nhật mật khẩu mới'
+    },
   ];
 
   return (
@@ -214,6 +222,8 @@ export default function ProfileScreen() {
                   setStatsModalVisible(true);
                 } else if (item.id === 'theme') {
                   setThemeModalVisible(true);
+                } else if (item.id === 'password') {
+                  setPasswordModalVisible(true);
                 }
               }}
             >
@@ -253,6 +263,10 @@ export default function ProfileScreen() {
       <ThemeSelectionModal
         visible={isThemeModalVisible}
         onClose={() => setThemeModalVisible(false)}
+      />
+      <ChangePasswordModal
+        visible={isPasswordModalVisible}
+        onClose={() => setPasswordModalVisible(false)}
       />
     </SafeAreaView>
   );
