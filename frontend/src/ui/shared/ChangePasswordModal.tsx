@@ -253,7 +253,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     opacity: 0.7,
   },
   confirmText: {
-    color: '#FFFFFF',
+    color: colors.background,
     fontSize: 16,
     fontWeight: '700',
   },

@@ -385,7 +385,7 @@ const getStyles = (colors: ThemeColors) =>
       opacity: 0.4,
     },
     confirmText: {
-      color: '#FFFFFF',
+      color: colors.background,
       fontSize: 18,
       fontWeight: '700',
     },

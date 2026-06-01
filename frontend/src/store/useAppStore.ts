@@ -770,16 +770,32 @@ export const useAppStore = create<AppState>()(
       },
 
       logWeight: async (weight, date) => {
-        const { userId } = get();
+        const { userId, userProfile } = get();
         if (!userId) return;
         const logDate = date || getLocalToday();
 
+        // 1. Cập nhật UI ngay lập tức (Optimistic Update)
+        const history = userProfile.weightHistory || [];
+        const existingIndex = history.findIndex(h => h.date === logDate);
+        let newHistory = [...history];
+        if (existingIndex >= 0) {
+          newHistory[existingIndex] = { date: logDate, weight };
+        } else {
+          newHistory.push({ date: logDate, weight });
+        }
+        newHistory.sort((a, b) => a.date.localeCompare(b.date));
+
+        set({
+          latestWeight: weight,
+          userProfile: { ...userProfile, currentWeight: weight, weightHistory: newHistory }
+        });
+
         try {
           set({ isWeightLoading: true });
-          // 1. Lưu SQLite
+          // 2. Lưu SQLite
           await trackingDb.logWeight(weight, logDate);
           
-          // 2. Gọi API
+          // 3. Gọi API
           await progressApi.logWeight(userId, logDate, weight);
           // Auto-refresh after POST
           await get().fetchLatestWeight();

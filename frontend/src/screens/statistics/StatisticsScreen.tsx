@@ -226,7 +226,7 @@ export default function StatisticsScreen() {
     rawFastingData.forEach((item) => {
       chartData.push({
         value: item.value,
-        frontColor: '#ffffff',
+        frontColor: colors.isDark ? '#ffffff' : '#8b5cf6',
         label: item.label,
         spacing: 2,
         labelTextStyle: { 
@@ -240,12 +240,12 @@ export default function StatisticsScreen() {
       });
       chartData.push({
         value: userFastingGoal,
-        frontColor: 'rgba(255, 255, 255, 0.15)',
+        frontColor: colors.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(139, 92, 246, 0.2)',
         spacing: timeFilter === 'week' ? 14 : 36,
       });
     });
     return chartData;
-  }, [dateList, remoteFastingHistory, timeFilter, colors.textSecondary, userFastingGoal]);
+  }, [dateList, remoteFastingHistory, timeFilter, colors.textSecondary, colors.isDark, userFastingGoal]);
 
   const rawFastingValues = activeFastingData.filter((_, i) => i % 2 === 0).map(d => d.value);
   const totalFasting = rawFastingValues.reduce((acc, curr) => acc + curr, 0);
@@ -452,11 +452,11 @@ export default function StatisticsScreen() {
           {/* Legend mô phỏng giống mẫu */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ffffff', marginRight: 6 }} />
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.isDark ? '#ffffff' : '#8b5cf6', marginRight: 6 }} />
               <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600' }}>Giờ nhịn</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255, 255, 255, 0.15)', marginRight: 6 }} />
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(139, 92, 246, 0.2)', marginRight: 6 }} />
               <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600' }}>Mục tiêu</Text>
             </View>
           </View>
@@ -528,7 +528,7 @@ export default function StatisticsScreen() {
           <View style={[styles.cardFooter, { marginTop: 16 }]}>
             <View style={styles.dotIndicatorPurple} />
             <Text style={styles.footerText}>
-              Cột nền mờ biểu thị mục tiêu nhịn ăn, cột trắng sáng biểu thị giờ nhịn thực tế đạt được.
+              Cột nền mờ biểu thị mục tiêu nhịn ăn, cột màu nổi bật biểu thị giờ nhịn thực tế đạt được.
             </Text>
           </View>
         </View>
