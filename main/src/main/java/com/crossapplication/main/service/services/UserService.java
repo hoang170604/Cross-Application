@@ -120,8 +120,8 @@ public class UserService implements UserServiceInterface {
 
         // Auto log weight to history on profile creation or weight update
         try {
-            LocalDate today = LocalDate.now();
-            WeightLog existingLog = weightRepo.findByUserIdAndDate(id, today);
+            LocalDate logDate = u.getCreatedAt() != null ? u.getCreatedAt() : LocalDate.now();
+            WeightLog existingLog = weightRepo.findByUserIdAndDate(id, logDate);
             if (existingLog != null) {
                 existingLog.setWeight(profile.getWeight());
                 weightRepo.save(existingLog);
@@ -133,7 +133,7 @@ public class UserService implements UserServiceInterface {
                     WeightLog w = new WeightLog();
                     w.setUser(u);
                     w.setWeight(profile.getWeight());
-                    w.setDate(today);
+                    w.setDate(logDate);
                     weightRepo.save(w);
                 }
             }
