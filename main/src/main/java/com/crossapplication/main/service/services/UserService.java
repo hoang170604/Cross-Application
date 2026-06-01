@@ -11,10 +11,12 @@ import com.crossapplication.main.dto.UserDTO;
 import com.crossapplication.main.entity.NutritionGoal;
 import com.crossapplication.main.entity.User;
 import com.crossapplication.main.entity.UserProfile;
+import com.crossapplication.main.entity.WeightLog;
 import com.crossapplication.main.mapper.UserMapper;
 import com.crossapplication.main.repository.interfaces.NutritionGoalRepository;
 import com.crossapplication.main.repository.interfaces.UserProfileRepository;
 import com.crossapplication.main.repository.interfaces.UserRepositoryInterface;
+import com.crossapplication.main.repository.interfaces.WeightLogRepository;
 import com.crossapplication.main.service.interfaces.UserServiceInterface;
 import com.crossapplication.main.util.JwtTokenProvider;
 import com.crossapplication.main.util.PasswordEncoder;
@@ -30,6 +32,9 @@ public class UserService implements UserServiceInterface {
 
     @Autowired
     private UserProfileRepository profileRepo;
+
+    @Autowired
+    private WeightLogRepository weightRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -112,6 +117,30 @@ public class UserService implements UserServiceInterface {
             profile.setUser(u);
         }
         profileRepo.save(profile);
+
+        // Auto log weight to history on profile creation or weight update
+        try {
+            LocalDate today = LocalDate.now();
+            WeightLog existingLog = weightRepo.findByUserIdAndDate(id, today);
+            if (existingLog != null) {
+                existingLog.setWeight(profile.getWeight());
+                weightRepo.save(existingLog);
+            } else {
+                List<WeightLog> userLogs = weightRepo.findByUserIdOrderByDateAsc(id);
+                boolean hasNoLogs = userLogs == null || userLogs.isEmpty();
+                boolean weightChanged = (existingProfile != null && existingProfile.getWeight() != profile.getWeight());
+                if (hasNoLogs || weightChanged) {
+                    WeightLog w = new WeightLog();
+                    w.setUser(u);
+                    w.setWeight(profile.getWeight());
+                    w.setDate(today);
+                    weightRepo.save(w);
+                }
+            }
+        } catch (Exception e) {
+            // Keep it robust, don't crash profile update if weight logging fails
+            System.err.println("Failed to auto-log weight: " + e.getMessage());
+        }
 
         // 1. Tính Tỷ lệ trao đổi chất cơ bản (BMR) theo phương trình Mifflin-St Jeor
         double bmr;

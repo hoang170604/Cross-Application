@@ -278,7 +278,8 @@ export default function StatisticsScreen() {
   // ─── 4. THỐNG KÊ TIẾN ĐỘ CÂN NẶNG (WEIGHT PROGRESS) ────────────────────────────
   const activeWeightData = useMemo(() => {
     // Để LineChart đẹp, nếu ngày không có dữ liệu, lấy dữ liệu gần nhất phía trước
-    let lastKnownWeight = userProfile.currentWeight || userProfile.weight || 70;
+    const initialWeight = userProfile.weight || userProfile.currentWeight || 70;
+    let lastKnownWeight = initialWeight;
 
     // Khởi tạo lastKnownWeight dựa trên history cũ hơn nếu có
     if (remoteWeightHistory.length > 0) {
@@ -289,7 +290,7 @@ export default function StatisticsScreen() {
       if (beforeStart.length > 0) {
         lastKnownWeight = beforeStart[beforeStart.length - 1].weight;
       } else {
-        lastKnownWeight = pastLogs[0].weight;
+        lastKnownWeight = userProfile.weight || pastLogs[0].weight || 70;
       }
     }
 
