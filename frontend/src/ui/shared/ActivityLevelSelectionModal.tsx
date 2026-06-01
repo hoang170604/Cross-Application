@@ -10,85 +10,78 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/src/store/useAppStore';
-import { syncOnboardingProfile } from '@/src/api/authService';
+import { updateProfileAndCalculateGoal } from '@/src/api/userService';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
 import { calculateNutritionalGoals } from '@/src/core/calculateNutrition';
 
-interface GoalSelectionModalProps {
+interface ActivityLevelSelectionModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
-const GOAL_OPTIONS = [
-  { id: 'lose_weight', title: 'Giảm cân', icon: 'trending-down', color: '#10B981', bg: '#D1FAE5', desc: 'Thâm hụt calo an toàn để giảm mỡ' },
-  { id: 'maintain', title: 'Giữ dáng', icon: 'body', color: '#3B82F6', bg: '#DBEAFE', desc: 'Duy trì cân nặng và thể trạng hiện tại' },
-  { id: 'build_muscle', title: 'Tăng cơ', icon: 'barbell', color: '#EF4444', bg: '#FEE2E2', desc: 'Thặng dư calo để xây dựng cơ bắp' },
+const ACTIVITY_OPTIONS = [
+  { id: 1.2, title: 'Ngồi nhiều', icon: '💻', desc: 'Làm việc văn phòng, ít hoặc không tập thể dục' },
+  { id: 1.375, title: 'Vận động nhẹ', icon: '🚶', desc: 'Đi bộ, làm việc nhà, tập thể dục nhẹ 1-3 ngày/tuần' },
+  { id: 1.55, title: 'Vận động vừa', icon: '🏃', desc: 'Tập thể dục/thể thao vừa phải 3-5 ngày/tuần' },
+  { id: 1.725, title: 'Năng động', icon: '🔥', desc: 'Tập thể dục/thể thao cường độ cao 6-7 ngày/tuần' },
+  { id: 1.9, title: 'Cường độ cao', icon: '🏋️', desc: 'Vận động viên hoặc công việc lao động rất nặng' },
 ] as const;
 
-export const GoalSelectionModal: React.FC<GoalSelectionModalProps> = ({ visible, onClose }) => {
+export const ActivityLevelSelectionModal: React.FC<ActivityLevelSelectionModalProps> = ({ visible, onClose }) => {
   const { userProfile, userId, updateUserProfile } = useAppStore();
   const colors = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
 
-  const getMappedGoal = (g?: string) => {
-    if (!g) return 'maintain';
-    const val = g.toLowerCase();
-    if (val === 'maintain_weight') return 'maintain';
-    if (val === 'gain_muscle') return 'build_muscle';
-    return val;
-  };
-
-  const [selectedGoal, setSelectedGoal] = useState<string>(getMappedGoal(userProfile.goal));
+  const [selectedActivity, setSelectedActivity] = useState<number>(userProfile.activityLevel || 1.375);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Cập nhật lại lựa chọn mặc định khi mở modal
   useEffect(() => {
     if (visible) {
-      setSelectedGoal(getMappedGoal(userProfile.goal));
+      setSelectedActivity(userProfile.activityLevel || 1.375);
       setIsLoading(false);
     }
-  }, [visible, userProfile.goal]);
+  }, [visible, userProfile.activityLevel]);
 
   const handleConfirm = async () => {
-    if (selectedGoal === userProfile.goal) {
+    if (selectedActivity === userProfile.activityLevel) {
       onClose();
       return;
     }
 
     setIsLoading(true);
     try {
-      // 1. TÍNH TOÁN NỘI BỘ (FALLBACK / OPTIMISTIC UPDATE)
       const w = userProfile.currentWeight || userProfile.weight || 70;
       const h = userProfile.height || 170;
       const a = userProfile.age || 25;
       const g = userProfile.gender || 'Nam';
-      const act = userProfile.activityLevel || 1.375;
-      
+      const act = selectedActivity;
+
+      // 1. TÍNH TOÁN NỘI BỘ (FALLBACK / OPTIMISTIC UPDATE)
       const goals = calculateNutritionalGoals({
         weight: w,
         height: h,
         age: a,
         gender: g,
-        goal: selectedGoal,
+        goal: userProfile.goal || 'maintain_weight',
         activityLevel: act
       });
-      
-      // Update store 
+
       updateUserProfile({
-         goal: selectedGoal as any,
+         activityLevel: act,
          ...goals
       });
 
       // 2. ĐỒNG BỘ VỚI SERVER
       if (userId) {
-        const responseData = await syncOnboardingProfile(userId, {
-          ...userProfile,
-          goal: selectedGoal,
-          targetCalories: undefined,
-          targetProtein: undefined,
-          targetCarb: undefined,
-          targetFat: undefined
+        const responseData = await updateProfileAndCalculateGoal(userId, {
+          age: a,
+          gender: g,
+          height: h,
+          weight: w,
+          activityLevel: act,
+          goal: userProfile.goal || 'maintain_weight',
+          name: userProfile.name
         });
 
         // Nếu API trả về data hợp lệ, ghi đè lại bằng kết quả chính xác của server
@@ -103,8 +96,7 @@ export const GoalSelectionModal: React.FC<GoalSelectionModalProps> = ({ visible,
         }
       }
     } catch (error) {
-      console.log('Lỗi API đồng bộ mục tiêu (sử dụng fallback local):', error);
-      // Không cần làm gì thêm vì đã có Optimistic Update ở bước 1
+      console.log('Lỗi API đồng bộ hệ số vận động (sử dụng fallback local):', error);
     } finally {
       setIsLoading(false);
       onClose();
@@ -118,34 +110,34 @@ export const GoalSelectionModal: React.FC<GoalSelectionModalProps> = ({ visible,
         <View style={styles.handle} />
         
         <View style={styles.header}>
-          <Text style={styles.title}>Chọn mục tiêu</Text>
+          <Text style={styles.title}>Hệ số vận động</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} disabled={isLoading}>
             <Ionicons name="close" size={24} color="#64748B" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
-          {GOAL_OPTIONS.map((item) => {
-            const isSelected = selectedGoal === item.id;
+          {ACTIVITY_OPTIONS.map((item) => {
+            const isSelected = selectedActivity === item.id;
             return (
               <TouchableOpacity
                 key={item.id}
                 style={[styles.optionCard, isSelected && styles.optionCardSelected]}
-                onPress={() => setSelectedGoal(item.id)}
+                onPress={() => setSelectedActivity(item.id)}
                 disabled={isLoading}
                 activeOpacity={0.7}
               >
-                <View style={[styles.iconBox, { backgroundColor: item.bg }]}>
-                  <Ionicons name={item.icon as any} size={24} color={item.color} />
+                <View style={styles.iconBox}>
+                  <Text style={{ fontSize: 24 }}>{item.icon}</Text>
                 </View>
                 <View style={styles.optionText}>
-                  <Text style={[styles.optionTitle, isSelected && { color: item.color }]}>
+                  <Text style={[styles.optionTitle, isSelected && { color: colors.primary }]}>
                     {item.title}
                   </Text>
                   <Text style={styles.optionDesc}>{item.desc}</Text>
                 </View>
-                <View style={[styles.radioCircle, isSelected && { borderColor: item.color }]}>
-                  {isSelected && <View style={[styles.radioInner, { backgroundColor: item.color }]} />}
+                <View style={[styles.radioCircle, isSelected && { borderColor: colors.primary }]}>
+                  {isSelected && <View style={[styles.radioInner, { backgroundColor: colors.primary }]} />}
                 </View>
               </TouchableOpacity>
             );
@@ -214,7 +206,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
     borderRadius: 16,
     backgroundColor: colors.surface,
     borderWidth: 2,
@@ -229,29 +221,30 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     elevation: 2,
   },
   iconBox: {
-    width: 48, height: 48,
-    borderRadius: 14,
+    width: 44, height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   optionText: {
     flex: 1,
   },
   optionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 2,
   },
   optionDesc: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 16,
   },
   radioCircle: {
-    width: 24, height: 24,
-    borderRadius: 12,
+    width: 22, height: 22,
+    borderRadius: 11,
     borderWidth: 2,
     borderColor: colors.cardBorder,
     alignItems: 'center',
@@ -259,16 +252,16 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     marginLeft: 12,
   },
   radioInner: {
-    width: 12, height: 12,
-    borderRadius: 6,
+    width: 10, height: 10,
+    borderRadius: 5,
   },
   footer: {
     paddingHorizontal: 24,
-    marginTop: 24,
+    marginTop: 20,
   },
   confirmBtn: {
     backgroundColor: colors.primary,
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',

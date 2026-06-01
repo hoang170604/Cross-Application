@@ -45,6 +45,7 @@ export default function WelcomeProfileScreen() {
     });
 
     if (token) {
+      await setPendingSync(true);
       router.replace('/SyncLoadingScreen');
     } else {
       await setPendingSync(true);

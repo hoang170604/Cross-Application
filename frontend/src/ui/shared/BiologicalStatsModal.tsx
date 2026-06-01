@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/src/store/useAppStore';
 import { updateProfileAndCalculateGoal } from '@/src/api/userService';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
+import { calculateNutritionalGoals } from '@/src/core/calculateNutrition';
 
 interface BiologicalStatsModalProps {
   visible: boolean;
@@ -28,6 +30,7 @@ export const BiologicalStatsModal: React.FC<BiologicalStatsModalProps> = ({ visi
   const [age, setAge] = useState<number>(userProfile.age || 25);
   const [height, setHeight] = useState<number>(userProfile.height || 170);
   const [weight, setWeight] = useState<number>(userProfile.weight || 70);
+  const [activityLevel, setActivityLevel] = useState<number>(userProfile.activityLevel || 1.375);
   const [isLoading, setIsLoading] = useState(false);
 
   // Sync state when modal is opened
@@ -37,6 +40,7 @@ export const BiologicalStatsModal: React.FC<BiologicalStatsModalProps> = ({ visi
       setAge(userProfile.age || 25);
       setHeight(userProfile.height || 170);
       setWeight(userProfile.weight || 70);
+      setActivityLevel(userProfile.activityLevel || 1.375);
       setIsLoading(false);
     }
   }, [visible, userProfile]);
@@ -48,14 +52,17 @@ export const BiologicalStatsModal: React.FC<BiologicalStatsModalProps> = ({ visi
       const a = age;
       const h = height;
       const w = weight;
+      const act = activityLevel;
 
       // 1. TÍNH TOÁN NỘI BỘ (FALLBACK / OPTIMISTIC UPDATE)
-      let bmr = 10 * w + 6.25 * h - 5 * a;
-      bmr += (g === 'male' || g === 'Nam' ? 5 : -161);
-      
-      let tdee = bmr * 1.2; // Sedentary baseline
-      if (userProfile.goal === 'lose_weight') tdee -= 500;
-      else if (userProfile.goal === 'gain_muscle') tdee += 500;
+      const goals = calculateNutritionalGoals({
+        weight: w,
+        height: h,
+        age: a,
+        gender: g,
+        goal: userProfile.goal || 'maintain_weight',
+        activityLevel: act
+      });
 
       updateUserProfile({
         gender: g,
@@ -63,10 +70,8 @@ export const BiologicalStatsModal: React.FC<BiologicalStatsModalProps> = ({ visi
         height: h,
         weight: w,
         currentWeight: w,
-        targetCalories: Math.round(tdee),
-        targetProtein: Math.round((tdee * 0.3) / 4),
-        targetCarb: Math.round((tdee * 0.45) / 4),
-        targetFat: Math.round((tdee * 0.25) / 9)
+        activityLevel: act,
+        ...goals
       });
 
       // 2. ĐỒNG BỘ VỚI SERVER
@@ -76,7 +81,7 @@ export const BiologicalStatsModal: React.FC<BiologicalStatsModalProps> = ({ visi
           gender: g,
           height: h,
           weight: w,
-          activityLevel: userProfile.activityLevel || 1.375,
+          activityLevel: act,
           goal: userProfile.goal || 'maintain_weight',
           name: userProfile.name
         });
@@ -114,103 +119,138 @@ export const BiologicalStatsModal: React.FC<BiologicalStatsModalProps> = ({ visi
         </View>
 
         <View style={styles.content}>
-          {/* Giới tính */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Giới tính</Text>
-            <View style={styles.genderContainer}>
-              {([
-                { label: 'Nam', value: 'male', icon: 'male' },
-                { label: 'Nữ', value: 'female', icon: 'female' }
-              ] as const).map((g) => {
-                const isSelected = gender === g.value || (g.value === 'male' && gender === 'Nam') || (g.value === 'female' && gender === 'Nữ');
-                return (
-                  <TouchableOpacity
-                    key={g.value}
-                    onPress={() => setGender(g.value)}
-                    style={[styles.genderBtn, isSelected && styles.genderBtnSelected]}
-                    disabled={isLoading}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons 
-                      name={g.icon as any} 
-                      size={20} 
-                      color={isSelected ? colors.background : colors.textSecondary} 
-                      style={{ marginRight: 6 }} 
-                    />
-                    <Text style={[styles.genderBtnText, isSelected && styles.genderBtnTextSelected]}>
-                      {g.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+          <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+            {/* Giới tính */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Giới tính</Text>
+              <View style={styles.genderContainer}>
+                {([
+                  { label: 'Nam', value: 'male', icon: 'male' },
+                  { label: 'Nữ', value: 'female', icon: 'female' }
+                ] as const).map((g) => {
+                  const isSelected = gender === g.value || (g.value === 'male' && gender === 'Nam') || (g.value === 'female' && gender === 'Nữ');
+                  return (
+                    <TouchableOpacity
+                      key={g.value}
+                      onPress={() => setGender(g.value)}
+                      style={[styles.genderBtn, isSelected && styles.genderBtnSelected]}
+                      disabled={isLoading}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons 
+                        name={g.icon as any} 
+                        size={20} 
+                        color={isSelected ? colors.background : colors.textSecondary} 
+                        style={{ marginRight: 6 }} 
+                      />
+                      <Text style={[styles.genderBtnText, isSelected && styles.genderBtnTextSelected]}>
+                        {g.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-          </View>
 
-          {/* Tuổi */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Tuổi</Text>
-            <View style={styles.counterContainer}>
-              <TouchableOpacity
-                onPress={() => setAge(Math.max(1, age - 1))}
-                style={styles.counterBtn}
-                disabled={isLoading}
-              >
-                <Ionicons name="remove" size={20} color={colors.text} />
-              </TouchableOpacity>
-              <Text style={styles.counterValue}>{age}</Text>
-              <TouchableOpacity
-                onPress={() => setAge(Math.min(120, age + 1))}
-                style={styles.counterBtn}
-                disabled={isLoading}
-              >
-                <Ionicons name="add" size={20} color={colors.text} />
-              </TouchableOpacity>
+            {/* Tuổi */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Tuổi</Text>
+              <View style={styles.counterContainer}>
+                <TouchableOpacity
+                  onPress={() => setAge(Math.max(1, age - 1))}
+                  style={styles.counterBtn}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="remove" size={20} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.counterValue}>{age}</Text>
+                <TouchableOpacity
+                  onPress={() => setAge(Math.min(120, age + 1))}
+                  style={styles.counterBtn}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="add" size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
-          {/* Chiều cao */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Chiều cao (cm)</Text>
-            <View style={styles.counterContainer}>
-              <TouchableOpacity
-                onPress={() => setHeight(Math.max(100, height - 1))}
-                style={styles.counterBtn}
-                disabled={isLoading}
-              >
-                <Ionicons name="remove" size={20} color={colors.text} />
-              </TouchableOpacity>
-              <Text style={styles.counterValue}>{height}</Text>
-              <TouchableOpacity
-                onPress={() => setHeight(Math.min(250, height + 1))}
-                style={styles.counterBtn}
-                disabled={isLoading}
-              >
-                <Ionicons name="add" size={20} color={colors.text} />
-              </TouchableOpacity>
+            {/* Chiều cao */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Chiều cao (cm)</Text>
+              <View style={styles.counterContainer}>
+                <TouchableOpacity
+                  onPress={() => setHeight(Math.max(100, height - 1))}
+                  style={styles.counterBtn}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="remove" size={20} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.counterValue}>{height}</Text>
+                <TouchableOpacity
+                  onPress={() => setHeight(Math.min(250, height + 1))}
+                  style={styles.counterBtn}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="add" size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
-          {/* Cân nặng */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Cân nặng (kg)</Text>
-            <View style={styles.counterContainer}>
-              <TouchableOpacity
-                onPress={() => setWeight(Math.max(30, weight - 1))}
-                style={styles.counterBtn}
-                disabled={isLoading}
-              >
-                <Ionicons name="remove" size={20} color={colors.text} />
-              </TouchableOpacity>
-              <Text style={styles.counterValue}>{weight}</Text>
-              <TouchableOpacity
-                onPress={() => setWeight(Math.min(250, weight + 1))}
-                style={styles.counterBtn}
-                disabled={isLoading}
-              >
-                <Ionicons name="add" size={20} color={colors.text} />
-              </TouchableOpacity>
+            {/* Cân nặng */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Cân nặng (kg)</Text>
+              <View style={styles.counterContainer}>
+                <TouchableOpacity
+                  onPress={() => setWeight(Math.max(30, weight - 1))}
+                  style={styles.counterBtn}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="remove" size={20} color={colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.counterValue}>{weight}</Text>
+                <TouchableOpacity
+                  onPress={() => setWeight(Math.min(250, weight + 1))}
+                  style={styles.counterBtn}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="add" size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+
+            {/* Hệ số vận động */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Hệ số vận động</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                {([
+                  { id: 1.2, title: 'Ngồi nhiều', icon: '💻', desc: 'Văn phòng' },
+                  { id: 1.375, title: 'Nhẹ', icon: '🚶', desc: 'Đi bộ' },
+                  { id: 1.55, title: 'Vừa', icon: '🏃', desc: '3-5 buổi' },
+                  { id: 1.725, title: 'Nặng', icon: '🔥', desc: '6-7 buổi' },
+                  { id: 1.9, title: 'Rất nặng', icon: '🏋️', desc: 'VĐV' }
+                ] as const).map((act) => {
+                  const isSelected = activityLevel === act.id;
+                  return (
+                    <TouchableOpacity
+                      key={act.id}
+                      onPress={() => setActivityLevel(act.id)}
+                      style={[styles.activityBtn, isSelected && styles.activityBtnSelected]}
+                      disabled={isLoading}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ fontSize: 18, marginBottom: 2 }}>{act.icon}</Text>
+                      <Text style={[styles.activityBtnText, isSelected && styles.activityBtnTextSelected]}>
+                        {act.title}
+                      </Text>
+                      <Text style={[styles.activityBtnDesc, isSelected && styles.activityBtnDescSelected]}>
+                        {act.desc}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </ScrollView>
         </View>
 
         <View style={styles.footer}>
@@ -306,6 +346,38 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   genderBtnTextSelected: {
     color: colors.background,
+  },
+  activityBtn: {
+    width: 100,
+    padding: 10,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
+    alignItems: 'center',
+  },
+  activityBtnSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  activityBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  activityBtnTextSelected: {
+    color: colors.background,
+  },
+  activityBtnDesc: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  activityBtnDescSelected: {
+    color: colors.background,
+    opacity: 0.8,
   },
   counterContainer: {
     flexDirection: 'row',

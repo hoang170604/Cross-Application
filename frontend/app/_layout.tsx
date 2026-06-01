@@ -134,7 +134,9 @@ function InitialLayout() {
       userProfile && 
       userProfile.height > 0 && 
       userProfile.weight > 0 && 
-      userProfile.age > 0;
+      userProfile.age > 0 &&
+      userProfile.name !== undefined &&
+      userProfile.name.trim() !== '';
 
     // Xử lý điều kiện điều hướng
     if (hasFinishedOnboarding) {

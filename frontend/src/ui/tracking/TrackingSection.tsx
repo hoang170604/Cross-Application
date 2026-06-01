@@ -223,9 +223,6 @@ export const TrackingSection: React.FC = () => {
       {/* ━━━━━ MEASUREMENTS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Chỉ số cơ thể</Text>
-        <TouchableOpacity activeOpacity={0.7}>
-          <Text style={styles.moreLink}>Thêm</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.card}>

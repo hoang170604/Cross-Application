@@ -40,7 +40,7 @@ const WeightProgressCardComponent: React.FC<WeightProgressCardProps> = ({
   }, [currentWeight]);
 
   const isLose = goal === 'lose_weight' || goal === 'lose';
-  const isGain = goal === 'gain_muscle' || goal === 'gain';
+  const isGain = goal === 'gain_muscle' || goal === 'gain' || goal === 'build_muscle';
   
   // Tính toán tiến độ
   const progress = useMemo(() => {

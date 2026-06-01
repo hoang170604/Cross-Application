@@ -16,6 +16,7 @@ import { GoalSelectionModal } from '@/src/ui/shared/GoalSelectionModal';
 import { ThemeSelectionModal } from '@/src/ui/shared/ThemeSelectionModal';
 import { BiologicalStatsModal } from '@/src/ui/shared/BiologicalStatsModal';
 import { ChangePasswordModal } from '@/src/ui/shared/ChangePasswordModal';
+import { ActivityLevelSelectionModal } from '@/src/ui/shared/ActivityLevelSelectionModal';
 import { CachedImage } from '@/src/ui/shared/CachedImage';
 import { useTheme } from '@/src/hooks/useTheme';
 import { ThemeColors } from '@/src/core/theme';
@@ -88,6 +89,7 @@ export default function ProfileScreen() {
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
   const [isStatsModalVisible, setStatsModalVisible] = useState(false);
   const [isPasswordModalVisible, setPasswordModalVisible] = useState(false);
+  const [isActivityModalVisible, setActivityModalVisible] = useState(false);
 
   const height = userProfile.height || 170;
   const currentWeight = userProfile.currentWeight !== undefined ? userProfile.currentWeight : (userProfile.weight || 70);
@@ -140,6 +142,15 @@ export default function ProfileScreen() {
     );
   };
 
+  const activityMap: Record<number, string> = {
+    1.2: 'Ngồi nhiều (Ít vận động)',
+    1.375: 'Vận động nhẹ (Đi bộ nhẹ)',
+    1.55: 'Vận động vừa (Tập 3-5 buổi/tuần)',
+    1.725: 'Năng động (Tập 6-7 buổi/tuần)',
+    1.9: 'Cường độ cao (Lao động nặng)',
+  };
+  const activityText = activityMap[userProfile.activityLevel || 1.375] || 'Vận động nhẹ';
+
   // Danh sách các tùy chọn cài đặt
   const settingsItems = [
     {
@@ -148,12 +159,17 @@ export default function ProfileScreen() {
       title: 'Mục tiêu của tôi',
       subtitle: userProfile.goal === 'lose_weight' ? 'Giảm cân' : userProfile.goal === 'gain_muscle' ? 'Tăng cơ' : 'Giữ dáng'
     },
-
     {
       id: 'stats',
       icon: '👤',
       title: 'Chỉ số sinh lý',
       subtitle: `${gender}, ${age} tuổi, ${height}cm, ${currentWeight}kg`
+    },
+    {
+      id: 'activity',
+      icon: '🏃',
+      title: 'Hệ số vận động',
+      subtitle: activityText
     },
     {
       id: 'theme',
@@ -220,6 +236,8 @@ export default function ProfileScreen() {
                   setGoalModalVisible(true);
                 } else if (item.id === 'stats') {
                   setStatsModalVisible(true);
+                } else if (item.id === 'activity') {
+                  setActivityModalVisible(true);
                 } else if (item.id === 'theme') {
                   setThemeModalVisible(true);
                 } else if (item.id === 'password') {
@@ -259,6 +277,10 @@ export default function ProfileScreen() {
       <BiologicalStatsModal
         visible={isStatsModalVisible}
         onClose={() => setStatsModalVisible(false)}
+      />
+      <ActivityLevelSelectionModal
+        visible={isActivityModalVisible}
+        onClose={() => setActivityModalVisible(false)}
       />
       <ThemeSelectionModal
         visible={isThemeModalVisible}

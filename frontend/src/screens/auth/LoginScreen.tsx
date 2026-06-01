@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SharedHeader } from '@/src/ui/shared/SharedHeader';
@@ -13,6 +14,7 @@ export default function LoginScreen() {
   const { login, pendingOnboardingSync } = useAppStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -70,7 +72,13 @@ export default function LoginScreen() {
         expiresIn: data.expiresIn ?? null,
       });
       const { userProfile, pendingOnboardingSync } = useAppStore.getState();
-      const isProfileComplete = userProfile && userProfile.height > 0 && userProfile.weight > 0 && userProfile.age > 0;
+      const isProfileComplete = 
+        userProfile && 
+        userProfile.height > 0 && 
+        userProfile.weight > 0 && 
+        userProfile.age > 0 &&
+        userProfile.name !== undefined &&
+        userProfile.name.trim() !== '';
 
       if (pendingOnboardingSync) {
         router.replace('/SyncLoadingScreen');
@@ -147,14 +155,26 @@ export default function LoginScreen() {
           {/* Mật khẩu */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-              style={[styles.input, passwordError ? styles.inputError : null]}
-              placeholder="Ít nhất 8 ký tự"
-              placeholderTextColor="#9CA3AF"
-              value={password}
-              onChangeText={handlePasswordChange}
-              secureTextEntry
-            />
+            <View style={{ position: 'relative', justifyContent: 'center' }}>
+              <TextInput
+                style={[styles.input, { paddingRight: 48 }, passwordError ? styles.inputError : null]}
+                placeholder="Ít nhất 8 ký tự"
+                placeholderTextColor="#9CA3AF"
+                value={password}
+                onChangeText={handlePasswordChange}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 16, height: '100%', justifyContent: 'center' }}
+              >
+                <Ionicons 
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color="#9CA3AF" 
+                />
+              </TouchableOpacity>
+            </View>
             {passwordError ? <Text style={styles.inlineError}>{passwordError}</Text> : null}
           </View>
  

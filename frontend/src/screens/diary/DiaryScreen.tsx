@@ -65,9 +65,6 @@ export default function DiaryDashboardScreen() {
         <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16, backgroundColor: colors.background }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <Text style={{ fontSize: 18, fontWeight: '700', letterSpacing: 2, color: colors.text }}>NUTRITRACK</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontWeight: '700', fontSize: 18, color: colors.text }}>1</Text>
-            </View>
           </View>
           <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '500', textTransform: 'capitalize' }}>{todayString}</Text>
         </View>

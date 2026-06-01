@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SharedHeader } from '@/src/ui/shared/SharedHeader';
@@ -14,6 +15,8 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -36,8 +39,8 @@ export default function RegisterScreen() {
   const handlePasswordChange = (text: string) => {
     setPassword(text);
     if (errorMessage) setErrorMessage('');
-    if (text.length > 0 && text.length < 6) {
-      setPasswordError('Mật khẩu phải có ít nhất 6 ký tự');
+    if (text.length > 0 && text.length < 8) {
+      setPasswordError('Mật khẩu phải có ít nhất 8 ký tự');
     } else {
       setPasswordError('');
     }
@@ -100,7 +103,13 @@ export default function RegisterScreen() {
         expiresIn: data.expiresIn ?? null,
       });
       const { userProfile, pendingOnboardingSync: currentPendingSync } = useAppStore.getState();
-      const isProfileComplete = userProfile && userProfile.height > 0 && userProfile.weight > 0 && userProfile.age > 0;
+      const isProfileComplete = 
+        userProfile && 
+        userProfile.height > 0 && 
+        userProfile.weight > 0 && 
+        userProfile.age > 0 &&
+        userProfile.name !== undefined &&
+        userProfile.name.trim() !== '';
 
       if (currentPendingSync) {
         router.replace('/SyncLoadingScreen');
@@ -120,12 +129,12 @@ export default function RegisterScreen() {
       }
     } catch (error: any) {
       console.log('Register Error Detail:', error.response?.data);
-      
+
       const serverData = error.response?.data;
-      const rawError = typeof serverData === 'string' 
-        ? serverData 
+      const rawError = typeof serverData === 'string'
+        ? serverData
         : (serverData?.message || serverData?.error || error.message || '');
-      
+
       const msg = String(rawError).toLowerCase();
       let detailedError = 'Lỗi kết nối đến máy chủ. Vui lòng thử lại.';
 
@@ -171,28 +180,52 @@ export default function RegisterScreen() {
           {/* Mật khẩu */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-              style={[styles.input, passwordError ? styles.inputError : null]}
-              placeholder="Ít nhất 8 ký tự"
-              placeholderTextColor="#9CA3AF"
-              value={password}
-              onChangeText={handlePasswordChange}
-              secureTextEntry
-            />
+            <View style={{ position: 'relative', justifyContent: 'center' }}>
+              <TextInput
+                style={[styles.input, { paddingRight: 48 }, passwordError ? styles.inputError : null]}
+                placeholder="Ít nhất 8 ký tự"
+                placeholderTextColor="#9CA3AF"
+                value={password}
+                onChangeText={handlePasswordChange}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: 16, height: '100%', justifyContent: 'center' }}
+              >
+                <Ionicons 
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color="#9CA3AF" 
+                />
+              </TouchableOpacity>
+            </View>
             {passwordError ? <Text style={styles.inlineError}>{passwordError}</Text> : null}
           </View>
 
           {/* Xác nhận mật khẩu */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Xác nhận mật khẩu</Text>
-            <TextInput
-              style={[styles.input, confirmPasswordError ? styles.inputError : null]}
-              placeholder="Nhập lại mật khẩu"
-              placeholderTextColor="#9CA3AF"
-              value={confirmPassword}
-              onChangeText={handleConfirmPasswordChange}
-              secureTextEntry
-            />
+            <View style={{ position: 'relative', justifyContent: 'center' }}>
+              <TextInput
+                style={[styles.input, { paddingRight: 48 }, confirmPasswordError ? styles.inputError : null]}
+                placeholder="Nhập lại mật khẩu"
+                placeholderTextColor="#9CA3AF"
+                value={confirmPassword}
+                onChangeText={handleConfirmPasswordChange}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{ position: 'absolute', right: 16, height: '100%', justifyContent: 'center' }}
+              >
+                <Ionicons 
+                  name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color="#9CA3AF" 
+                />
+              </TouchableOpacity>
+            </View>
             {confirmPasswordError ? <Text style={styles.inlineError}>{confirmPasswordError}</Text> : null}
           </View>
 
