@@ -1,0 +1,1131 @@
+\documentclass[12pt,a4paper]{article}
+
+% ===== PACKAGES =====
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue]{hyperref}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{calc, fit, positioning, arrows.meta, shadows, shapes.geometric, backgrounds, decorations.pathreplacing}
+% Thêm package minted để highlight code
+\usepackage{minted}
+% Tùy chỉnh màu sắc/giao diện cho minted (tùy chọn)
+\usemintedstyle{vs} 
+
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=2cm}
+\onehalfspacing
+\setlength{\parindent}{1cm}
+\setlength{\headheight}{18pt}
+
+
+
+% ===== BẮT ĐẦU TÀI LIỆU =====
+\begin{document}
+
+% ---------- Bìa ----------
+\begin{titlepage}
+\begin{tikzpicture}[overlay,remember picture]
+% Khung viền ngoài (đậm)
+\draw [line width=3pt]
+    ($(current page.north west) + (3.0cm,-2.0cm)$)
+    rectangle
+    ($(current page.south east) + (-2.0cm,2.0cm)$);
+% Khung viền trong (nhạt)
+\draw [line width=0.5pt]
+    ($(current page.north west) + (3.1cm,-2.1cm)$)
+    rectangle
+    ($(current page.south east) + (-2.1cm,2.1cm)$); 
+\end{tikzpicture}
+
+\begin{center}
+% Dùng \vspace* ở đầu trang để không bị LaTeX bỏ qua khoảng trắng
+\vspace*{-12pt} 
+
+\textbf{\fontsize{13pt}{16pt}\selectfont BỘ GIÁO DỤC VÀ ĐÀO TẠO} \\
+\textbf{\fontsize{13pt}{16pt}\selectfont TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI} \\
+\textbf{\fontsize{13pt}{16pt}\selectfont KHOA CÔNG NGHỆ THÔNG TIN} \\
+\vspace{1.5cm}
+
+% Đảm bảo file logo tồn tại ở thư mục img/LOGO_DHXD.png
+\includegraphics[width=4cm]{img/LOGO_DHXD.png}
+
+\vspace{1.2cm}
+\textbf{\fontsize{14pt}{18pt}\selectfont BÁO CÁO MÔN HỌC} \\[0.2cm]
+\textbf{\fontsize{16pt}{20pt}\selectfont Đồ án phát triển ứng dụng đa nền tảng} \\
+\vspace{1.2cm}
+
+\textbf{\fontsize{14pt}{18pt}\selectfont Đề tài:} \\[0.2cm]
+\textbf{\fontsize{16pt}{20pt}\selectfont XÂY DỰNG HỆ THỐNG THEO DÕI SỨC KHỎE VÀ DINH DƯỠNG NUTRITRACK} \\
+\vspace{1.8cm}
+
+% Căn chỉnh lại bảng để các dấu 2 chấm (:) thẳng hàng dọc với nhau
+\large
+\begin{tabular}{l l}
+ \textbf{Nhóm sinh viên thực hiện} & : Nguyễn Việt Anh \\
+                                   & : Nguyễn Thành Đạt \\
+                                   & : Nguyễn Đức Phương \\
+                                   & : Phạm Xuân Tú \\
+                                   & : Đinh Quang Tuấn \\[0.25cm] 
+ \textbf{Lớp}                      & : 68CS2 \\[0.1cm]
+ \textbf{Nhóm}                     & : 2 \\[0.1cm] 
+ \textbf{Giảng viên hướng dẫn}     & : Lê Văn Minh  \\
+\end{tabular}
+
+% \vfill sẽ tự động đẩy dòng ngày tháng xuống sát viền dưới cùng của trang bìa
+\vfill
+\textbf{\fontsize{13pt}{16pt}\selectfont Hà Nội, tháng 6 năm 2026.}
+\end{center}
+\end{titlepage}
+
+\clearpage
+% ===== HEADER / FOOTER =====
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Báo cáo Đồ án -- NutriTrack}
+\lhead{\leftmark}
+\cfoot{\thepage}
+% ===== TRANG BÌA =====
+\title{
+    \vspace{2cm}
+    \Large \textbf{BÁO CÁO ĐỒ ÁN MÔN HỌC} \\[0.5cm]
+    \large Phân tích và Thiết kế Hệ thống Thông tin \\[1cm]
+    \rule{\linewidth}{0.5mm} \\[0.4cm]
+    {\huge \textbf{HỆ THỐNG THEO DÕI SỨC KHỎE VÀ DINH DƯỠNG}} \\[0.3cm]
+    {\LARGE \textbf{NUTRITRACK}} \\[0.4cm]
+    \rule{\linewidth}{0.5mm} \\[1.5cm]
+}
+\author{
+    \begin{tabular}{ll}
+        \textbf{Nhóm thực hiện:} & Nhóm 2 - Lớp 68CS2 \\
+        \textbf{Giảng viên hướng dẫn:} & ThS. Lê Văn Minh \\
+        \textbf{Học kỳ:} & Học kỳ II -- Năm học 2025-2026 \\
+        \textbf{Lớp:} & 68CS2 \\
+    \end{tabular}
+}
+\date{}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Giải pháp Tổng thể của Hệ thống}
+% ============================================================
+
+% ------------------------------------------------------------
+\subsection{Giới thiệu Bài toán Nghiệp vụ}
+% ------------------------------------------------------------
+
+\subsubsection{Bối cảnh và Nhu cầu Thực tiễn}
+
+Trong bối cảnh lối sống hiện đại ngày càng bận rộn, việc theo dõi chế độ dinh dưỡng và sức khỏe cá nhân trở thành nhu cầu thiết yếu nhưng đầy thách thức. Theo Tổ chức Y tế Thế giới (WHO), hơn 1,9 tỷ người trưởng thành trên toàn cầu đang bị thừa cân, trong đó phần lớn nguyên nhân xuất phát từ việc thiếu nhận thức và công cụ phù hợp để quản lý năng lượng nạp vào và tiêu thụ hàng ngày.
+
+Tại thị trường Việt Nam, người dùng đang đối mặt với các vấn đề cụ thể sau:
+
+\begin{itemize}
+    \item \textbf{Thiếu cơ sở dữ liệu thực phẩm Việt Nam:} Hầu hết ứng dụng dinh dưỡng phổ biến hiện nay (MyFitnessPal, Cronometer) được xây dựng dựa trên dữ liệu thực phẩm phương Tây, thiếu nghiêm trọng các món ăn Việt Nam thông dụng như phở bò, cơm tấm, bún bò Huế, bánh mì thịt.
+    
+    \item \textbf{Không có tính toán cá nhân hóa:} Mỗi người có nhu cầu năng lượng khác nhau tùy theo tuổi, giới tính, chiều cao, cân nặng và mức độ vận động. Việc áp dụng một mức calo chung cho tất cả dẫn đến kế hoạch dinh dưỡng kém hiệu quả.
+    
+    \item \textbf{Phân mảnh dữ liệu sức khỏe:} Người dùng phải sử dụng nhiều ứng dụng riêng lẻ cho từng nhu cầu: ghi nhận bữa ăn, theo dõi tập luyện, lịch nhịn ăn gián đoạn. Sự phân mảnh này cản trở việc nhìn tổng quan về tình trạng sức khỏe.
+    
+    \item \textbf{Giao diện phức tạp, thiếu thân thiện:} Nhiều ứng dụng hiện có giao diện cồng kềnh, yêu cầu nhiều thao tác để ghi nhận một bữa ăn, khiến người dùng bỏ cuộc sau vài ngày sử dụng.
+\end{itemize}
+
+\subsubsection{Mục tiêu Hệ thống và Các Chỉ số Tính toán Cốt lõi}
+
+Hệ thống \textbf{NutriTrack} được đề xuất nhằm giải quyết đồng thời các bài toán trên thông qua một nền tảng di động tích hợp. Hệ thống thực hiện tự động hóa các tính toán dinh dưỡng dựa trên các công thức khoa học được y học công nhận:
+
+\paragraph{Chỉ số BMR (Basal Metabolic Rate):}
+Tỷ lệ chuyển hóa cơ bản -- lượng năng lượng tối thiểu cơ thể cần khi nghỉ ngơi hoàn toàn. Hệ thống áp dụng công thức \textbf{Mifflin-St Jeor}:
+
+\begin{align}
+    \text{BMR}_{\text{nam}} &= 10W + 6{,}25H - 5A + 5 \\
+    \text{BMR}_{\text{nữ}} &= 10W + 6{,}25H - 5A - 161
+\end{align}
+
+Trong đó: $W$ = cân nặng (kg), $H$ = chiều cao (cm), $A$ = tuổi (năm).
+
+\paragraph{Chỉ số TDEE (Total Daily Energy Expenditure):}
+Tổng năng lượng tiêu thụ thực tế mỗi ngày, được tính bằng:
+
+\begin{equation}
+    \text{TDEE} = \text{BMR} \times \text{PAL}
+\end{equation}
+
+Trong đó PAL (Physical Activity Level) là hệ số vận động, nhận các giá trị từ 1,2 (ít vận động) đến 1,9 (vận động rất cao).
+
+\paragraph{Mục tiêu Calo theo Mục đích cá nhân:}
+
+\begin{equation}
+    \text{Calo mục tiêu} = 
+    \begin{cases}
+        \text{TDEE} - 500 & \text{nếu mục tiêu là giảm cân} \\
+        \text{TDEE} + 500 & \text{nếu mục tiêu là tăng cơ/xây dựng cơ bắp} \\
+        \text{TDEE}       & \text{nếu mục tiêu là duy trì}
+    \end{cases}
+\end{equation}
+
+% ------------------------------------------------------------
+\subsection{Mô hình Phân rã Chức năng}
+% ------------------------------------------------------------
+
+Hệ thống NutriTrack được phân rã thành các nhóm chức năng chính với hai tác nhân ngoài cốt lõi là \textbf{Người dùng (User)} và \textbf{Quản trị viên (Admin)}. Các chức năng tính toán chỉ số dinh dưỡng (BMR, TDEE, Calo mục tiêu) là các logic xử lý nội bộ tự động của hệ thống khi có sự thay đổi chỉ số từ phía tác nhân ngoài.
+
+\subsubsection{Tác nhân chính}
+
+\begin{itemize}
+    \item \textbf{Người dùng (User):} Là tác nhân chính tương tác với ứng dụng di động để cập nhật chỉ số thể chất cá nhân, ghi nhận nhật ký ăn uống/nước uống, ghi nhận hoạt động tập luyện và theo dõi các chế độ nhịn ăn gián đoạn.
+    \item \textbf{Quản trị viên (Admin):} Là tác nhân vận hành hệ thống chịu trách nhiệm quản trị danh sách người dùng, phê duyệt/quản lý thư viện thực phẩm dùng chung và thiết lập các thử thách tập luyện mẫu cho toàn hệ thống.
+\end{itemize}
+
+\subsubsection{Danh sách Use-case}
+
+Dựa theo sơ đồ Use-case tổng thể của hệ thống, các Use-case được phân nhóm theo hai tác nhân chính như sau:
+
+\begin{itemize}
+    \item \textbf{Các Use-case của tác nhân Người dùng (User):}
+    \begin{itemize}
+        \item \textbf{UC-01: Đăng ký / Đăng nhập:} Cho phép người dùng tạo tài khoản mới và đăng nhập để đồng bộ dữ liệu cá nhân.
+        \item \textbf{UC-02: Thiết lập mục tiêu và hồ sơ:} Cập nhật các thông tin thể chất (tuổi, chiều cao, cân nặng, giới tính, mức độ vận động) và chọn mục tiêu dinh dưỡng. Hệ thống sẽ tự động tính toán năng lượng tiêu chuẩn (BMR, TDEE) và phân bổ lượng Macro mục tiêu.
+        \item \textbf{UC-03: Quản lý Nhật ký Dinh dưỡng (Món ăn, Nước):} Ghi nhận lượng calo/macros tiêu thụ thông qua các bữa ăn trong ngày và lượng nước uống nạp vào cơ thể.
+        \item \textbf{UC-04: Quản lý Thể chất \& Cân nặng (Ghi nhận Tập luyện, Số ký):} Ghi chép nhật ký hoạt động thể chất (thời gian tập, calo đốt cháy) và cập nhật biến động cân nặng định kỳ.
+        \item \textbf{UC-05: Tham gia \& Cập nhật tiến độ Thử thách tập luyện:} Tự chọn tham gia các thử thách tập luyện cá nhân/hệ thống và cập nhật số liệu tiến trình thực tế.
+        \item \textbf{UC-06: Quản lý Nhịn ăn gián đoạn:} Chọn phác đồ nhịn ăn phù hợp, bắt đầu/kết thúc phiên nhịn ăn và theo dõi đồng hồ đếm ngược sinh học.
+        \item \textbf{UC-07: Xem Báo cáo \& Thống kê:} Xem biểu đồ biểu diễn xu hướng calo nạp vào, cân nặng, nước uống, nhịn ăn theo tuần/tháng.
+    \end{itemize}
+    
+    \item \textbf{Các Use-case của tác nhân Quản trị viên (Admin):}
+    \begin{itemize}
+        \item \textbf{UC-08: Quản lý Thư viện Thực phẩm (Thêm / Sửa / Xóa):} Quản lý cơ sở dữ liệu thực phẩm dùng chung (tên thực phẩm, năng lượng, dinh dưỡng trên 100g).
+        \item \textbf{UC-09: Quản lý Thử thách Tập luyện (Thêm / Sửa / Xóa):} Xây dựng, biên tập các thử thách rèn luyện thể chất mẫu để gợi ý cho người dùng.
+        \item \textbf{UC-10: Quản lý Danh sách Người dùng:} Xem danh sách tài khoản người dùng đã đăng ký để kiểm soát bảo mật và hỗ trợ vận hành.
+\end{itemize}
+\end{itemize}
+
+\noindent\textit{Lưu ý phạm vi hiện thực:} Các chức năng của tác nhân Quản trị viên (Admin) hiện được hiện thực hoàn chỉnh và phân quyền kiểm soát chặt chẽ ở lớp cơ sở dữ liệu và Backend REST API. Tuy nhiên, ở phiên bản hiện tại, hệ thống chưa xây dựng giao diện người dùng (UI) dành riêng cho Admin trên ứng dụng di động React Native (vốn được tối ưu hóa riêng cho trải nghiệm của User). Các thao tác vận hành của Admin đang được thực hiện trực tiếp thông qua công cụ quản trị cơ sở dữ liệu hoặc kiểm thử API (Swagger/Postman).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{img/UseCase.jpg}
+    \caption{Sơ đồ Use-case tổng thể hệ thống NutriTrack}
+    \label{fig:usecase}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{Mô hình Kiến trúc Hệ thống}
+% ------------------------------------------------------------
+
+\subsubsection{Kiến trúc Client-Server 3 Tầng}
+
+Hệ thống NutriTrack được xây dựng theo mô hình kiến trúc \textbf{Client-Server 3 tầng (3-Tier Architecture)}, phân tách rõ ràng ba lớp xử lý:
+
+\begin{description}
+    \item[Tầng 1 -- Presentation (Frontend):] Ứng dụng di động React Native (Expo) chạy trên thiết bị người dùng. Chịu trách nhiệm hiển thị giao diện, xử lý tương tác và gửi HTTP request đến Backend qua thư viện Axios.
+    
+    \item[Tầng 2 -- Business Logic (Backend):] Máy chủ Spring Boot (Java) xử lý toàn bộ nghiệp vụ: xác thực JWT, tính toán BMR/TDEE, quản lý phiên nhịn ăn và tổng hợp thống kê. Phơi bày các endpoint theo chuẩn RESTful API.
+    
+    \item[Tầng 3 -- Data (Database):] Microsoft SQL Server lưu trữ toàn bộ dữ liệu có cấu trúc. Backend truy xuất qua Spring Data JPA/Hibernate với cơ chế connection pooling.
+\end{description}
+
+\subsubsection{Luồng Giao tiếp}
+
+Luồng dữ liệu được thực hiện theo trình tự sau:
+
+\begin{enumerate}
+    \item \textbf{Frontend $\rightarrow$ Backend:} Ứng dụng React Native sử dụng Axios để gửi HTTP request (GET/POST/PUT/DELETE) qua giao thức HTTPS. Mọi request (trừ đăng nhập/đăng ký) đều đính kèm JWT Token trong header \texttt{Authorization: Bearer <token>}.
+    
+    \item \textbf{Backend xử lý:} Spring Boot tiếp nhận request qua \texttt{JwtAuthenticationFilter}, xác thực token, sau đó điều hướng đến Controller $\rightarrow$ Service $\rightarrow$ Repository để xử lý nghiệp vụ.
+    
+    \item \textbf{Backend $\rightarrow$ Database:} Spring Data JPA thực thi truy vấn SQL trên SQL Server thông qua Hibernate ORM và trả về kết quả dưới dạng Entity objects.
+    
+    \item \textbf{Backend $\rightarrow$ Frontend:} Kết quả được ánh xạ sang DTO và trả về client dưới dạng JSON (HTTP 200/201/400/401).
+    
+    \item \textbf{Frontend cập nhật UI:} React Native nhận JSON response, cập nhật state qua \texttt{useState}/\texttt{useContext}, kích hoạt re-render giao diện.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{img/kientruc.png}
+    \caption{Sơ đồ kiến trúc hệ thống NutriTrack (Client-Server 3 tầng)}
+    \label{fig:kientruc}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{Lý do Lựa chọn Công nghệ}
+% ------------------------------------------------------------
+
+\begin{description}
+    \item[React Native + Expo (Frontend):] 
+    React Native được lựa chọn vì khả năng \textbf{phát triển đa nền tảng} từ một codebase TypeScript duy nhất, biên dịch thành native code cho cả Android và iOS. So với phát triển native riêng biệt, tiết kiệm ước tính 40--60\% thời gian phát triển. \textbf{Expo SDK} cung cấp sẵn các API thiết bị phức tạp (SecureStore, Camera, Notifications) mà không cần cấu hình native module thủ công. \textbf{TypeScript} bổ sung hệ thống kiểu tĩnh, phát hiện lỗi ngay tại compile-time và đóng vai trò hợp đồng interface giữa Frontend và Backend khi làm việc nhóm.
+    
+    \item[Spring Boot (Backend):] 
+    Spring Boot là lựa chọn \textbf{production-grade} được kiểm chứng rộng rãi trong các hệ thống doanh nghiệp với kiến trúc phân lớp Controller $\rightarrow$ Service $\rightarrow$ Repository tạo cấu trúc rõ ràng, dễ phân công và bảo trì. \textbf{Spring Security + JWT} cung cấp cơ chế xác thực Stateless an toàn, phù hợp với ứng dụng di động không duy trì session phía server. Khả năng xử lý số học với kiểu \texttt{double}/\texttt{BigDecimal} của JVM đảm bảo độ chính xác cần thiết cho các công thức tính BMR/TDEE, tránh lỗi floating-point phổ biến ở JavaScript.
+    
+    \item[Microsoft SQL Server (Cơ sở dữ liệu):] 
+    SQL Server được lựa chọn vì \textbf{mô hình quan hệ (RDBMS)} phù hợp với cấu trúc dữ liệu dinh dưỡng có ràng buộc phức tạp (Users $\to$ MealLogs $\to$ FoodItems). Cơ chế \textbf{ACID Transaction} đảm bảo toàn vẹn dữ liệu khi ghi nhận bữa ăn đồng thời từ nhiều thiết bị. \textbf{Stored Procedures và Index} cho phép tối ưu các truy vấn thống kê phức tạp trực tiếp ở tầng Database. Tích hợp liền mạch với Spring Data JPA qua JDBC Driver, không phát sinh vấn đề tương thích kiểu dữ liệu.
+\end{description}
+
+Sự kết hợp giữa ba tầng công nghệ này tạo thành một \textbf{full-stack hiện đại}, được kiểm chứng trong môi trường sản xuất, đảm bảo tính ổn định trong phạm vi đồ án và khả năng mở rộng về sau.
+
+\newpage
+% ============================================================
+\section{Quá trình Thiết kế Hệ thống}
+% ============================================================
+
+% ------------------------------------------------------------
+\subsection{Mockup UI và Mô hình Dữ liệu}
+% ------------------------------------------------------------
+
+\subsubsection{Thiết kế Giao diện (UI/UX)}
+
+Giao diện NutriTrack được thiết kế theo nguyên tắc \textbf{Mobile-First}, ưu tiên thao tác một tay, phản hồi tức thì và tối thiểu hóa số bước để hoàn thành một tác vụ. Hệ thống màu sắc sử dụng dark theme chủ đạo kết hợp accent xanh lá, gợi cảm giác sức khỏe và năng lượng.
+
+\paragraph{Màn hình Dashboard.}
+Trung tâm tổng hợp dữ liệu sức khỏe hàng ngày, gồm: biểu đồ tròn (Donut Chart) phân bổ Macronutrients (Carbs/Protein/Fat), vòng tròn tiến trình calo, danh sách 4 bữa ăn và thẻ trạng thái nhịn ăn gián đoạn.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.40\textwidth]{img/ui1.jpg}
+    \caption{Mockup màn hình Dashboard -- Tổng quan dinh dưỡng hàng ngày}
+    \label{fig:ui_dashboard}
+\end{figure}
+
+\paragraph{Màn hình Nhật ký Ăn uống (NutriTrack Diary).}
+Hiển thị chi tiết từng món ăn đã ghi theo từng bữa trong ngày. Người dùng có thể bật chế độ sửa hàng loạt (Batch Edit) để tích chọn và xóa nhiều món ăn cùng lúc với hiệu ứng mượt mà, nhấn vào từng món ăn để xem thông tin dinh dưỡng chi tiết (Macro), và nhấn nút \texttt{[+]} để thêm thực phẩm mới vào bữa ăn tương ứng.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.40\textwidth]{img/nhatkianuong.jpg}
+    \caption{Mockup màn hình Nhật ký ăn uống -- NutriTrack Diary}
+    \label{fig:ui_diary}
+\end{figure}
+
+\paragraph{Màn hình Hồ sơ Người dùng (Profile).}
+Hiển thị và cho phép chỉnh sửa thông tin thể chất, mục tiêu calo, mức độ hoạt động. Kết quả tính toán BMR, TDEE và phân bổ Macro mục tiêu được hiển thị trực tiếp sau khi lưu, cập nhật ngay lên Dashboard.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.40\textwidth]{img/profile.jpg}
+    \caption{Mockup màn hình Hồ sơ người dùng -- Chỉ số cơ thể và Mục tiêu}
+    \label{fig:ui_profile}
+\end{figure}
+
+\paragraph{Màn hình Thống kê (Statistics).}
+Cung cấp cái nhìn tổng quan về xu hướng dinh dưỡng và cân nặng trong tuần hoặc tháng. Bao gồm biểu đồ vùng (Area Chart) thể hiện lượng calo tiêu thụ hàng ngày kết hợp đường giới hạn đỏ biểu diễn mục tiêu, và biểu đồ đường cong (Line Chart) theo dõi sự biến động của cân nặng.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.40\textwidth]{img/thongketuancalo.jpg}
+    \caption{Mockup màn hình Thống kê -- Biểu đồ Calo và Cân nặng}
+    \label{fig:ui_stats}
+\end{figure}
+
+\subsubsection{Mô hình Dữ liệu (ERD)}
+
+Cơ sở dữ liệu NutriTrack được tổ chức theo mô hình quan hệ chuẩn hóa đến dạng chuẩn 3NF với 4 bảng chính:
+
+\begin{itemize}
+    \item \textbf{Users:} Thông tin tài khoản, thể chất và các chỉ số tính toán (BMR, TDEE, mục tiêu calo).
+    \item \textbf{FoodItems:} Cơ sở dữ liệu thực phẩm dùng chung, bao gồm cả thực phẩm tùy chỉnh của người dùng (\texttt{is\_custom = 1}).
+    \item \textbf{DailyLogs:} Nhật ký bữa ăn hàng ngày. Macro được lưu dạng denormalized (đã tính theo khẩu phần thực tế) để tránh sai lệch khi dữ liệu thực phẩm thay đổi.
+    \item \textbf{Macros:} Mục tiêu phân bổ Macro theo ngày, lưu cả dạng phần trăm (\%) và gram (g). Cho phép truy vết lịch sử khi người dùng thay đổi mục tiêu.
+\end{itemize}
+
+\noindent\textit{Lưu ý phạm vi hiện thực:} Các chức năng của tác nhân Quản trị viên (Admin) hiện được hiện thực hoàn chỉnh và phân quyền kiểm soát chặt chẽ ở lớp cơ sở dữ liệu và Backend REST API. Tuy nhiên, ở phiên bản hiện tại, hệ thống chưa xây dựng giao diện người dùng (UI) dành riêng cho Admin trên ứng dụng di động React Native (vốn được tối ưu hóa riêng cho trải nghiệm của User). Các thao tác vận hành của Admin đang được thực hiện trực tiếp thông qua công cụ quản trị cơ sở dữ liệu hoặc kiểm thử API (Swagger/Postman).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\textwidth]{img/database.png}
+    \caption{Sơ đồ ERD -- Mô hình dữ liệu hệ thống NutriTrack}
+    \label{fig:erd}
+\end{figure}
+
+\subsubsection{Logic Thiết kế Giao diện và Trải nghiệm Người dùng (UI/UX Logic)}
+
+Hệ thống NutriTrack tối ưu hóa trải nghiệm người dùng bằng cách áp dụng các nguyên lý UI/UX hiện đại kết hợp với logic lập trình Frontend (React Native) nhằm tạo ra phản hồi tức thì, tối giản hóa thao tác và cung cấp thông tin trực quan.
+
+\paragraph{1. Cơ chế Theme Động (Theme Engine Colors):}
+Để đáp ứng trải nghiệm thị giác nhất quán ở cả môi trường sáng và tối, ứng dụng triển khai 16 thuộc tính màu sắc cốt lõi trong giao diện (\texttt{ThemeColors}), được điều khiển bởi hệ thống phát hiện cấu hình thiết bị động:
+\begin{equation}
+    \mathcal{C}_{\text{resolved}} =
+    \begin{cases}
+        \mathcal{C}_{\text{dark}} & \text{nếu } T_{\text{user}} = \text{`dark'} \lor (T_{\text{user}} = \text{`system'} \land \text{System} = \text{Dark}) \\
+        \mathcal{C}_{\text{light}} & \text{nếu } T_{\text{user}} = \text{`light'} \lor (T_{\text{user}} = \text{`system'} \land \text{System} = \text{Light})
+    \end{cases}
+\end{equation}
+
+Hệ thống sử dụng các tông màu chuyên biệt: màu ngọc lục bảo (\texttt{\#10B981}) cho các mục tiêu thành công (Success), màu xanh đại dương (\texttt{\#0ea5e9}) làm chủ đạo cho chu trình thanh lọc cơ thể trong nhịn ăn, và màu cam đỏ (\texttt{\#f97316}) làm nổi bật đường mục tiêu năng lượng Calo trên biểu đồ.
+
+\paragraph{2. Logic Theo dõi Nước uống (Hydration Tracking UX \& Glass Interaction Logic):}
+Giao diện nước uống được thiết kế tối giản, tập trung vào tương tác một chạm trực quan thông qua lưới các cốc nước:
+\begin{itemize}
+    \item \textbf{Lưới Cốc nước (Water Glass Grid):} Hiển thị lượng nước đã uống thông qua các biểu tượng cốc nước (\texttt{WaterGlass}). Mỗi cốc đại diện cho $250\,\text{ml}$. Cốc được lấp đầy có màu xanh dương tươi sáng (\texttt{\#3B9AE8}), cốc trống có màu xanh xám (\texttt{\#5A6B80}).
+    \item \textbf{Nút Thêm nhanh Nét đứt (AddGlassButton):} Cốc nước rỗng tiếp theo trên lưới được vẽ bằng đường viền nét đứt màu xanh lá cây (\texttt{\#00C48C}) đi kèm biểu tượng dấu \texttt{+}. Nhấp vào đây để thêm nhanh đúng $250\,\text{ml}$ nước.
+    \item \textbf{Tương tác trực tiếp trên lưới:} Người dùng có thể nhấn vào bất kỳ cốc nước thứ $i$ nào trên lưới (chỉ số index từ 0):
+    \begin{itemize}
+        \item Nếu chạm vào cốc nước vừa lấp đầy gần nhất ($i + 1 = \text{filledGlasses}$), hệ thống sẽ giảm $250\,\text{ml}$ nước (xóa cốc).
+        \item Nếu chạm vào một cốc trống xa hơn, hệ thống tự động cộng dồn lượng nước cần thiết để lấp đầy đến vị trí đó:
+        \begin{equation}
+            \Delta w = (i + 1 - \text{filledGlasses}) \times 250\,\text{ml}
+        \end{equation}
+    \end{itemize}
+    \item \textbf{Hoạt ảnh chuyển số mượt mà (Animated Water Amount):} Con số tổng lít nước uống (ví dụ: \texttt{1,75 l}) được cập nhật tăng giảm thông qua hoạt ảnh nội suy chuyển động trong $400\,\text{ms}$ sử dụng \texttt{Animated.timing} để loại bỏ cảm giác nhảy số giật cục.
+    \item \textbf{Khóa Lạc quan chặn gián đoạn (Optimistic Lock):} Khi người dùng chạm cốc nước, giao diện cộng dồn giá trị ngay lập tức (Optimistic Update) và kích hoạt một khóa thời gian (\texttt{\_waterOptimisticTs = Date.now()}) duy trì trong 3 giây. Trong thời gian khóa, mọi tiến trình fetch dữ liệu nền từ SQLite hay API Server sẽ bị bỏ qua, ngăn ngừa hoàn toàn hiện tượng nhấp nháy giao diện (flickering) do dữ liệu cũ ghi đè lên dữ liệu mới.
+\end{itemize}
+
+\paragraph{Code Minh họa (TypeScript - Logic Tương tác cốc nước và Optimistic Store):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+// useTracking.ts: Xử lý sự kiện nhấn cốc nước trên lưới
+const handleWaterPress = useCallback((index: number) => {
+  const targetGlasses = index + 1;
+  let amountToAdd = 0;
+  if (targetGlasses === waterStats.filledGlasses) {
+    amountToAdd = -250; // Click vào cốc đầy gần nhất -> giảm nước
+  } else {
+    amountToAdd = (targetGlasses - waterStats.filledGlasses) * 250; // Click cốc xa hơn -> cộng dồn
+  }
+  logWater(amountToAdd);
+}, [waterStats.filledGlasses, logWater]);
+
+// useAppStore.ts: Logic Optimistic Update & Khóa Lạc Quan 3 giây
+logWater: async (amountMl: number) => {
+  const { userId, waterIntake: prevIntake } = get();
+  if (!userId) return;
+  const today = getLocalToday();
+  const newIntake = Math.max(0, prevIntake + amountMl);
+  
+  // 1. Cập nhật UI ngay lập tức & Đặt khóa lạc quan tránh ghi đè dữ liệu cũ
+  set({ waterIntake: newIntake, _waterOptimisticTs: Date.now() });
+
+  // 2. Ghi SQLite ngầm & Gửi API đồng bộ
+  trackingDb.logWater(amountMl, today).catch(err => console.error(err));
+  try {
+    await progressApi.logWater(userId, amountMl, today);
+  } catch (error: any) {
+    await syncDb.addToSyncQueue('LOG_WATER', { amount: amountMl, date: today });
+  }
+}
+\end{minted}
+
+\paragraph{3. Logic Nhật ký Ăn uống (Food/Meal Logging Batch Edit Logic):}
+Để tối ưu hóa nỗ lực tương tác khi người dùng cần xóa bớt nhiều món ăn đã ghi nhận trong ngày, hệ thống triển khai cơ chế chỉnh sửa hàng loạt (\textbf{Batch Edit Mode}) tích hợp hoạt ảnh phản hồi trực quan:
+\begin{itemize}
+    \item \textbf{Layout Animation Trượt Checkbox:} Khi người dùng nhấn nút "Sửa" trên Header, ứng dụng kích hoạt \texttt{LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)}. Các hộp checkbox sẽ đồng loạt trượt êm ái từ cạnh trái ra để người dùng tích chọn món ăn cần xóa.
+    \item \textbf{Xóa Hàng loạt (Batch Delete):} Khi tích chọn một hoặc nhiều món ăn (hoặc nhấn "Chọn tất cả"), một thanh tác vụ màu đỏ sẽ nổi lên ở chân màn hình kèm nút "Xóa (N) món". Khi nhấn xác nhận, danh sách món ăn được xóa đồng thời, các thẻ món ăn còn lại tự động co giãn thu hẹp khoảng trống với hiệu ứng chuyển động trượt mượt mà.
+\end{itemize}
+
+\paragraph{Code Minh họa (TypeScript - Xử lý Batch Edit Mode \& Animation):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+// MealDetailScreen.tsx: Xử lý bật tắt chế độ Edit Mode mượt mà
+const toggleEditMode = () => {
+  // Trượt Checkbox từ cạnh trái ra mượt mà nhờ LayoutAnimation
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  setIsEditMode(!isEditMode);
+  setSelectedIds([]);
+};
+
+// Thực hiện xóa hàng loạt các món ăn được tích chọn
+const handleDelete = () => {
+  if (selectedIds.length === 0) return;
+  Alert.alert('Xóa món ăn', `Bạn có chắc muốn xóa ${selectedIds.length} món?`, [
+    { text: 'Hủy', style: 'cancel' },
+    { 
+      text: 'Xóa', 
+      style: 'destructive', 
+      onPress: () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        removeFoods(mealType, selectedIds); // Gọi store xóa hàng loạt
+        setIsEditMode(false);
+        setSelectedIds([]);
+      } 
+    }
+  ]);
+};
+\end{minted}
+
+\paragraph{4. Logic Ghi nhận Hoạt động Thể chất (Activity Durations \& Calorie Burn Indicator):}
+Ghi nhận hoạt động thể chất cung cấp phản hồi thông số năng lượng tức thời nhằm động viên tinh thần tập luyện của người dùng:
+\begin{itemize}
+    \item \textbf{Stepper Điều khiển kết hợp Nhập liệu:} Giao diện điều chỉnh thời gian tập gồm một TextInput cho phép nhập số phút trực tiếp kèm bàn phím \texttt{number-pad}, kết hợp hai nút bấm Stepper \texttt{+} và \texttt{-} điều chỉnh nhanh tăng/giảm mỗi bước 5 phút.
+    \item \textbf{Ước lượng Calo đốt cháy tức thời (Real-time Calorie Burn Indicator):} Khi người dùng nhấn nút stepper hoặc thay đổi số phút ($t$), giá trị Calo tiêu hao dự kiến được tính toán lại ngay lập tức và cập nhật động lên nhãn cảnh báo (Fire Icon Badge):
+    \begin{equation}
+        C_{\text{burn}} = \text{caloriesPerMin} \times t
+    \end{equation}
+\end{itemize}
+
+\paragraph{Code Minh họa (TypeScript - Stepper và Dự đoán Calo đốt cháy):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+// AddActivityModal.tsx: Logic Stepper tăng giảm thời gian tập
+const handleDecrease = () => {
+  const val = Math.max(MIN_MINUTES, minutes - STEP); // STEP = 5 phút
+  setMinutes(val);
+  setInputText(String(val));
+};
+
+const handleIncrease = () => {
+  const val = Math.min(MAX_MINUTES, minutes + STEP);
+  setMinutes(val);
+  setInputText(String(val));
+};
+
+// Tự động tính calo đốt cháy theo thời gian thực mỗi khi minutes thay đổi
+const currentInputVal = parseInt(inputText, 10) || 0;
+const estimatedCals = Math.round(activity.caloriesPerMin * currentInputVal);
+\end{minted}
+
+\paragraph{5. Logic Vòng tròn Tiến trình Nhịn ăn (Circular Fasting Timer SVG \& Tooltip):}
+Đồng hồ nhịn ăn sử dụng các phương trình lượng giác để định vị các điểm mốc sinh học trên cung tròn SVG và xử lý tương tác an toàn:
+\begin{itemize}
+    \item \textbf{Định vị lượng giác các Marker:} Để phân bổ chính xác vị trí các điểm mốc sinh học (như mốc Ketosis bắt đầu tại giờ thứ 12, Autophagy tại giờ thứ 18) trên cung tròn SVG có bán kính $R = 114\,\text{pt}$, góc xoay $\theta_i$ và tọa độ $(x_i, y_i)$ được tính như sau:
+    \begin{align}
+        \theta_i &= -90^\circ + 360^\circ \times \frac{t_i}{D_{\text{target}}} \\
+        x_i &= cx + R \cos\left(\frac{\pi \theta_i}{180}\right) \\
+        y_i &= cy + R \sin\left(\frac{\pi \theta_i}{180}\right)
+    \end{align}
+    \item \textbf{Xử lý Rò rỉ Bộ nhớ Tooltip (Safe Tooltip Timeouts):} Khi nhấn vào điểm mốc, một Tooltip Badge hiện lên tại tâm vòng tròn và tự động đóng sau 3 giây nhờ bộ Timer. Để ngăn lỗi sập ứng dụng hoặc rò rỉ bộ nhớ (Memory Leak) khi người dùng thoát màn hình trước khi hết 3 giây, Timer được lưu trong một tham chiếu (\texttt{useRef}) và bị hủy chủ động khi component unmount.
+\end{itemize}
+
+\paragraph{Code Minh họa (TypeScript - Đóng mở Tooltip an toàn với useRef):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+// CircularTimer.tsx: Tương tác Tooltip động không gây rò rỉ bộ nhớ
+const tooltipTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+const handleMarkerPress = useCallback((phaseId: string) => {
+  if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+  if (activeTooltipId === phaseId) {
+    setActiveTooltipId(null);
+    return;
+  }
+  setActiveTooltipId(phaseId);
+  // Tự động đóng tooltip sau 3 giây
+  tooltipTimerRef.current = setTimeout(() => {
+    setActiveTooltipId(null);
+  }, 3000);
+}, [activeTooltipId]);
+
+// Dọn dẹp timer khi component unmount
+useEffect(() => {
+  return () => {
+    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+  };
+}, []);
+\end{minted}
+
+\paragraph{6. Logic Biểu đồ \& Chuyển đổi Tab Thống kê (Charts \& Stats UX Logic):}
+Màn hình thống kê hiển thị sự thay đổi thông số cơ thể và năng lượng một cách mượt mà:
+\begin{itemize}
+    \item \textbf{Segmented Tab Slide (Slider Tab-bar Transition):} Nút chuyển đổi bộ lọc bộ thời gian (Tuần / Tháng) có một khung nền trắng dịch chuyển trượt ngang mượt mà bằng \texttt{LayoutAnimation} khi click đổi tab.
+    \item \textbf{Direct Manipulation Interactive Charts:} Khi người dùng nhấn giữ (\textit{Press-and-hold}) lên bất kỳ điểm nút nào trên biểu đồ của thư viện \texttt{react-native-gifted-charts}, hệ thống sẽ mở rộng một đường gióng dọc nét đứt kèm một Tooltip Popover động chứa thông tin chi tiết của ngày đó.
+\end{itemize}
+
+\paragraph{7. Logic Ghi nhận Cân nặng (Weight Tracking UX Logic):}
+\begin{itemize}
+    \item \textbf{Modal Input Auto-focus:} Form nhập liệu cân nặng được thiết kế dưới dạng popup modal. Khi mở ra, hệ thống tự động bật bàn phím số (\texttt{autoFocus=\{true\}} + \texttt{keyboardType="decimal-pad"}), giảm bớt thao tác chạm cho người dùng.
+    \item \textbf{Nút Điều chỉnh Nhanh ở Giao diện Chính:} Cho phép người dùng chạm nhanh vào nút \texttt{+} hoặc \texttt{-} ở giao diện chính để tăng/giảm trực tiếp 0.1 kg cân nặng mà không cần mở modal nhập liệu.
+\end{itemize}
+
+\paragraph{Code Minh họa (TypeScript - Tăng giảm cân nặng nhanh):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+// TrackingSection.tsx: Nút bấm tăng giảm nhanh 0.1 kg cân nặng
+<TouchableOpacity
+  onPress={() => {
+    if (weightStats.displayValue > 0.5) {
+      logWeight(Math.round((weightStats.displayValue - 0.1) * 10) / 10);
+    }
+  }}
+>
+  <Ionicons name="remove-circle-outline" size={36} color={colors.textSecondary} />
+</TouchableOpacity>
+\end{minted}
+
+% ------------------------------------------------------------
+\subsection{Phân tích Chi tiết Logic Toán học và Thuật toán}
+% ------------------------------------------------------------
+
+Phần này mô tả chi tiết các cơ sở toán học được áp dụng tự động bên trong hệ thống để đưa ra các phân tích và khuyến nghị dinh dưỡng chính xác.
+
+\subsubsection{Logic Đăng nhập và Xác thực (JWT Authentication)}
+
+\paragraph{Dữ liệu Đầu vào:} 
+\begin{itemize}
+    \item \texttt{email}: Chuỗi định dạng email hợp lệ.
+    \item \texttt{password}: Chuỗi mật khẩu nguyên bản (raw password) người dùng nhập.
+\end{itemize}
+
+\paragraph{Các Bước Xử lý Logic:}
+\begin{enumerate}
+    \item \textbf{Mã hóa và Kiểm tra Mật khẩu:} Hệ thống sử dụng thuật toán băm \texttt{Bcrypt} để so sánh mật khẩu nguyên bản với mã băm (hash) lưu trong cơ sở dữ liệu.
+    \item \textbf{Tạo JWT Token:} Nếu mật khẩu khớp, hệ thống tạo một JSON Web Token (JWT) với Payload chứa \texttt{userId}, \texttt{email}, và \texttt{roles}.
+    \item Token được ký bằng thuật toán \texttt{HS256} với một khóa bí mật (Secret Key) và có thời hạn sử dụng (Expiration) mặc định là 7 ngày.
+\end{enumerate}
+
+\paragraph{Code Minh họa (Java - Spring Boot):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{java}
+// UserController.java: Endpoint đăng nhập hệ thống
+@PostMapping("/login")
+public ResponseEntity<ApiResponse<?>> login(@RequestBody Map<String, String> body) {
+    String email = body.get("email");
+    String password = body.get("password");
+    if (email == null || password == null) {
+        return ResponseEntity.badRequest().body(ApiResponse.error("Email and password required"));
+    }
+    try {
+        User user = userService.loginAndGetUser(email, password);
+        String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());
+        return ResponseEntity.ok(ApiResponse.success(Map.of(
+            "token", token,
+            "userId", user.getId(),
+            "email", user.getEmail(),
+            "role", user.getRole(),
+            "expiresIn", 86400
+        ), "Login successful"));
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage(), "LOGIN_FAILED"));
+    }
+}
+\end{minted}
+
+\subsubsection{Tính toán Chỉ số Khối lượng Cơ thể (BMI)}
+
+\paragraph{Dữ liệu Đầu vào:} Chiều cao $H_{\text{cm}} \in (0, 300]$ (cm) và Cân nặng $W \in (0, 500]$ (kg).
+
+\paragraph{Các Bước Xử lý Logic:}
+Chuyển đổi $H_{\text{cm}}$ sang mét ($H = H_{\text{cm}} / 100$). Tính BMI theo công thức chuẩn của WHO và phân loại:
+\begin{equation}
+    \text{BMI} = \frac{W}{H^{2}} \quad \implies \quad
+    \text{Category}(\text{BMI}) =
+    \begin{cases}
+        \text{Thiếu cân}  & \text{nếu } \text{BMI} < 18{,}5 \\
+        \text{Bình thường} & \text{nếu } 18{,}5 \leq \text{BMI} < 25{,}0 \\
+        \text{Thừa cân}    & \text{nếu } 25{,}0 \leq \text{BMI} < 30{,}0 \\
+        \text{Béo phì}     & \text{nếu } \text{BMI} \geq 30{,}0
+    \end{cases}
+    \label{eq:bmi_logic}
+\end{equation}
+
+\noindent\textbf{Ví dụ Minh họa:} Nam, $175$\,cm, $70$\,kg:
+\begin{equation}
+    \text{BMI} = \frac{70}{(1{,}75)^{2}} = \frac{70}{3{,}0625} \approx 22{,}9 \quad \text{(Bình thường)}
+\end{equation}
+
+\paragraph{Code Minh họa (TypeScript - Frontend calculateNutrition.ts):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+// Tính Chỉ số Khối Cơ thể (Body Mass Index) làm tròn 1 chữ số thập phân
+export function calculateBMI(weight: number, heightCm: number): number {
+  const h = Number(heightCm) / 100; // cm -> m
+  const w = Number(weight);
+  if (h <= 0) return 0;
+  return Math.round((w / (h * h)) * 10) / 10;
+}
+\end{minted}
+
+\subsubsection{Tính toán BMR, TDEE và Mục tiêu Calo}
+
+\paragraph{1. Tính BMR (Công thức Mifflin-St Jeor):}
+\begin{align}
+    \text{BMR}_{\text{nam}}  &= 10W + 6{,}25H_{\text{cm}} - 5A + 5    \label{eq:bmr_m} \\
+    \text{BMR}_{\text{nữ}}   &= 10W + 6{,}25H_{\text{cm}} - 5A - 161  \label{eq:bmr_f}
+\end{align}
+
+\noindent\textbf{Ví dụ:} Nam giới, 22 tuổi, 70\,kg, 175\,cm:
+\begin{equation}
+    \text{BMR} = (10 \times 70) + (6{,}25 \times 175) - (5 \times 22) + 5 = 1688{,}75 \text{ kcal/ngày}
+\end{equation}
+
+\paragraph{2. Tính TDEE theo Hệ số Vận động:}
+\begin{equation}
+    \text{TDEE} = \text{BMR} \times \text{PAL}
+\end{equation}
+\begin{table}[H]
+    \centering
+    \caption{Hệ số PAL theo mức độ vận động}
+    \label{tab:pal}
+    \begin{tabularx}{0.8\textwidth}{lXc}
+        \toprule
+        \textbf{Mức độ vận động} & \textbf{Mô tả} & \textbf{Hệ số PAL} \\
+        \midrule
+        Ít vận động     & Ngồi nhiều, không tập luyện                 & 1,200 \\
+        Nhẹ             & Tập luyện nhẹ 1--3 ngày/tuần                & 1,375 \\
+        Vừa phải        & Tập luyện vừa 3--5 ngày/tuần                & 1,550 \\
+        Cao             & Tập luyện nặng 6--7 ngày/tuần               & 1,725 \\
+        Rất cao         & Lao động chân tay nặng + tập hàng ngày      & 1,900 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\noindent\textbf{Ví dụ:} Mức ``Vừa phải'', PAL = 1,55 $\implies \text{TDEE} = 1688{,}75 \times 1{,}550 = 2617{,}56 \text{ kcal/ngày}$.
+
+\paragraph{Code Minh họa (Java - Spring Boot UserService.java):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{java}
+// Tính toán chỉ số BMR và TDEE của người dùng dựa trên cấu hình thể chất
+double bmr;
+double weight = profile.getWeight();
+double height = profile.getHeight();
+int age = profile.getAge();
+String gender = profile.getGender();
+
+if ("male".equalsIgnoreCase(gender)) {
+    bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+} else {
+    bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+}
+
+double activityMultiplier = profile.getActivityLevel() > 0 ? profile.getActivityLevel() : 1.2;
+double tdee = bmr * activityMultiplier;
+\end{minted}
+
+\paragraph{3. Xác định Mục tiêu Calo theo Goal:}
+\begin{equation}
+    C_{\text{mục tiêu}} =
+    \begin{cases}
+        \text{TDEE} - 500 & \text{nếu mục tiêu là \textbf{Giảm cân} (thâm hụt $\approx$ 0,5\,kg/tuần)} \\[4pt]
+        \text{TDEE} + 500 & \text{nếu mục tiêu là \textbf{Tăng cơ} (thặng dư, hỗ trợ đồng hóa)} \\[4pt]
+        \text{TDEE}       & \text{nếu mục tiêu là \textbf{Duy trì cân nặng}}
+    \end{cases}
+\end{equation}
+
+\subsubsection{Phân bổ Tỷ lệ Macronutrients}
+
+\begin{table}[H]
+    \centering
+    \caption{Tỷ lệ phân bổ Macro theo mục tiêu sức khỏe}
+    \label{tab:macro_pct}
+    \begin{tabularx}{0.70\textwidth}{lXXX}
+        \toprule
+        \textbf{Mục tiêu} & \textbf{\%Protein} & \textbf{\%Carbs} & \textbf{\%Fat} \\
+        \midrule
+        Giảm cân    & 40\%   & 30\%  & 30\% \\
+        Tăng cơ     & 30\%   & 50\%  & 20\% \\
+        Duy trì     & 30\%   & 40\%  & 30\% \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\paragraph{Code Minh họa (TypeScript - React Native calculateNutrition.ts):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+export function calculateNutritionalGoals(profile: {
+  weight: number;
+  height: number;
+  age: number;
+  gender: string;
+  goal: string;
+  activityLevel?: number | string;
+}) {
+  const bmr = calculateBMR(profile.weight, profile.height, profile.age, profile.gender);
+  const activityMultiplier = typeof profile.activityLevel === 'number' ? profile.activityLevel : 1.2;
+  let tdee = bmr * activityMultiplier;
+
+  const g = profile.goal ? profile.goal.toLowerCase() : 'maintain';
+  let proteinRatio = 0.30;
+  let carbRatio = 0.40;
+  let fatRatio = 0.30;
+
+  if (g === 'lose_weight') {
+    tdee -= 500;
+    proteinRatio = 0.40;
+    carbRatio = 0.30;
+    fatRatio = 0.30;
+  } else if (g === 'build_muscle' || g === 'gain_muscle') {
+    tdee += 500;
+    proteinRatio = 0.30;
+    carbRatio = 0.50;
+    fatRatio = 0.20;
+  }
+
+  const targetCalories = Math.max(1200, Math.round(tdee));
+  return {
+    targetCalories,
+    targetProtein: Math.round((targetCalories * proteinRatio) / 4),
+    targetCarb: Math.round((targetCalories * carbRatio) / 4),
+    targetFat: Math.round((targetCalories * fatRatio) / 9),
+  };
+}
+\end{minted}
+
+Công thức quy đổi sang gram:
+\begin{align}
+    \text{Protein (g)} &= \frac{C_{\text{mục tiêu}} \times \%_{\text{Protein}}}{4} \\[6pt]
+    \text{Carbs (g)}   &= \frac{C_{\text{mục tiêu}} \times \%_{\text{Carbs}}}{4} \\[6pt]
+    \text{Fat (g)}     &= \frac{C_{\text{mục tiêu}} \times \%_{\text{Fat}}}{9}
+\end{align}
+
+\noindent\textbf{Ví dụ số đầy đủ} ($C_{\text{mục tiêu}} = 2117{,}56$\,kcal, mục tiêu giảm cân):
+\begin{align}
+    \text{Protein} &= (2117{,}56 \times 0{,}40) / 4 = 211{,}8\,\text{g} \\[4pt]
+    \text{Carbs}   &= (2117{,}56 \times 0{,}30) / 4 = 158{,}8\,\text{g} \\[4pt]
+    \text{Fat}     &= (2117{,}56 \times 0{,}30) / 9 = 70{,}6\,\text{g}
+\end{align}
+Kiểm tra dư lượng ($\epsilon \approx 0{,}2\,\text{kcal}$): $4(211{,}8) + 4(158{,}8) + 9(70{,}6) = 2117{,}8 \approx 2117{,}56$ $\checkmark$.
+
+
+\subsubsection{Khấu trừ Calo và Cộng dồn Dinh dưỡng (Food Logging)}
+
+\paragraph{Công thức Tam suất:}
+Khi nạp $M$ gram thực phẩm $(c_{100}, p_{100}, k_{100}, f_{100})$, hệ thống tính:
+\begin{equation}
+    C_{\text{actual}} = \frac{c_{100} \times M}{100} \quad ; \quad
+    C_{\text{rem}} = C_{\text{mục tiêu}} - \sum C_{\text{actual}}
+\end{equation}
+
+\paragraph{Ví dụ chi tiết -- Thêm 200\,g ức gà vào bữa trưa:}
+Người dùng chọn \emph{Ức gà hấp} và nhập $q = 200$\,g. Dữ liệu dinh dưỡng chuẩn trên 100\,g:
+\begin{table}[H]
+    \centering
+    \caption{Thành phần dinh dưỡng ức gà hấp (trên 100\,g)}
+    \label{tab:chicken_nutrition}
+    \begin{tabularx}{0.65\textwidth}{lXr}
+        \toprule
+        \textbf{Chỉ số} & \textbf{Ký hiệu} & \textbf{Giá trị / 100\,g} \\
+        \midrule
+        Năng lượng   & $C_{100}$ & 165 kcal \\
+        Protein      & $P_{100}$ & 31{,}0\,g \\
+        Carbohydrate & $K_{100}$ & 0{,}0\,g  \\
+        Chất béo     & $F_{100}$ & 3{,}6\,g  \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Thực tế ($q=200$): Calo = 330 kcal, Protein = 62.0 g, Carbs = 0.0 g, Fat = 7.2 g.
+
+\paragraph{Code Minh họa (Java - FoodService.java):}
+Khi nhận thông tin, Backend tính toán giá trị thực tế theo khẩu phần (gram):
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{java}
+@Override
+public Map<String, Double> calculateNutrition(Long id, double weightInGrams) {
+    Map<String, Double> map = new HashMap<>();
+    Optional<Food> fopt = foodRepo.findById(id);
+    if (fopt.isEmpty()) return map;
+    Food f = fopt.get();
+    double factor = weightInGrams / 100.0;
+    map.put("calories", (double) f.getCaloriesPer100g() * factor);
+    map.put("protein", (double) f.getProteinPer100g() * factor);
+    map.put("carb", (double) f.getCarbPer100g() * factor);
+    map.put("fat", (double) f.getFatPer100g() * factor);
+    return map;
+}
+\end{minted}
+
+\noindent\textbf{Cấu trúc JSON Giao tiếp (API Payload):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{json}
+POST /api/diaries/users/1/meals/LUNCH?date=2026-06-01
+{
+  "foodId": 501,
+  "quantity": 2.0,
+  "calories": 330.0,
+  "protein": 62.0,
+  "carb": 0.0,
+  "fat": 7.2
+}
+
+// Response trả về (200 OK):
+{
+  "status": 200,
+  "message": "Food added successfully",
+  "data": {
+    "id": 8821,
+    "foodId": 501,
+    "mealId": 102,
+    "quantity": 2.0,
+    "calories": 330.0,
+    "protein": 62.0,
+    "carb": 0.0,
+    "fat": 7.2,
+    "foodName": "Uc ga hap",
+    "mealType": "LUNCH"
+  }
+}
+\end{minted}
+
+\subsubsection{Ghi nhận Hoạt động Thể chất (Activity Logging)}
+
+Khi người dùng ghi nhận buổi tập, hệ thống tính lượng calo tiêu hao bằng chỉ số MET (Metabolic Equivalent of Task) và cộng thêm vào quỹ để có thể ăn bù:
+\begin{equation}
+    C_{\text{burn}} = \text{caloriesPerMin} \times t = \frac{\text{MET} \times 3{,}5 \times W}{200} \times t \quad \text{(kcal)}
+\end{equation}
+\begin{equation}
+    C_{\text{remaining}} = \text{TDEE} + C_{\text{burn}} - C_{\text{consumed}}
+\end{equation}
+
+\paragraph{Ví dụ chi tiết -- Chạy bộ 30 phút:}
+Người dùng nữ, 55\,kg, chạy bộ ngoài trời ($\text{MET} = 8{,}0$). TDEE = 1850 kcal. Đã ăn 1200 kcal.
+$C_{\text{burn}} = \frac{8{,}0 \times 3{,}5 \times 55 \times 30}{200} = 231 \;\text{kcal}$.
+$C_{\text{remaining}} = 1850 + 231 - 1200 = 881 \;\text{kcal}$.
+
+\paragraph{Code Minh họa (TypeScript - Zustand Store):}
+Hệ thống lấy hệ số MET từ Backend để tính toán lượng calo tiêu hao mỗi phút dựa trên cân nặng người dùng:
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+// Tính toán lượng calo tiêu hao mỗi phút từ dữ liệu MET tải về
+const enriched = (res.data as any[]).map(type => {
+  const met = type.met || 3.0;
+  const caloriesPerMin = (met * 3.5 * weight) / 200;
+  return {
+    id: type.id,
+    name: type.name,
+    caloriesPerMin: Math.round(caloriesPerMin * 10) / 10
+  };
+});
+\end{minted}
+
+\noindent\textbf{Cấu trúc JSON Giao tiếp (API Payload):}
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{json}
+POST /api/activities/users/1
+{
+  "activityType": "RUNNING",
+  "durationMinutes": 30,
+  "caloriesBurned": 220.0,
+  "startTime": "2026-06-01T08:00:00",
+  "source": "app"
+}
+
+// Response trả về (201 Created):
+{
+  "status": 200,
+  "message": "Activity added successfully",
+  "data": {
+    "id": 1042,
+    "userId": 1,
+    "activityType": "RUNNING",
+    "durationMinutes": 30,
+    "caloriesBurned": 220.0,
+    "startTime": "2026-06-01T08:00:00",
+    "source": "app",
+    "createdAt": "2026-06-01T08:30:00"
+  }
+}
+\end{minted}
+
+\subsubsection{Mục tiêu Nước uống (Hydration Tracking)}
+
+\paragraph{Tính toán Mục tiêu Nước uống:}
+Mục tiêu lượng nước mặc định hàng ngày được thiết lập cố định ở mức $2000$\,ml (hoặc cấu hình tùy chỉnh bởi người dùng qua Store):
+\begin{equation}
+    W_{\text{target}} = 2000 \quad \text{(ml)}
+\end{equation}
+
+\paragraph{Ghi nhận Lượng nước (Add Water):}
+Mỗi khi người dùng nhấn nút \texttt{+250ml}, hệ thống cộng dồn tổng lượng nước đã uống:
+\begin{equation}
+    W_{\text{consumed}} = \sum_{i=1}^{n} w_i \quad \text{(ml)}
+\end{equation}
+Tỷ lệ hoàn thành mục tiêu ($\rho_{\text{water}}$) hiển thị trên thanh tiến trình:
+\begin{equation}
+    \rho_{\text{water}} = \min\!\left(\frac{W_{\text{consumed}}}{W_{\text{target}}},\; 1{,}0\right) \times 100\;\%
+\end{equation}
+
+\noindent\textbf{Ví dụ:} Uống $n=6$ lần (mỗi lần $w_i = 250\,\text{ml}$) đạt $1500\,\text{ml}$ trên mục tiêu $2000\,\text{ml}$ ($\rho_{\text{water}} = 75\%$).
+
+\paragraph{Code Minh họa (TypeScript - Zustand Store logWater):}
+Khi người dùng ấn nút ``+250\,ml'', hệ thống lưu SQLite cục bộ ngoại tuyến và đồng bộ lên Backend API:
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+logWater: async (amountMl: number) => {
+  const { userId, waterIntake: prevIntake } = get();
+  if (!userId) return;
+  const today = getLocalToday();
+
+  // 1. Cập nhật UI ngay lập tức (Optimistic Update) + Đặt khóa lạc quan
+  const newIntake = Math.max(0, prevIntake + amountMl);
+  set({ waterIntake: newIntake, _waterOptimisticTs: Date.now() });
+
+  // 2. Lưu SQLite cục bộ ngầm (Offline Storage)
+  trackingDb.logWater(amountMl, today).catch(err => 
+    console.error('[DB] Failed to log water:', err.message)
+  );
+
+  // 3. Gửi đồng bộ lên Backend API
+  try {
+    await progressApi.logWater(userId, amountMl, today);
+  } catch (error: any) {
+    console.warn('[Store] logWater sync failed, adding to queue:', error.message);
+    await syncDb.addToSyncQueue('LOG_WATER', { amount: amountMl, date: today });
+  }
+},
+\end{minted}
+
+\paragraph{Code Minh họa (TypeScript - SQLite offline logging trong trackingDb.ts):}
+Dưới đây là mã nguồn xử lý cập nhật hoặc thêm mới lượng nước nạp vào trong cơ sở dữ liệu SQLite local để phục vụ lưu trữ offline-first:
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+export async function logWater(amount: number, date: string) {
+  const db = await getDatabase();
+  // Kiểm tra xem ngày hôm đó đã có bản ghi chưa
+  const existing = await db.getFirstAsync<{ id: number, amount_ml: number }>(
+    'SELECT id, amount_ml FROM water_logs WHERE date = ?',
+    [date]
+  );
+
+  if (existing) {
+    await db.runAsync(
+      'UPDATE water_logs SET amount_ml = ?, synced = 0 WHERE id = ?',
+      [existing.amount_ml + amount, existing.id]
+    );
+  } else {
+    await db.runAsync(
+      'INSERT INTO water_logs (amount_ml, date, synced) VALUES (?, ?, 0)',
+      [amount, date]
+    );
+  }
+}
+\end{minted}
+
+% ============================================================
+\section{Kết quả Hiện thực và Đánh giá Hệ thống}
+% ============================================================
+
+\subsection{Môi trường và Công cụ Phát triển}
+
+Hệ thống NutriTrack được triển khai và cấu hình chạy thử nghiệm trong môi trường sau:
+\begin{itemize}
+    \item \textbf{Frontend:} Expo SDK 54.0 (chạy trên React Native), sử dụng TypeScript để đảm bảo tính an toàn kiểu dữ liệu. Cơ sở dữ liệu nội bộ SQLite được quản lý thông qua thư viện \texttt{expo-sqlite}. Quản lý trạng thái bằng Zustand Store.
+    \item \textbf{Backend:} Java SDK 17 với framework Spring Boot 3.2. Sử dụng Spring Security để phân quyền và xác thực stateless qua JSON Web Token (JWT). Truy xuất dữ liệu thông qua Spring Data JPA và tự động mapping qua MapStruct.
+    \item \textbf{Cơ sở dữ liệu:} Microsoft SQL Server 2022 lưu trữ dữ liệu tập trung trên đám mây / server.
+\end{itemize}
+
+\subsection{Hiện thực Giao diện và các Màn hình Chức năng}
+
+Các giao diện cốt lõi của ứng dụng đã được phát triển hoàn thiện theo đúng thiết kế Mockup:
+\begin{enumerate}
+    \item \textbf{Dashboard (Màn hình chính):} Hiển thị biểu đồ tròn (Donut Chart) phân bổ Carbs/Protein/Fat bằng thư viện \texttt{react-native-gifted-charts}, thanh tiến trình năng lượng Calo và lưới cốc nước uống tương tác.
+    \item \textbf{Diary (Nhật ký ăn uống):} Hiển thị danh mục món ăn theo bữa ăn trong ngày (Breakfast, Lunch, Dinner, Snack). Hỗ trợ cơ chế Edit Mode để chọn và xóa hàng loạt (Batch Delete) với hiệu ứng LayoutAnimation mượt mà.
+    \item \textbf{Profile (Hồ sơ cá nhân):} Cho phép người dùng nhập các thông tin chiều cao, cân nặng, mức độ vận động. Hệ thống tự động tính toán BMR, TDEE, Calo mục tiêu và phân bổ dinh dưỡng ngay lập tức ở cả local và server.
+    \item \textbf{Statistics (Thống kê):} Biểu diễn xu hướng Calo nạp vào hàng ngày dưới dạng biểu đồ vùng (Area Chart) kết hợp đường giới hạn mục tiêu màu đỏ, và theo dõi biến động cân nặng qua biểu đồ đường cong (Line Chart).
+    \item \textbf{Fasting Timer (Nhịn ăn gián đoạn):} Vòng tròn SVG đếm ngược thời gian nhịn ăn tương tác, đánh dấu các mốc sinh lý (Ketosis, Autophagy) và hiển thị tooltip thông tin chi tiết.
+\end{enumerate}
+
+\subsection{Cơ chế Đồng bộ Ngoại tuyến và Offline-First (Sync Engine)}
+
+Trái tim của trải nghiệm người dùng liền mạch trong NutriTrack là cơ chế \textbf{Offline-First Sync Engine}. Khi thiết bị mất kết nối mạng (Internet Offline), mọi tác vụ sửa đổi dữ liệu không bị chặn lại mà được lưu trữ cục bộ dưới SQLite local và xếp vào một hàng đợi đồng bộ (\texttt{sync\_queue}).
+
+\paragraph{Mô hình Hoạt động của Sync Worker:}
+Khi ứng dụng khởi động hoặc định kỳ mỗi 30 giây, một tiến trình chạy ngầm (\texttt{processSyncQueue}) được kích hoạt để thực hiện:
+\begin{enumerate}
+    \item Đọc hàng đợi từ bảng SQLite \texttt{sync\_queue} theo nguyên tắc FIFO (First-In, First-Out) để bảo toàn trình tự nghiệp vụ.
+    \item Lấy JWT Token từ Zustand Store và gửi tuần tự các request đồng bộ lên REST API Server.
+    \item Nếu API phản hồi thành công (HTTP status 2xx), xóa tác vụ đó khỏi SQLite local.
+    \item Nếu xảy ra lỗi kết nối mạng (Network Error / Timeout), worker tự động ngắt vòng lặp sớm (\textbf{Early Abort}) để tiết kiệm năng lượng pin và tránh treo ứng dụng do hàng loạt request chờ hết hạn.
+\end{enumerate}
+
+\paragraph{Code Minh họa (TypeScript - Offline Sync Worker trong syncManager.ts):}
+Dưới đây là mã nguồn chi tiết của hàm tiến trình đồng bộ nền được hiện thực trong ứng dụng:
+\begin{minted}[frame=lines, breaklines, fontsize=\small]{typescript}
+import { useAppStore } from '../store/useAppStore';
+import * as syncDb from './syncDb';
+import * as diaryApi from '../api/diaryService';
+import * as progressApi from '../api/progressService';
+
+export async function processSyncQueue() {
+  // 1. Truy vấn các tác vụ chưa đồng bộ trong SQLite theo thứ tự FIFO
+  const queue = await syncDb.getSyncQueue();
+  if (queue.length === 0) return;
+
+  // 2. Kiểm tra trạng thái đăng nhập
+  const { userId, token } = useAppStore.getState();
+  if (!userId || !token) return;
+
+  console.log(`[Sync Worker] Phát hiện ${queue.length} tác vụ đang chờ đồng bộ...`);
+
+  // 3. Duyệt tuần tự để đảm bảo đúng thứ tự nghiệp vụ
+  for (const item of queue) {
+    try {
+      const payload = JSON.parse(item.payload);
+      
+      switch (item.action_type) {
+        case 'ADD_MEAL':
+          await diaryApi.addFoodToMeal(userId, payload.mealType, payload.date, payload);
+          break;
+        case 'ADD_ACTIVITY':
+          await progressApi.addActivity(userId, payload);
+          break;
+        case 'LOG_WATER':
+          await progressApi.logWater(userId, payload.amount, payload.date);
+          break;
+        case 'LOG_WEIGHT':
+          await progressApi.logWeight(userId, payload.date, payload.weight);
+          break;
+      }
+      
+      // Xóa khỏi SQLite local khi đồng bộ thành công
+      await syncDb.removeFromSyncQueue(item.id!);
+      console.log(`[Sync Worker] Đồng bộ thành công tác vụ #${item.id} (${item.action_type})`);
+      
+    } catch (err: any) {
+      console.warn(`[Sync Worker] Lỗi đồng bộ tác vụ #${item.id}:`, err.message);
+      await syncDb.incrementRetryCount(item.id!);
+
+      // Cơ chế Ngắt Sớm (Early Abort) khi mất mạng hoàn toàn hoặc timeout
+      const isNetworkOrTimeout = 
+        err.message?.includes('timeout') || 
+        err.message === 'Network Error' || 
+        !err.response;
+        
+      if (isNetworkOrTimeout) {
+        console.log('[Sync Worker] Mất kết nối mạng. Tạm dừng tiến trình đồng bộ.');
+        break;
+      }
+    }
+  }
+}
+\end{minted}
+
+\subsection{Kết quả Kiểm thử và Kiểm chứng Hệ thống (Testing \& Verification)}
+
+Nhóm phát triển đã thực hiện kiểm thử tích hợp toàn diện (Integration Testing) và kiểm chứng sự đồng bộ API (API Synchronization Audit) giữa hai đầu hệ thống:
+\begin{itemize}
+    \item \textbf{Đồng bộ Dữ liệu (100\%):} Tất cả 16 DTOs (Data Transfer Objects) phía Java Spring Boot được khớp hoàn toàn về trường thông tin và kiểu dữ liệu với 16 Models tương ứng phía Frontend. Mọi cơ chế mapping thực thể cơ sở dữ liệu qua các lớp Mapper MapStruct đều hoạt động chính xác.
+    \item \textbf{Độ phủ Endpoint (71/71):} Toàn bộ 71 API Endpoints trên 9 Controller nghiệp vụ (Quản lý User, Thực phẩm, Nhật ký ăn uống, Nhịn ăn gián đoạn, Hoạt động thể chất, Tiến trình sức khỏe, Nước uống, Thử thách tập luyện) đã được kiểm chứng và kết nối thành công 100\%.
+    \item \textbf{Các lỗi nghiêm trọng đã khắc phục:}
+    \begin{enumerate}
+        \item Khắc phục sự lệch khớp đường dẫn API ghi nhận cân nặng (`/api/progress/log-weight`) và lấy cân nặng gần nhất (`/api/progress/latest-weight`) ở client giúp dữ liệu hiển thị tức thời.
+        \item Xử lý lỗi chuyển đổi múi giờ và định dạng thời gian (`YYYY-MM-DD` vs `LocalDateTime`) khi đồng bộ lượng nước uống, chuyển đổi sang truyền nhận dạng chuỗi ISO tương thích hoàn toàn với Jackson.
+        \item Cấp quyền sửa/xóa các thử thách cá nhân (`WorkoutChallenge`) cho người dùng thường (Role USER) thay vì chỉ chặn cứng ở Admin như ban đầu, đồng thời duy trì ràng buộc kiểm tra sở hữu dữ liệu (Data Ownership).
+    \end{enumerate}
+\end{itemize}
+
+% ============================================================
+\section{Kết luận và Hướng phát triển}
+% ============================================================
+
+\subsection{Kết quả Đạt được}
+
+Đồ án môn học đã hoàn thành xuất sắc các mục tiêu đề ra ban đầu đối với hệ thống NutriTrack:
+\begin{itemize}
+    \item Xây dựng thành công ứng dụng di động đa nền tảng có hiệu năng cao, giao diện Dark Theme hiện đại, trực quan và tối ưu hóa trải nghiệm tương tác một tay.
+    \item Tự động hóa hoàn toàn các tính toán dinh dưỡng, lượng calo và macro tiêu thụ hàng ngày dựa trên các công thức khoa học (Mifflin-St Jeor, BMI, TDEE).
+    \item Thiết kế và hiện thực thành công kiến trúc Offline-First với Sync Engine thông minh, cho phép ứng dụng hoạt động ổn định ngay cả trong điều kiện mạng yếu hoặc không có mạng, bảo vệ an toàn dữ liệu người dùng.
+\end{itemize}
+
+\subsection{Hạn chế của Đồ án}
+
+Mặc dù hệ thống đã hoạt động ổn định và đáp ứng đầy đủ yêu cầu nghiệp vụ, đồ án vẫn còn một số hạn chế cần cải thiện:
+\begin{itemize}
+    \item Cơ sở dữ liệu thực phẩm Việt Nam mặc dù đã có nhưng số lượng món ăn bản địa còn giới hạn, người dùng vẫn phải tự tạo nhiều món ăn thủ công (Custom Foods).
+    \item Việc ghi nhận bữa ăn hoàn toàn phụ thuộc vào việc nhập liệu thủ công của người dùng, dễ gây ra sai sót hoặc nản lòng sau thời gian dài sử dụng.
+    \item Chưa tích hợp đồng bộ tự động với các cảm biến sức khỏe hoặc ứng dụng theo dõi phần cứng thông dụng (Apple Health, Google Fit).
+    \item Các chức năng dành cho Quản trị viên (Admin) như quản lý thực phẩm hệ thống và quản lý thử thách mới chỉ được triển khai đầy đủ ở tầng cơ sở dữ liệu và Backend API (bảo mật bằng phân quyền JWT), chưa được xây dựng giao diện tương tác (UI) trên ứng dụng di động React Native (do ứng dụng di động được định hướng tập trung tối đa cho trải nghiệm của người dùng cuối USER).
+\end{itemize}
+
+\subsection{Hướng phát triển Tương lai}
+
+Để đưa NutriTrack trở thành một ứng dụng theo dõi sức khỏe chuyên nghiệp, nhóm đề xuất các hướng phát triển tiếp theo:
+\begin{itemize}
+    \item \textbf{Tích hợp AI nhận diện thực phẩm:} Sử dụng các mô hình học máy (Machine Learning) để nhận dạng món ăn và ước lượng calo trực tiếp qua ảnh chụp từ camera điện thoại.
+    \item \textbf{Tích hợp cảm biến và thiết bị đeo:} Kết nối trực tiếp với API của Apple HealthKit và Google Fit để tự động đồng bộ số bước chân, nhịp tim và lượng calo đốt cháy thực tế từ vòng đeo thông minh.
+    \item \textbf{Tính năng quét mã vạch (Barcode Scanner):} Cho phép người dùng quét mã vạch sản phẩm đóng hộp để tự động tra cứu thành phần dinh dưỡng từ cơ sở dữ liệu quốc tế.
+    \item \textbf{Mở rộng khía cạnh mạng xã hội:} Xây dựng cộng đồng chia sẻ thực đơn, thách đấu tập luyện nhóm để tăng tính gắn kết và động lực cho người dùng.
+\end{itemize}
+
+\end{document}
