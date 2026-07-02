@@ -1,0 +1,112 @@
+/* Diary Page Styles */
+
+.diary-content {
+    padding: 2rem;
+}
+
+.diary-entry {
+    background: #f9f9f9;
+    border-left: 4px solid #007bff;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+}
+
+.diary-entry h3 {
+    color: #007bff;
+    margin-bottom: 0.5rem;
+}
+
+.diary-entry-date {
+    color: #999;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.diary-entry-content {
+    color: #666;
+    line-height: 1.8;
+}
+
+.food-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: white;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.food-item-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.food-item-calories {
+    background-color: #007bff;
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.daily-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.daily-summary h2 {
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.stat {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .diary-entry {
+        padding: 1rem;
+    }
+
+    .food-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .food-item-calories {
+        margin-top: 0.75rem;
+        align-self: flex-start;
+    }
+
+    .summary-stats {
+        grid-template-columns: 1fr;
+    }
+}

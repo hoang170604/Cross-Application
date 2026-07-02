@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Yazio Frontend</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        header h1 {
+            font-size: 24px;
+            color: #333;
+        }
+        
+        .user-info {
+            text-align: right;
+        }
+        
+        .user-info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stat:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .success {
+            background: #2ecc71;
+        }
+        
+        .success:hover {
+            background: #27ae60;
+        }
+        
+        .error {
+            background: #e74c3c;
+        }
+        
+        .error:hover {
+            background: #c0392b;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert.show {
+            display: block;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div>
+                <h1>🍽️ Yazio Dashboard</h1>
+            </div>
+            <div class="user-info" id="userInfo">
+                <p>Loading...</p>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+        </header>
+
+        <!-- Alerts -->
+        <div id="alertContainer"></div>
+
+        <!-- Dashboard Stats -->
+        <div class="dashboard-grid">
+            <!-- Today's Nutrition Stats -->
+            <div class="card">
+                <h2>📊 Today's Nutrition</h2>
+                <div id="nutritionStats" class="loading">
+                    <div class="spinner"></div> Loading...
+                </div>
+            </div>
+
+            <!-- Today's Activity -->
+            <div class="card">
+                <h2>🏃 Today's Activity</h2>
+                <div id="activityStats" class="loading">
+                    <div class="spinner"></div> Loading...
+                </div>
+            </div>
+
+            <!-- Fasting Status -->
+            <div class="card">
+                <h2>⏱️ Fasting Status</h2>
+                <div id="fastingStatus" class="loading">
+                    <div class="spinner"></div> Loading...
+                </div>
+            </div>
+
+            <!-- Water Intake -->
+            <div class="card">
+                <h2>💧 Water Today</h2>
+                <div id="waterStats" class="loading">
+                    <div class="spinner"></div> Loading...
+                </div>
+            </div>
+
+            <!-- Weight -->
+            <div class="card">
+                <h2>⚖️ Latest Weight</h2>
+                <div id="weightStats" class="loading">
+                    <div class="spinner"></div> Loading...
+                </div>
+            </div>
+
+            <!-- Recent Challenges -->
+            <div class="card">
+                <h2>🎯 Active Challenges</h2>
+                <div id="challengeStats" class="loading">
+                    <div class="spinner"></div> Loading...
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <h2>⚡ Quick Actions</h2>
+            <div class="dashboard-grid">
+                <!-- Log Water -->
+                <div>
+                    <div class="input-group">
+                        <label>Log Water (ml)</label>
+                        <input type="number" id="waterAmount" placeholder="250" value="250" min="50" max="1000">
+                    </div>
+                    <button class="btn success" onclick="logWater()">Log Water</button>
+                </div>
+
+                <!-- Log Weight -->
+                <div>
+                    <div class="input-group">
+                        <label>Log Weight (kg)</label>
+                        <input type="number" id="weightValue" placeholder="75.5" step="0.1" min="30" max="200">
+                    </div>
+                    <button class="btn success" onclick="logWeight()">Log Weight</button>
+                </div>
+
+                <!-- Start Fasting -->
+                <div>
+                    <div class="input-group">
+                        <label>Fasting Goal (hours)</label>
+                        <input type="number" id="fastingHours" placeholder="16" value="16" min="8" max="72">
+                    </div>
+                    <button class="btn" id="fastingBtn" onclick="toggleFasting()">Start Fasting</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include all necessary scripts -->
+    <script src="js/api/axios-client.js"></script>
+    <script src="js/config/api.config.js"></script>
+    <script src="js/utils/error-handler.js"></script>
+    <script src="js/services/auth.service.js"></script>
+    <script src="js/services/activity.service.js"></script>
+    <script src="js/services/food.service.js"></script>
+    <script src="js/services/diary.service.js"></script>
+    <script src="js/services/fasting.service.js"></script>
+    <script src="js/services/water.service.js"></script>
+    <script src="js/services/progress.service.js"></script>
+    <script src="js/services/challenge.service.js"></script>
+
+    <script>
+        // Global state
+        let currentUser = null;
+        let currentUserId = null;
+
+        // Initialize dashboard on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserProfile();
+            loadDashboardData();
+            // Refresh data every 30 seconds
+            setInterval(loadDashboardData, 30000);
+        });
+
+        // ===== USER PROFILE =====
+        async function loadUserProfile() {
+            try {
+                // Check if authenticated
+                if (!AuthService.isAuthenticated()) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const currentUser = AuthService.getCurrentUser();
+                currentUserId = currentUser?.id || 1;
+
+                document.getElementById('userInfo').innerHTML = `
+                    <p><strong>${currentUser?.email || 'User'}</strong></p>
+                    <p>${currentUser?.fullName || 'No name set'}</p>
+                    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+                `;
+            } catch (error) {
+                console.error('Failed to load user profile:', error);
+                handleLogout();
+            }
+        }
+
+        // ===== LOAD DASHBOARD DATA =====
+        async function loadDashboardData() {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Load nutrition stats
+            loadNutritionStats(today);
+
+            // Load activity stats
+            loadActivityStats(today);
+
+            // Load fasting status
+            loadFastingStatus();
+
+            // Load water stats
+            loadWaterStats(today);
+
+            // Load weight stats
+            loadWeightStats();
+
+            // Load challenges
+            loadChallenges();
+        }
+
+        async function loadNutritionStats(date) {
+            try {
+                const response = await ProgressService.getDailyNutrition(currentUserId, date);
+                const data = response.data || { totalCalories: 0, totalProtein: 0, totalCarb: 0, totalFat: 0 };
+
+                document.getElementById('nutritionStats').innerHTML = `
+                    <div class="stat">
+                        <span class="stat-label">Calories</span>
+                        <span class="stat-value">${Math.round(data.totalCalories)} kcal</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Protein</span>
+                        <span class="stat-value">${Math.round(data.totalProtein)}g</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Carbs</span>
+                        <span class="stat-value">${Math.round(data.totalCarb)}g</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Fat</span>
+                        <span class="stat-value">${Math.round(data.totalFat)}g</span>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('nutritionStats').innerHTML = '<p style="color: #e74c3c;">Failed to load nutrition data</p>';
+            }
+        }
+
+        async function loadActivityStats(date) {
+            try {
+                const response = await ActivityService.getDailyCaloriesBurned(currentUserId, date);
+                const calories = response.data || 0;
+
+                document.getElementById('activityStats').innerHTML = `
+                    <div class="stat">
+                        <span class="stat-label">Calories Burned</span>
+                        <span class="stat-value">${Math.round(calories)} kcal</span>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('activityStats').innerHTML = '<p style="color: #e74c3c;">Failed to load activity data</p>';
+            }
+        }
+
+        async function loadFastingStatus() {
+            try {
+                const response = await FastingService.getOpenSession(currentUserId);
+                const session = response.data;
+
+                if (session) {
+                    const startTime = new Date(session.startTime);
+                    const now = new Date();
+                    const elapsed = Math.round((now - startTime) / (1000 * 60 * 60) * 10) / 10;
+
+                    document.getElementById('fastingStatus').innerHTML = `
+                        <div class="stat">
+                            <span class="stat-label">Elapsed Time</span>
+                            <span class="stat-value">${elapsed}h / ${session.fastingGoalHours}h</span>
+                        </div>
+                    `;
+                    document.getElementById('fastingBtn').textContent = 'Stop Fasting';
+                    document.getElementById('fastingBtn').classList.add('error');
+                } else {
+                    document.getElementById('fastingStatus').innerHTML = '<p style="color: #999;">Not fasting</p>';
+                    document.getElementById('fastingBtn').textContent = 'Start Fasting';
+                    document.getElementById('fastingBtn').classList.remove('error');
+                }
+            } catch (error) {
+                document.getElementById('fastingStatus').innerHTML = '<p style="color: #999;">Not fasting</p>';
+            }
+        }
+
+        async function loadWaterStats(date) {
+            try {
+                const response = await WaterService.getDailyTotal(currentUserId, date);
+                const total = response.data || 0;
+
+                document.getElementById('waterStats').innerHTML = `
+                    <div class="stat">
+                        <span class="stat-label">Total</span>
+                        <span class="stat-value">${total} ml</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Goal</span>
+                        <span class="stat-value">2000 ml</span>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('waterStats').innerHTML = '<p style="color: #e74c3c;">Failed to load water data</p>';
+            }
+        }
+
+        async function loadWeightStats() {
+            try {
+                const response = await ProgressService.getLatestWeight(currentUserId);
+                const weight = response.data;
+
+                if (weight) {
+                    document.getElementById('weightStats').innerHTML = `
+                        <div class="stat">
+                            <span class="stat-label">Latest</span>
+                            <span class="stat-value">${weight.weight} kg</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Date</span>
+                            <span class="stat-value">${weight.date}</span>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('weightStats').innerHTML = '<p style="color: #999;">No weight recorded</p>';
+                }
+            } catch (error) {
+                document.getElementById('weightStats').innerHTML = '<p style="color: #999;">No weight recorded</p>';
+            }
+        }
+
+        async function loadChallenges() {
+            try {
+                const response = await WorkoutChallengeService.getUserChallenges(currentUserId);
+                const challenges = response.data || [];
+                const activeChallenges = challenges.filter(c => c.isActive);
+
+                if (activeChallenges.length > 0) {
+                    const html = activeChallenges.slice(0, 3).map(c => `
+                        <div class="stat">
+                            <span class="stat-label">${c.challengeName}</span>
+                            <span class="stat-value">${c.currentValue}/${c.targetValue} ${c.unit}</span>
+                        </div>
+                    `).join('');
+                    document.getElementById('challengeStats').innerHTML = html;
+                } else {
+                    document.getElementById('challengeStats').innerHTML = '<p style="color: #999;">No active challenges</p>';
+                }
+            } catch (error) {
+                document.getElementById('challengeStats').innerHTML = '<p style="color: #999;">No active challenges</p>';
+            }
+        }
+
+        // ===== QUICK ACTIONS =====
+        async function logWater() {
+            const amount = parseFloat(document.getElementById('waterAmount').value);
+            if (!amount || amount <= 0) {
+                showAlert('Please enter a valid amount', 'error');
+                return;
+            }
+
+            try {
+                await WaterService.logWater({
+                    userId: currentUserId,
+                    amountMl: amount,
+                    timestamp: new Date().toISOString()
+                });
+                showAlert(`✓ Logged ${amount}ml of water`, 'success');
+                loadWaterStats(new Date().toISOString().split('T')[0]);
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function logWeight() {
+            const weight = parseFloat(document.getElementById('weightValue').value);
+            if (!weight || weight <= 0) {
+                showAlert('Please enter a valid weight', 'error');
+                return;
+            }
+
+            try {
+                await ProgressService.logWeight({
+                    userId: currentUserId,
+                    weight: weight,
+                    date: new Date().toISOString().split('T')[0]
+                });
+                showAlert(`✓ Logged weight: ${weight} kg`, 'success');
+                loadWeightStats();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function toggleFasting() {
+            try {
+                const openSession = await FastingService.getOpenSession(currentUserId);
+                
+                if (openSession.data) {
+                    // Stop fasting
+                    await FastingService.stopFasting(currentUserId, new Date().toISOString());
+                    showAlert('✓ Fasting stopped', 'success');
+                } else {
+                    // Start fasting
+                    const hours = parseInt(document.getElementById('fastingHours').value);
+                    await FastingService.startFasting(currentUserId, new Date().toISOString(), hours);
+                    showAlert(`✓ Started ${hours}-hour fasting`, 'success');
+                }
+                loadFastingStatus();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        function handleLogout() {
+            AuthService.logout();
+        }
+
+        // ===== UTILITIES =====
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // Override ApiErrorHandler notification to use our alert system
+        window.showNotification = showAlert;
+    </script>
+</body>
+</html>

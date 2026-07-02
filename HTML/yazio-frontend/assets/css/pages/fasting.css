@@ -1,0 +1,145 @@
+/* Fasting Page Styles */
+
+.fasting-content {
+    padding: 2rem;
+}
+
+.fasting-timer {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 3rem 2rem;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.fasting-timer h2 {
+    color: white;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.timer-display {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    font-family: 'Courier New', monospace;
+}
+
+.timer-status {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+}
+
+.fasting-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.fasting-actions button {
+    padding: 0.75rem 1.5rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.fasting-actions button:hover {
+    background-color: white;
+    color: #f5576c;
+}
+
+.fasting-window {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    margin-bottom: 1.5rem;
+}
+
+.fasting-window h3 {
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.window-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    text-align: center;
+}
+
+.info-label {
+    color: #999;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.info-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.fasting-history {
+    background: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.fasting-history h3 {
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.history-item {
+    background: white;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+    border-left: 4px solid #28a745;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-date {
+    font-weight: 600;
+    color: #333;
+}
+
+.history-duration {
+    color: #28a745;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .fasting-timer {
+        padding: 2rem 1rem;
+    }
+
+    .timer-display {
+        font-size: 2rem;
+    }
+
+    .fasting-actions {
+        flex-direction: column;
+    }
+
+    .fasting-actions button {
+        width: 100%;
+    }
+
+    .window-info {
+        grid-template-columns: 1fr;
+    }
+}
